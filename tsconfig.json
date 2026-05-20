@@ -1,0 +1,15 @@
+{
+  "extends": "./tsconfig.base.json",
+  "compilerOptions": {
+    "noEmit": true
+  },
+  "files": [],
+  "references": [
+    { "path": "./packages/core" },
+    { "path": "./packages/firecrawl" },
+    { "path": "./packages/dataforseo-cli" },
+    { "path": "./packages/dataforseo" },
+    { "path": "./packages/ahrefs-cli" },
+    { "path": "./packages/ahrefs" }
+  ]
+}

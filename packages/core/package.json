@@ -1,0 +1,52 @@
+{
+  "name": "@mirage-cli/core",
+  "version": "0.1.0",
+  "description": "Wrap any Commander.js CLI for in-process execution. ALS-isolated, streaming stdout/stderr, ByteSource stdin, Cloudflare Worker-compatible.",
+  "type": "module",
+  "main": "./dist/index.js",
+  "module": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "bun": "./src/index.ts",
+      "import": "./dist/index.js"
+    },
+    "./package.json": "./package.json"
+  },
+  "files": [
+    "dist/",
+    "README.md"
+  ],
+  "scripts": {
+    "build": "bun build src/index.ts --target=node --outdir=dist --external commander && tsc -p tsconfig.build.json",
+    "test": "bun test --reporter=dots",
+    "test:worker": "wrangler dev --port 3003 --local --log-level=warn & sleep 3 && bun tests/drive-worker.ts; ec=$?; kill %1 2>/dev/null; exit $ec",
+    "typecheck": "tsc --noEmit"
+  },
+  "peerDependencies": {
+    "commander": ">=11"
+  },
+  "devDependencies": {
+    "commander": "^12.1.0",
+    "firecrawl-cli": "^1.18.0",
+    "wrangler": "^3.0.0"
+  },
+  "publishConfig": {
+    "access": "public"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/alexbruf/mirage-cli.git",
+    "directory": "packages/core"
+  },
+  "keywords": [
+    "commander",
+    "cli",
+    "cloudflare-workers",
+    "mirage",
+    "in-process",
+    "streaming"
+  ],
+  "license": "MIT"
+}

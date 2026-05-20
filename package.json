@@ -1,0 +1,39 @@
+{
+  "name": "mirage-cli",
+  "private": true,
+  "version": "0.0.0",
+  "description": "Wrap Commander.js TS CLIs as importable @mirage-cli/* packages for mirage runtimes and Cloudflare Workers.",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/alexbruf/mirage-cli.git"
+  },
+  "bugs": {
+    "url": "https://github.com/alexbruf/mirage-cli/issues"
+  },
+  "homepage": "https://github.com/alexbruf/mirage-cli#readme",
+  "type": "module",
+  "workspaces": [
+    "packages/*"
+  ],
+  "scripts": {
+    "build": "bun run --filter '*' build",
+    "test": "bun run --filter '*' test",
+    "test:worker": "bun run --filter '@mirage-cli/core' test:worker",
+    "typecheck": "bun run --filter '*' typecheck",
+    "changeset": "bunx changeset",
+    "version": "bunx changeset version",
+    "release": "bun run build && bunx changeset publish"
+  },
+  "devDependencies": {
+    "@changesets/cli": "^2.27.0",
+    "@mirage-cli/ahrefs": "workspace:*",
+    "@mirage-cli/core": "workspace:*",
+    "@mirage-cli/dataforseo": "workspace:*",
+    "@mirage-cli/firecrawl": "workspace:*",
+    "@struktoai/mirage-core": "^0.0.1",
+    "@struktoai/mirage-node": "^0.0.1",
+    "@types/bun": "latest",
+    "typescript": "^5.6.0"
+  }
+}

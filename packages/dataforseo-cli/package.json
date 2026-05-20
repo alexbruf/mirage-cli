@@ -1,0 +1,61 @@
+{
+  "name": "dataforseo-cli",
+  "version": "0.3.0",
+  "description": "Ergonomic CLI wrapper around the DataForSEO API (curated commands + raw escape hatch).",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/alexbruf/mirage-cli.git",
+    "directory": "packages/dataforseo-cli"
+  },
+  "bugs": {
+    "url": "https://github.com/alexbruf/mirage-cli/issues"
+  },
+  "homepage": "https://github.com/alexbruf/mirage-cli/tree/main/packages/dataforseo-cli#readme",
+  "type": "module",
+  "main": "./dist/index.js",
+  "module": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "bun": "./src/index.ts",
+      "import": "./dist/index.js"
+    },
+    "./cli": {
+      "types": "./dist/dfs.d.ts",
+      "bun": "./src/dfs.ts",
+      "import": "./dist/dfs.js"
+    },
+    "./package.json": "./package.json"
+  },
+  "files": [
+    "dist/",
+    "src/spec/index.json",
+    "README.md"
+  ],
+  "bin": {
+    "dfs": "./dist/dfs.js",
+    "dataforseo": "./dist/dfs.js"
+  },
+  "scripts": {
+    "dev": "bun run src/dfs.ts",
+    "spec:build": "bun run scripts/build-spec-index.ts",
+    "spec:refresh": "bun run scripts/refresh-spec.ts && bun run scripts/build-spec-index.ts",
+    "prebuild": "bun run scripts/build-spec-index.ts",
+    "build": "bun build src/dfs.ts src/index.ts --target=node --outdir=dist --minify && bun run scripts/postbuild.ts && bun run scripts/build-types.ts",
+    "compile": "bun build src/dfs.ts --compile --outfile=bin/dfs",
+    "test": "bun test --reporter=dots",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "commander": "^12.1.0"
+  },
+  "devDependencies": {
+    "@struktoai/mirage-core": "^0.0.1",
+    "yaml": "^2.6.0"
+  },
+  "publishConfig": {
+    "access": "public"
+  }
+}

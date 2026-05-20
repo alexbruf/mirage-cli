@@ -28,14 +28,14 @@
   },
   "peerDependencies": {
     "@struktoai/mirage-core": ">=0.0.1",
-    "ahrefs-cli": "workspace:*"
+    "@mirage-cli/ahrefs-cli": "workspace:*"
   },
   "peerDependenciesMeta": {
     "@struktoai/mirage-core": { "optional": true }
   },
   "devDependencies": {
     "@struktoai/mirage-core": "^0.0.1",
-    "ahrefs-cli": "workspace:*",
+    "@mirage-cli/ahrefs-cli": "workspace:*",
     "commander": "^14.0.3"
   },
   "publishConfig": {

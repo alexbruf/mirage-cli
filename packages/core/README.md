@@ -53,7 +53,7 @@ const result = await runCommander(program, ["greet", "world", "--loud"]);
 import { command } from "@struktoai/mirage-core";
 import { CommandSpec, Operand, OperandKind } from "@struktoai/mirage-core";
 import { toMirageCommandFn } from "@mirage-cli/core";
-import { buildDfsProgram } from "dataforseo-cli";
+import { buildDfsProgram } from "@mirage-cli/dataforseo-cli";
 
 export const dfsCommand = command({
   name: "dfs",

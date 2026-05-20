@@ -19,7 +19,7 @@
  */
 
 import type { Command } from "commander";
-import { buildProgram as buildAhrefsProgram } from "ahrefs-cli";
+import { buildProgram as buildAhrefsProgram } from "@mirage-cli/ahrefs-cli";
 import { toMirageCommandFn, type IOResultCtor, type MirageCommandFn } from "@mirage-cli/core";
 // @struktoai/mirage-core is an optional peer dep — only needed for
 // `ahrefsResource()`. Type-only at compile time.

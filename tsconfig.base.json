@@ -29,10 +29,10 @@
     "paths": {
       "@mirage-cli/core": ["./packages/core/src/index.ts"],
       "@mirage-cli/core/*": ["./packages/core/src/*"],
-      "dataforseo-cli": ["./packages/dataforseo-cli/src/index.ts"],
-      "dataforseo-cli/*": ["./packages/dataforseo-cli/src/*"],
-      "ahrefs-cli": ["./packages/ahrefs-cli/src/index.ts"],
-      "ahrefs-cli/*": ["./packages/ahrefs-cli/src/*"]
+      "@mirage-cli/dataforseo-cli": ["./packages/dataforseo-cli/src/index.ts"],
+      "@mirage-cli/dataforseo-cli/*": ["./packages/dataforseo-cli/src/*"],
+      "@mirage-cli/ahrefs-cli": ["./packages/ahrefs-cli/src/index.ts"],
+      "@mirage-cli/ahrefs-cli/*": ["./packages/ahrefs-cli/src/*"]
     }
   }
 }

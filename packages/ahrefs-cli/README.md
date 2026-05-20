@@ -84,7 +84,7 @@ bunx openapi-typescript openapi/ahrefs.json -o src/generated/api-types.ts
 Same command definitions power the CLI and the library. Call them in-process via `invoke()` — no subprocess.
 
 ```ts
-import { invoke, keywordsOverviewCmd } from "ahrefs-cli";
+import { invoke, keywordsOverviewCmd } from "@mirage-cli/ahrefs-cli";
 
 const { text, result } = await invoke(keywordsOverviewCmd, {
   flags: { country: "us", json: true },
@@ -100,7 +100,7 @@ await invoke(keywordsOverviewCmd, ["--country", "us", "--json", "vegan protein"]
 For raw API access (without a command's flag-parsing layer):
 
 ```ts
-import { request } from "ahrefs-cli";
+import { request } from "@mirage-cli/ahrefs-cli";
 
 const data = await request({
   path: "/keywords-explorer/overview",

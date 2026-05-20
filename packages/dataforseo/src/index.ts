@@ -27,7 +27,7 @@
  */
 
 import type { Command } from "commander";
-import { buildProgram as buildDfsProgram } from "dataforseo-cli";
+import { buildProgram as buildDfsProgram } from "@mirage-cli/dataforseo-cli";
 import { toMirageCommandFn, type IOResultCtor, type MirageCommandFn } from "@mirage-cli/core";
 // Type-only imports so @struktoai/mirage-core stays an optional peer dep.
 // Consumers who want `dataforseoResource()` (the drop-in for ws.addMount)

@@ -28,15 +28,15 @@
   },
   "peerDependencies": {
     "@struktoai/mirage-core": ">=0.0.1",
-    "dataforseo-cli": "workspace:*"
+    "@mirage-cli/dataforseo-cli": "workspace:*"
   },
   "peerDependenciesMeta": {
     "@struktoai/mirage-core": { "optional": true }
   },
   "devDependencies": {
     "@struktoai/mirage-core": "^0.0.1",
-    "commander": "^12.1.0",
-    "dataforseo-cli": "workspace:*"
+    "@mirage-cli/dataforseo-cli": "workspace:*",
+    "commander": "^12.1.0"
   },
   "publishConfig": {
     "access": "public"

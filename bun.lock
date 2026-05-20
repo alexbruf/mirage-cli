@@ -23,20 +23,20 @@
         "@mirage-cli/core": "workspace:*",
       },
       "devDependencies": {
+        "@mirage-cli/ahrefs-cli": "workspace:*",
         "@struktoai/mirage-core": "^0.0.1",
-        "ahrefs-cli": "workspace:*",
         "commander": "^14.0.3",
       },
       "peerDependencies": {
+        "@mirage-cli/ahrefs-cli": "workspace:*",
         "@struktoai/mirage-core": ">=0.0.1",
-        "ahrefs-cli": "workspace:*",
       },
       "optionalPeers": [
         "@struktoai/mirage-core",
       ],
     },
     "packages/ahrefs-cli": {
-      "name": "ahrefs-cli",
+      "name": "@mirage-cli/ahrefs-cli",
       "version": "0.1.0",
       "bin": {
         "ahrefs": "./dist/cli.js",
@@ -70,20 +70,20 @@
         "@mirage-cli/core": "workspace:*",
       },
       "devDependencies": {
+        "@mirage-cli/dataforseo-cli": "workspace:*",
         "@struktoai/mirage-core": "^0.0.1",
         "commander": "^12.1.0",
-        "dataforseo-cli": "workspace:*",
       },
       "peerDependencies": {
+        "@mirage-cli/dataforseo-cli": "workspace:*",
         "@struktoai/mirage-core": ">=0.0.1",
-        "dataforseo-cli": "workspace:*",
       },
       "optionalPeers": [
         "@struktoai/mirage-core",
       ],
     },
     "packages/dataforseo-cli": {
-      "name": "dataforseo-cli",
+      "name": "@mirage-cli/dataforseo-cli",
       "version": "0.3.0",
       "bin": {
         "dfs": "./dist/dfs.js",
@@ -378,9 +378,13 @@
 
     "@mirage-cli/ahrefs": ["@mirage-cli/ahrefs@workspace:packages/ahrefs"],
 
+    "@mirage-cli/ahrefs-cli": ["@mirage-cli/ahrefs-cli@workspace:packages/ahrefs-cli"],
+
     "@mirage-cli/core": ["@mirage-cli/core@workspace:packages/core"],
 
     "@mirage-cli/dataforseo": ["@mirage-cli/dataforseo@workspace:packages/dataforseo"],
+
+    "@mirage-cli/dataforseo-cli": ["@mirage-cli/dataforseo-cli@workspace:packages/dataforseo-cli"],
 
     "@mirage-cli/firecrawl": ["@mirage-cli/firecrawl@workspace:packages/firecrawl"],
 
@@ -465,8 +469,6 @@
     "acorn-walk": ["acorn-walk@8.3.2", "", {}, "sha512-cjkyv4OtNCIeqhHrfS81QWXoCBPExR/J62oyEqepVw8WaQeSqpW2uhuLPh1m9eWhDuOo/jUXVTlifvesOWp/4A=="],
 
     "agent-base": ["agent-base@7.1.4", "", {}, "sha512-MnA+YT8fwfJPgBx3m60MNqakm30XOkyIoH1y6huTQvC0PwZG7ki8NacLBcrPbNoo8vEZy7Jpuk7+jMO+CUovTQ=="],
-
-    "ahrefs-cli": ["ahrefs-cli@workspace:packages/ahrefs-cli"],
 
     "ajv": ["ajv@8.20.0", "", { "dependencies": { "fast-deep-equal": "^3.1.3", "fast-uri": "^3.0.1", "json-schema-traverse": "^1.0.0", "require-from-string": "^2.0.2" } }, "sha512-Thbli+OlOj+iMPYFBVBfJ3OmCAnaSyNn4M1vz9T6Gka5Jt9ba/HIR56joy65tY6kx/FCF5VXNB819Y7/GUrBGA=="],
 
@@ -571,8 +573,6 @@
     "cross-spawn": ["cross-spawn@7.0.6", "", { "dependencies": { "path-key": "^3.1.0", "shebang-command": "^2.0.0", "which": "^2.0.1" } }, "sha512-uV2QOWP2nWzsy2aMp8aRibhi9dlzF5Hgh5SHaB9OiTGEyDTiJJyx0uy51QXdyWbtAHNua4XJzUKca3OzKUd3vA=="],
 
     "data-uri-to-buffer": ["data-uri-to-buffer@2.0.2", "", {}, "sha512-ND9qDTLc6diwj+Xe5cdAgVTbLVdXbtxTJRXRhli8Mowuaan+0EJOtdqJ0QCHNSSPyoXGx9HX2/VMnKeC34AChA=="],
-
-    "dataforseo-cli": ["dataforseo-cli@workspace:packages/dataforseo-cli"],
 
     "debug": ["debug@4.4.3", "", { "dependencies": { "ms": "^2.1.3" } }, "sha512-RGwwWnwQvkVfavKVt22FGLw+xYSdzARwm0ru6DhTVA3umU5hZc28V3kO4stgYryrTlLpuvgI9GiijltAjNbcqA=="],
 
@@ -1168,13 +1168,13 @@
 
     "@mirage-cli/dataforseo/commander": ["commander@12.1.0", "", {}, "sha512-Vw8qHK3bZM9y/P10u3Vib8o/DdkvA2OtPtZvD871QKjy74Wj1WSKFILMPRPSdUSx5RFK1arlJzEtA4PkFgnbuA=="],
 
+    "@mirage-cli/dataforseo-cli/commander": ["commander@12.1.0", "", {}, "sha512-Vw8qHK3bZM9y/P10u3Vib8o/DdkvA2OtPtZvD871QKjy74Wj1WSKFILMPRPSdUSx5RFK1arlJzEtA4PkFgnbuA=="],
+
     "@mirage-cli/firecrawl/commander": ["commander@12.1.0", "", {}, "sha512-Vw8qHK3bZM9y/P10u3Vib8o/DdkvA2OtPtZvD871QKjy74Wj1WSKFILMPRPSdUSx5RFK1arlJzEtA4PkFgnbuA=="],
 
     "apache-arrow/@types/node": ["@types/node@24.12.4", "", { "dependencies": { "undici-types": "~7.16.0" } }, "sha512-GUUEShf+PBCGW2KaXwcIt3Yk+e3pkKwWKb9GSyM9WQVE+ep2jzmHdGsHzu4wgcZy5fN9FBdVzjpBQsYlpfpgLA=="],
 
     "chalk/supports-color": ["supports-color@7.2.0", "", { "dependencies": { "has-flag": "^4.0.0" } }, "sha512-qpCAvRl9stuOHveKsn7HncJRvv501qIacKzQlO/+Lwxc9+0q2wLyv4Dfvt80/DPn2pqOBsJdDiogXGR9+OvwRw=="],
-
-    "dataforseo-cli/commander": ["commander@12.1.0", "", {}, "sha512-Vw8qHK3bZM9y/P10u3Vib8o/DdkvA2OtPtZvD871QKjy74Wj1WSKFILMPRPSdUSx5RFK1arlJzEtA4PkFgnbuA=="],
 
     "form-data/mime-types": ["mime-types@2.1.35", "", { "dependencies": { "mime-db": "1.52.0" } }, "sha512-ZDY+bPm5zTTF+YpCrAU9nK0UgICYPT0QtT1NZWFv4s++TNkcgVaT0g6+4R2uI4MjQjzysHB1zxuWL50hzaeXiw=="],
 

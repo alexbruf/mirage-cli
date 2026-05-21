@@ -504,7 +504,15 @@ export function toMirageCommandFn(
   options: ToMirageOptions = {},
 ): MirageCommandFn {
   return async (_accessor, _paths, texts, opts) => {
-    const stream = streamCommander(program, texts, { stdin: opts.stdin ?? null });
+    // Default to --help when the consumer passed no subcommand. Without this,
+    // commander writes a "missing command" message to stderr and exits with
+    // code 1 — leaving agents calling the bare command name (`pulse`,
+    // `ahrefs`, …) with nothing useful on stdout. The help text is exactly
+    // what they want when discovering a CLI. With exitOverride applied
+    // across the tree (see `applyExitOverrideRecursively`) the --help path
+    // exits cleanly with code 0.
+    const argv = texts.length === 0 ? ["--help"] : texts;
+    const stream = streamCommander(program, argv, { stdin: opts.stdin ?? null });
     // We hand mirage the stdout stream directly. The exitCode is filled in
     // Pipe BOTH stdout and stderr through outer TransformStreams. Reasons:
     //

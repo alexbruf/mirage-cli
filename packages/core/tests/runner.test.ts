@@ -216,6 +216,25 @@ describe("toMirageCommandFn", () => {
     expect(io.reads).toEqual({});
     expect(io.writes).toEqual({});
   });
+
+  // Feature: bare command name (no subcommand) should default to --help so
+  // agents calling e.g. `bash 'pulse'` see something useful on stdout instead
+  // of an empty exit-1 from commander's "missing command" path.
+  test("empty texts defaults to --help (exit 0, help text on stdout)", async () => {
+    const program = new Command();
+    program.name("demo").description("demo CLI for empty-argv default");
+    program.command("greet").action(() => { process.stdout.write("hello\n"); });
+    program.command("fail").action(() => { process.exit(2); });
+
+    const fn = toMirageCommandFn(program);
+    const [stdout, io] = await fn(null, [], [] /* no texts */, { stdin: null, flags: {} });
+    const stdoutBytes = await new Response(stdout as unknown as ReadableStream).arrayBuffer();
+    const text = dec.decode(new Uint8Array(stdoutBytes));
+    expect(io.exitCode).toBe(0);
+    expect(text).toContain("demo CLI for empty-argv default");
+    expect(text).toContain("greet");
+    expect(text).toContain("fail");
+  });
 });
 
 describe("concurrent runs", () => {

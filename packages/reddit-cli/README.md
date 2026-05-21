@@ -18,7 +18,15 @@ Either:
 - `REDDIT_API_HOST` env var — overrides the saved host.
 - `reddit login` — interactive Clerk OAuth (PKCE, loopback). Stored under `~/.config/reddit-cli/config.json`.
 
-Defaults pick the right Clerk tenant per host (staging vs `reddit.viewengine.ai`).
+Built-in OAuth defaults exist only for the prod host (`reddit.viewengine.ai`).
+For staging or any other Clerk tenant, set:
+
+```
+REDDIT_CLI_OAUTH_ISSUER=https://your-clerk-tenant.clerk.accounts.dev
+REDDIT_CLI_OAUTH_CLIENT_ID=your_public_pkce_client_id
+```
+
+…or pass `--issuer` / `--client-id` to `reddit login`.
 
 ## Programmatic use
 

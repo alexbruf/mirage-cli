@@ -2,18 +2,21 @@ import { createHash, randomBytes } from "node:crypto";
 import { createServer, type IncomingMessage, type ServerResponse } from "node:http";
 import { readConfig, writeConfig, type CLIConfig, type OAuthState } from "./config.ts";
 
-const STAGING_CLERK = {
-  issuer: "https://causal-seal-84.clerk.accounts.dev",
-  clientId: "FHFbsCNPcQoc9cJ6",
-};
+/**
+ * Built-in OAuth defaults exist only for the prod host. For staging or any
+ * other host, set `REDDIT_CLI_OAUTH_ISSUER` + `REDDIT_CLI_OAUTH_CLIENT_ID`
+ * in the environment, or pass `--issuer` / `--client-id` to `reddit login`.
+ */
 const PROD_CLERK = {
   issuer: "https://clerk.reddit.viewengine.ai",
   clientId: "Sxm9babDwnJT4LkL",
 };
 
-function defaultsForHost(host: string | undefined): { issuer: string; clientId: string } {
+function defaultsForHost(
+  host: string | undefined,
+): { issuer?: string; clientId?: string } {
   if (host && /reddit\.viewengine\.ai/i.test(host)) return PROD_CLERK;
-  return STAGING_CLERK;
+  return {};
 }
 
 const DEFAULT_SCOPES = "openid profile email";
@@ -48,7 +51,14 @@ export async function login(opts: LoginOpts = {}): Promise<OAuthState> {
   const hostDefaults = defaultsForHost(readConfig().host);
   const envIssuer = process.env.REDDIT_CLI_OAUTH_ISSUER;
   const envClientId = process.env.REDDIT_CLI_OAUTH_CLIENT_ID;
-  const issuer = (opts.issuer ?? envIssuer ?? hostDefaults.issuer).replace(/\/$/, "");
+  const issuerRaw = opts.issuer ?? envIssuer ?? hostDefaults.issuer;
+  if (!issuerRaw) {
+    throw new Error(
+      "No OAuth issuer configured. Set REDDIT_CLI_OAUTH_ISSUER or pass --issuer.\n" +
+        "Built-in defaults exist only for reddit.viewengine.ai (prod).",
+    );
+  }
+  const issuer = issuerRaw.replace(/\/$/, "");
   const clientId = opts.clientId ?? envClientId ?? hostDefaults.clientId;
   const scopes = opts.scopes ?? DEFAULT_SCOPES;
   if (!clientId) {

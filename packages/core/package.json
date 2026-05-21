@@ -30,7 +30,7 @@
   "devDependencies": {
     "commander": "^12.1.0",
     "firecrawl-cli": "^1.18.0",
-    "wrangler": "^3.0.0"
+    "wrangler": "^4.93.1"
   },
   "publishConfig": {
     "access": "public"

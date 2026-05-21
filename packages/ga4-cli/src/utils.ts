@@ -50,14 +50,6 @@ export async function run(
   }
 }
 
-export async function collectAsync<T>(iterable: AsyncIterable<T>): Promise<T[]> {
-  const items: T[] = [];
-  for await (const item of iterable) {
-    items.push(item);
-  }
-  return items;
-}
-
 export function parseJson(value: string): unknown {
   try {
     return JSON.parse(value);

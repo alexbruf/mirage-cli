@@ -1,21 +1,32 @@
-import { v1alpha, v1beta } from "@google-analytics/admin";
-import { BetaAnalyticsDataClient } from "@google-analytics/data";
-import { OAuth2Client } from "google-auth-library";
+/**
+ * GA4 auth — fetch-only. Replaces the previous `@google-analytics/{data,admin}`
+ * + `google-auth-library` stack with direct REST + Web Crypto JWT signing so
+ * the CLI runs in Node, Bun, and Cloudflare Workers.
+ *
+ * The public surface preserves Bin-Huang's original module: `setCredentialsPath`,
+ * `setProfile`, `listProfiles`, `getProfilesDir`, `getDefaultCredentialsPath`,
+ * `version` — so cli.ts and commands/profiles.ts don't need to change.
+ *
+ * What's new: `requireAccessToken`, `resolveAccessToken`, `authHeaders`,
+ * `signServiceAccountJWT`. Commands now call these directly instead of
+ * obtaining gRPC client instances.
+ */
+
 import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
 import { loadOAuthState, refreshIfNeeded } from "./oauth.ts";
 
-/**
- * Hardcoded so we don't have to read package.json at runtime (which is
- * awkward under bundlers and Bun). Keep in sync with package.json.
- */
-export const version = "0.1.0";
+export const version = "0.2.0";
+
+const GA4_SCOPE = "https://www.googleapis.com/auth/analytics.readonly";
+const TOKEN_URL = "https://oauth2.googleapis.com/token";
 
 const CONFIG_DIR = path.join(os.homedir(), ".config", "google-analytics-cli");
 const DEFAULT_CREDENTIALS_PATH = path.join(CONFIG_DIR, "credentials.json");
 const PROFILES_DIR = path.join(CONFIG_DIR, "profiles");
 
+// ── per-invocation state (set from cli.ts preAction hook) ─────────────
 let credentialsPath: string | undefined;
 let profileName: string | undefined;
 
@@ -79,86 +90,157 @@ function resolveKeyFilename(): string | undefined {
   ) {
     return DEFAULT_CREDENTIALS_PATH;
   }
+  if (process.env.GOOGLE_APPLICATION_CREDENTIALS) {
+    return process.env.GOOGLE_APPLICATION_CREDENTIALS;
+  }
   return undefined;
 }
 
-type GoogleClientOptions = ConstructorParameters<typeof BetaAnalyticsDataClient>[0];
+// ── token resolution ────────────────────────────────────────────────────
+
+export interface ServiceAccountKey {
+  type: "service_account";
+  project_id: string;
+  private_key_id: string;
+  private_key: string;
+  client_email: string;
+  client_id: string;
+  auth_uri: string;
+  token_uri: string;
+}
 
 /**
- * Build the options bag we hand to every Google client. Precedence:
- *
- *  1. `--credentials` / `--profile` flag         (service account JSON)
- *  2. `GA4_OAUTH_ACCESS_TOKEN` env var           (raw bearer — no refresh)
- *  3. Stored OAuth state from `ga4 login`        (auto-refreshes)
- *  4. Default SA at ~/.config/.../credentials.json
- *  5. GOOGLE_APPLICATION_CREDENTIALS / ADC       (handled by google-auth-library)
+ * Resolve an access token. Precedence matches the previous Bin-Huang flow:
+ *   1. `--credentials` flag (service-account JSON path)
+ *   2. `--profile` flag (named SA under ~/.config/.../profiles/)
+ *   3. `GA4_OAUTH_ACCESS_TOKEN` env (raw bearer — preferred for workers/CI;
+ *       also accepts `GA4_ACCESS_TOKEN` for symmetry with FunnelEnvy's CLI)
+ *   4. Stored OAuth tokens from `ga4 login` — auto-refresh if expired
+ *   5. Default SA path: ~/.config/google-analytics-cli/credentials.json
+ *   6. `GOOGLE_APPLICATION_CREDENTIALS` env (service-account JSON path)
  */
-async function getClientOptions(): Promise<GoogleClientOptions> {
-  // `fallback: 'rest'` forces the Google client libs to use REST transport
-  // instead of gRPC. This avoids a known incompatibility between Bun's
-  // Headers API and the gRPC metadata-fetch path in `google-gax`
-  // (which calls `headers.forEach((value, key) => ...)` on the auth
-  // plugin's response — Bun's Headers iterator signature differs).
-  // REST is functionally equivalent for everything the CLI does.
-  const base = {
-    libName: "google-analytics-cli",
-    libVersion: version,
-    fallback: "rest" as const,
-  };
-
-  // 1. SA file path (explicit flag wins)
+export async function resolveAccessToken(): Promise<string | undefined> {
+  // Explicit credentials flag wins (--credentials or --profile)
   if (credentialsPath || profileName) {
     const keyFilename = resolveKeyFilename();
-    return keyFilename ? { ...base, keyFilename } : { ...base };
+    if (keyFilename) return signFromKeyFile(keyFilename);
   }
 
-  // 2. Env-var raw bearer token (no refresh attempted)
-  const envToken = process.env.GA4_OAUTH_ACCESS_TOKEN;
-  if (envToken) {
-    const oauth = new OAuth2Client();
-    oauth.setCredentials({ access_token: envToken });
-    // `authClient` is typed as `AnyAuthClient` (a closed union) in @google-analytics/*.
-    // OAuth2Client is the base class of that union but the structural mismatch
-    // around `fromJSON` etc. trips TS — the runtime works fine.
-    return { ...base, authClient: oauth as never };
-  }
+  // Env-var raw bearer (no refresh attempted — short-lived tokens)
+  const envToken = process.env.GA4_OAUTH_ACCESS_TOKEN ?? process.env.GA4_ACCESS_TOKEN;
+  if (envToken) return envToken;
 
-  // 3. Stored OAuth tokens from `ga4 login`
+  // Stored OAuth from `ga4 login`
   const stored = loadOAuthState();
   if (stored) {
     const refreshed = await refreshIfNeeded(stored);
-    const oauth = new OAuth2Client({
-      clientId: refreshed.clientId,
-      clientSecret: refreshed.clientSecret,
-    });
-    oauth.setCredentials({
-      access_token: refreshed.accessToken,
-      refresh_token: refreshed.refreshToken,
-      expiry_date: refreshed.expiresAt,
-    });
-    return { ...base, authClient: oauth as never };
+    return refreshed.accessToken;
   }
 
-  // 4 + 5. Fall back to SA / ADC (google-auth-library handles GOOGLE_APPLICATION_CREDENTIALS
-  // and ~/.config/gcloud/application_default_credentials.json automatically)
+  // Default SA path or GOOGLE_APPLICATION_CREDENTIALS
   const keyFilename = resolveKeyFilename();
-  return keyFilename ? { ...base, keyFilename } : { ...base };
+  if (keyFilename) return signFromKeyFile(keyFilename);
+
+  return undefined;
 }
 
-export async function createAdminClient(): Promise<
-  InstanceType<typeof v1beta.AnalyticsAdminServiceClient>
-> {
-  return new v1beta.AnalyticsAdminServiceClient(await getClientOptions());
+export async function requireAccessToken(): Promise<string> {
+  const token = await resolveAccessToken();
+  if (!token) {
+    throw new Error(
+      "No GA4 credentials found. Provide one via:\n" +
+        "  • --credentials <path-to-sa.json>\n" +
+        "  • --profile <name>  (saved at ~/.config/google-analytics-cli/profiles/<name>.json)\n" +
+        "  • GA4_OAUTH_ACCESS_TOKEN env (raw bearer)\n" +
+        "  • GOOGLE_APPLICATION_CREDENTIALS env (SA JSON path)\n" +
+        "  • ga4 login  (interactive OAuth)",
+    );
+  }
+  return token;
 }
 
-export async function createAdminAlphaClient(): Promise<
-  InstanceType<typeof v1alpha.AnalyticsAdminServiceClient>
-> {
-  return new v1alpha.AnalyticsAdminServiceClient(await getClientOptions());
+export function authHeaders(token: string): Record<string, string> {
+  return { Authorization: `Bearer ${token}` };
 }
 
-export async function createDataClient(): Promise<
-  InstanceType<typeof BetaAnalyticsDataClient>
-> {
-  return new BetaAnalyticsDataClient(await getClientOptions());
+async function signFromKeyFile(keyFilePath: string): Promise<string> {
+  const raw = fs.readFileSync(keyFilePath, "utf8");
+  const key = JSON.parse(raw) as ServiceAccountKey;
+  if (key.type !== "service_account") {
+    throw new Error(`${keyFilePath} is not a service-account key (type=${key.type})`);
+  }
+  return signServiceAccountJWT(key);
+}
+
+/**
+ * Sign a JWT with the service-account private key using Web Crypto. Works
+ * identically in Node, Bun, and Cloudflare Workers — no `node:crypto.createSign`,
+ * no PEM-parsing assumptions beyond stripping headers + base64-decoding.
+ */
+export async function signServiceAccountJWT(key: ServiceAccountKey): Promise<string> {
+  const now = Math.floor(Date.now() / 1000);
+  const header = b64urlJson({ alg: "RS256", typ: "JWT" });
+  const claim = b64urlJson({
+    iss: key.client_email,
+    scope: GA4_SCOPE,
+    aud: key.token_uri || TOKEN_URL,
+    iat: now,
+    exp: now + 3600,
+  });
+  const signingInput = `${header}.${claim}`;
+
+  const privateKey = await importPkcs8PrivateKey(key.private_key);
+  const signature = await crypto.subtle.sign(
+    { name: "RSASSA-PKCS1-v1_5" },
+    privateKey,
+    new TextEncoder().encode(signingInput),
+  );
+  const jwt = `${signingInput}.${b64urlBytes(new Uint8Array(signature))}`;
+
+  const res = await fetch(key.token_uri || TOKEN_URL, {
+    method: "POST",
+    headers: { "Content-Type": "application/x-www-form-urlencoded" },
+    body: new URLSearchParams({
+      grant_type: "urn:ietf:params:oauth:grant-type:jwt-bearer",
+      assertion: jwt,
+    }),
+  });
+  if (!res.ok) {
+    const text = await res.text().catch(() => "");
+    throw new Error(`Service account token exchange failed (${res.status}): ${text.slice(0, 300)}`);
+  }
+  const data = (await res.json()) as { access_token: string };
+  return data.access_token;
+}
+
+async function importPkcs8PrivateKey(pem: string): Promise<CryptoKey> {
+  const stripped = pem
+    .replace(/-----BEGIN [A-Z ]+-----/, "")
+    .replace(/-----END [A-Z ]+-----/, "")
+    .replace(/\s+/g, "");
+  const bytes = base64ToBytes(stripped);
+  return crypto.subtle.importKey(
+    "pkcs8",
+    bytes as unknown as ArrayBuffer,
+    { name: "RSASSA-PKCS1-v1_5", hash: "SHA-256" },
+    false,
+    ["sign"],
+  );
+}
+
+function b64urlJson(obj: unknown): string {
+  return b64urlBytes(new TextEncoder().encode(JSON.stringify(obj)));
+}
+
+function b64urlBytes(bytes: Uint8Array): string {
+  let bin = "";
+  for (const b of bytes) bin += String.fromCharCode(b);
+  return btoa(bin).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "");
+}
+
+function base64ToBytes(b64: string): Uint8Array {
+  const bin = atob(b64);
+  const out = new Uint8Array(bin.length);
+  for (let i = 0; i < bin.length; i++) out[i] = bin.charCodeAt(i);
+  return out;
 }

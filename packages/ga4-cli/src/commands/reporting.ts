@@ -1,5 +1,4 @@
 import { Command } from "commander";
-import { createDataClient } from "../auth.ts";
 import {
   parseJson,
   parsePositiveInt,
@@ -9,6 +8,12 @@ import {
   validateFilter,
   validateOrderBy,
 } from "../utils.ts";
+import { gaRequest, DATA_BETA } from "../rest.ts";
+
+interface MetadataResponse {
+  dimensions?: { customDefinition?: boolean }[];
+  metrics?: { customDefinition?: boolean }[];
+}
 
 export function registerReportingCommands(program: Command): void {
   program
@@ -18,17 +23,10 @@ export function registerReportingCommands(program: Command): void {
       const format = cmd.optsWithGlobals().format;
       const property = resolvePropertyId(cmd);
       await run(async () => {
-        const client = await createDataClient();
-        const [metadata] = await client.getMetadata({
-          name: `${property}/metadata`,
-        });
+        const meta = await gaRequest<MetadataResponse>(`${DATA_BETA}/${property}/metadata`);
         return {
-          custom_dimensions: (metadata.dimensions ?? []).filter(
-            (d) => d.customDefinition,
-          ),
-          custom_metrics: (metadata.metrics ?? []).filter(
-            (m) => m.customDefinition,
-          ),
+          custom_dimensions: (meta.dimensions ?? []).filter((d) => d.customDefinition),
+          custom_metrics: (meta.metrics ?? []).filter((m) => m.customDefinition),
         };
       }, format);
     });
@@ -39,13 +37,7 @@ export function registerReportingCommands(program: Command): void {
     .action(async (_propertyId, _opts, cmd: Command) => {
       const format = cmd.optsWithGlobals().format;
       const property = resolvePropertyId(cmd);
-      await run(async () => {
-        const client = await createDataClient();
-        const [metadata] = await client.getMetadata({
-          name: `${property}/metadata`,
-        });
-        return metadata;
-      }, format);
+      await run(async () => gaRequest(`${DATA_BETA}/${property}/metadata`), format);
     });
 
   program
@@ -59,30 +51,27 @@ export function registerReportingCommands(program: Command): void {
       const format = cmd.optsWithGlobals().format;
       const property = resolvePropertyId(cmd);
       await run(async () => {
-        const request: Record<string, unknown> = { property };
+        const body: Record<string, unknown> = {};
         if (opts.dimensions) {
-          request.dimensions = opts.dimensions
-            .split(",")
-            .map((s: string) => ({ name: s.trim() }));
+          body.dimensions = opts.dimensions.split(",").map((s: string) => ({ name: s.trim() }));
         }
         if (opts.metrics) {
-          request.metrics = opts.metrics
-            .split(",")
-            .map((s: string) => ({ name: s.trim() }));
+          body.metrics = opts.metrics.split(",").map((s: string) => ({ name: s.trim() }));
         }
         if (opts.dimensionFilter) {
           const f = parseJson(opts.dimensionFilter);
           validateFilter(f, "--dimension-filter");
-          request.dimensionFilter = f;
+          body.dimensionFilter = f;
         }
         if (opts.metricFilter) {
           const f = parseJson(opts.metricFilter);
           validateFilter(f, "--metric-filter");
-          request.metricFilter = f;
+          body.metricFilter = f;
         }
-        const client = await createDataClient();
-        const [response] = await client.checkCompatibility(request);
-        return response;
+        return gaRequest(`${DATA_BETA}/${property}:checkCompatibility`, {
+          method: "POST",
+          body,
+        });
       }, format);
     });
 
@@ -106,41 +95,32 @@ export function registerReportingCommands(program: Command): void {
       await run(async () => {
         const dateRanges = parseJson(opts.dateRanges);
         validateDateRanges(dateRanges);
-
-        const request: Record<string, unknown> = {
-          property,
-          dimensions: opts.dimensions
-            .split(",")
-            .map((s: string) => ({ name: s.trim() })),
-          metrics: opts.metrics
-            .split(",")
-            .map((s: string) => ({ name: s.trim() })),
+        const body: Record<string, unknown> = {
+          dimensions: opts.dimensions.split(",").map((s: string) => ({ name: s.trim() })),
+          metrics: opts.metrics.split(",").map((s: string) => ({ name: s.trim() })),
           dateRanges,
         };
         if (opts.dimensionFilter) {
           const f = parseJson(opts.dimensionFilter);
           validateFilter(f, "--dimension-filter");
-          request.dimensionFilter = f;
+          body.dimensionFilter = f;
         }
         if (opts.metricFilter) {
           const f = parseJson(opts.metricFilter);
           validateFilter(f, "--metric-filter");
-          request.metricFilter = f;
+          body.metricFilter = f;
         }
         if (opts.orderBy) {
           const o = parseJson(opts.orderBy);
           validateOrderBy(o);
-          request.orderBys = o;
+          body.orderBys = o;
         }
-        if (opts.limit != null) request.limit = opts.limit;
-        if (opts.offset != null) request.offset = opts.offset;
-        if (opts.currencyCode) request.currencyCode = opts.currencyCode;
-        if (opts.keepEmptyRows) request.keepEmptyRows = true;
-        if (opts.returnPropertyQuota) request.returnPropertyQuota = true;
-
-        const client = await createDataClient();
-        const [response] = await client.runReport(request);
-        return response;
+        if (opts.limit != null) body.limit = opts.limit;
+        if (opts.offset != null) body.offset = opts.offset;
+        if (opts.currencyCode) body.currencyCode = opts.currencyCode;
+        if (opts.keepEmptyRows) body.keepEmptyRows = true;
+        if (opts.returnPropertyQuota) body.returnPropertyQuota = true;
+        return gaRequest(`${DATA_BETA}/${property}:runReport`, { method: "POST", body });
       }, format);
     });
 
@@ -163,38 +143,27 @@ export function registerReportingCommands(program: Command): void {
         const dateRanges = parseJson(opts.dateRanges);
         validateDateRanges(dateRanges);
         const pivots = parseJson(opts.pivots);
-        if (!Array.isArray(pivots)) {
-          throw new Error("--pivots must be a JSON array.");
-        }
-
-        const request: Record<string, unknown> = {
-          property,
-          dimensions: opts.dimensions
-            .split(",")
-            .map((s: string) => ({ name: s.trim() })),
-          metrics: opts.metrics
-            .split(",")
-            .map((s: string) => ({ name: s.trim() })),
+        if (!Array.isArray(pivots)) throw new Error("--pivots must be a JSON array.");
+        const body: Record<string, unknown> = {
+          dimensions: opts.dimensions.split(",").map((s: string) => ({ name: s.trim() })),
+          metrics: opts.metrics.split(",").map((s: string) => ({ name: s.trim() })),
           dateRanges,
           pivots,
         };
         if (opts.dimensionFilter) {
           const f = parseJson(opts.dimensionFilter);
           validateFilter(f, "--dimension-filter");
-          request.dimensionFilter = f;
+          body.dimensionFilter = f;
         }
         if (opts.metricFilter) {
           const f = parseJson(opts.metricFilter);
           validateFilter(f, "--metric-filter");
-          request.metricFilter = f;
+          body.metricFilter = f;
         }
-        if (opts.currencyCode) request.currencyCode = opts.currencyCode;
-        if (opts.keepEmptyRows) request.keepEmptyRows = true;
-        if (opts.returnPropertyQuota) request.returnPropertyQuota = true;
-
-        const client = await createDataClient();
-        const [response] = await client.runPivotReport(request);
-        return response;
+        if (opts.currencyCode) body.currencyCode = opts.currencyCode;
+        if (opts.keepEmptyRows) body.keepEmptyRows = true;
+        if (opts.returnPropertyQuota) body.returnPropertyQuota = true;
+        return gaRequest(`${DATA_BETA}/${property}:runPivotReport`, { method: "POST", body });
       }, format);
     });
 
@@ -207,18 +176,12 @@ export function registerReportingCommands(program: Command): void {
       const property = resolvePropertyId(cmd);
       await run(async () => {
         const requests = parseJson(opts.requests);
-        if (!Array.isArray(requests)) {
-          throw new Error("--requests must be a JSON array.");
-        }
-        if (requests.length > 5) {
-          throw new Error("--requests must contain at most 5 report objects.");
-        }
-        const client = await createDataClient();
-        const [response] = await client.batchRunReports({
-          property,
-          requests,
+        if (!Array.isArray(requests)) throw new Error("--requests must be a JSON array.");
+        if (requests.length > 5) throw new Error("--requests must contain at most 5 report objects.");
+        return gaRequest(`${DATA_BETA}/${property}:batchRunReports`, {
+          method: "POST",
+          body: { requests },
         });
-        return response;
       }, format);
     });
 
@@ -231,20 +194,13 @@ export function registerReportingCommands(program: Command): void {
       const format = cmd.optsWithGlobals().format;
       const parent = resolvePropertyId(cmd);
       await run(async () => {
-        const audienceExport: Record<string, unknown> = {
-          audience: opts.audience,
-        };
+        const body: Record<string, unknown> = { audience: opts.audience };
         if (opts.dimensions) {
-          audienceExport.dimensions = opts.dimensions
+          body.dimensions = opts.dimensions
             .split(",")
             .map((s: string) => ({ dimensionName: s.trim() }));
         }
-        const client = await createDataClient();
-        const [operation] = await client.createAudienceExport({
-          parent,
-          audienceExport,
-        });
-        return operation;
+        return gaRequest(`${DATA_BETA}/${parent}/audienceExports`, { method: "POST", body });
       }, format);
     });
 
@@ -253,11 +209,10 @@ export function registerReportingCommands(program: Command): void {
     .description("Get an audience export by name")
     .action(async (_propertyId, exportName: string, _opts, cmd: Command) => {
       const format = cmd.optsWithGlobals().format;
-      await run(async () => {
-        const client = await createDataClient();
-        const [response] = await client.getAudienceExport({ name: exportName });
-        return response;
-      }, format);
+      await run(
+        async () => gaRequest(`${DATA_BETA}/${normalizeExportName(exportName, cmd)}`),
+        format,
+      );
     });
 
   program
@@ -266,11 +221,10 @@ export function registerReportingCommands(program: Command): void {
     .action(async (_propertyId, _opts, cmd: Command) => {
       const format = cmd.optsWithGlobals().format;
       const parent = resolvePropertyId(cmd);
-      await run(async () => {
-        const client = await createDataClient();
-        const [response] = await client.listAudienceExports({ parent });
-        return response;
-      }, format);
+      await run(
+        async () => gaRequest(`${DATA_BETA}/${parent}/audienceExports`),
+        format,
+      );
     });
 
   program
@@ -281,12 +235,11 @@ export function registerReportingCommands(program: Command): void {
     .action(async (_propertyId, exportName: string, opts, cmd: Command) => {
       const format = cmd.optsWithGlobals().format;
       await run(async () => {
-        const request: Record<string, unknown> = { name: exportName };
-        if (opts.limit != null) request.limit = opts.limit;
-        if (opts.offset != null) request.offset = opts.offset;
-        const client = await createDataClient();
-        const [response] = await client.queryAudienceExport(request);
-        return response;
+        const name = normalizeExportName(exportName, cmd);
+        const body: Record<string, unknown> = {};
+        if (opts.limit != null) body.limit = opts.limit;
+        if (opts.offset != null) body.offset = opts.offset;
+        return gaRequest(`${DATA_BETA}/${name}:query`, { method: "POST", body });
       }, format);
     });
 
@@ -304,36 +257,35 @@ export function registerReportingCommands(program: Command): void {
       const format = cmd.optsWithGlobals().format;
       const property = resolvePropertyId(cmd);
       await run(async () => {
-        const request: Record<string, unknown> = {
-          property,
-          dimensions: opts.dimensions
-            .split(",")
-            .map((s: string) => ({ name: s.trim() })),
-          metrics: opts.metrics
-            .split(",")
-            .map((s: string) => ({ name: s.trim() })),
+        const body: Record<string, unknown> = {
+          dimensions: opts.dimensions.split(",").map((s: string) => ({ name: s.trim() })),
+          metrics: opts.metrics.split(",").map((s: string) => ({ name: s.trim() })),
         };
         if (opts.dimensionFilter) {
           const f = parseJson(opts.dimensionFilter);
           validateFilter(f, "--dimension-filter");
-          request.dimensionFilter = f;
+          body.dimensionFilter = f;
         }
         if (opts.metricFilter) {
           const f = parseJson(opts.metricFilter);
           validateFilter(f, "--metric-filter");
-          request.metricFilter = f;
+          body.metricFilter = f;
         }
         if (opts.orderBy) {
           const o = parseJson(opts.orderBy);
           validateOrderBy(o);
-          request.orderBys = o;
+          body.orderBys = o;
         }
-        if (opts.limit != null) request.limit = opts.limit;
-        if (opts.returnPropertyQuota) request.returnPropertyQuota = true;
-
-        const client = await createDataClient();
-        const [response] = await client.runRealtimeReport(request);
-        return response;
+        if (opts.limit != null) body.limit = opts.limit;
+        if (opts.returnPropertyQuota) body.returnPropertyQuota = true;
+        return gaRequest(`${DATA_BETA}/${property}:runRealtimeReport`, { method: "POST", body });
       }, format);
     });
+}
+
+/** Accept either a bare ID (`abc123`) or a full resource name (`properties/.../audienceExports/abc123`). */
+function normalizeExportName(name: string, cmd: Command): string {
+  if (name.includes("/")) return name;
+  const parent = resolvePropertyId(cmd);
+  return `${parent}/audienceExports/${name}`;
 }

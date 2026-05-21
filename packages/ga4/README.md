@@ -18,9 +18,9 @@ export const ga4 = command({
 
 const ws = new Workspace({ ... });
 ws.addMount("/cli/ga4", await ga4Resource());
-await ws.execute("ga4 --property 123456789 report --metrics sessions --dimensions country");
+await ws.execute("ga4 --property 123 report --dimensions country --metrics sessions --date-ranges '[{\"startDate\":\"7daysAgo\",\"endDate\":\"yesterday\"}]'");
 ```
 
-**Worker note:** the underlying CLI uses gRPC via `google-gax`. Node/Bun-only. Workerd cannot host this directly — use the REST flavor of the GA4 Data API directly if you need worker-side access.
+**Runs in workerd.** The underlying CLI is fetch-only — no gRPC, no protobuf.js, no Google client libs. Auth via `GA4_OAUTH_ACCESS_TOKEN` env (preferred for headless / Worker use), service-account JSON (signed via Web Crypto), or interactive `ga4 login` (PKCE — Node/Bun only).
 
 See `@mirage-cli/ga4-cli` for the underlying command surface.

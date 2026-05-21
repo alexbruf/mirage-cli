@@ -45,16 +45,13 @@
   ],
   "scripts": {
     "dev": "bun run src/cli.ts",
-    "build": "bun build src/cli.ts src/index.ts --target=node --outdir=dist --external @google-analytics/admin --external @google-analytics/data --external google-auth-library && bun run scripts/postbuild.ts && bun run build:types",
+    "build": "bun build src/cli.ts src/index.ts --target=node --outdir=dist && bun run scripts/postbuild.ts && bun run build:types",
     "build:types": "tsc -p tsconfig.build.json",
     "test": "bun test --reporter=dots",
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
-    "@google-analytics/admin": "^9.0.1",
-    "@google-analytics/data": "^5.2.1",
-    "commander": "^14.0.3",
-    "google-auth-library": "^10.6.2"
+    "commander": "^14.0.3"
   },
   "publishConfig": {
     "access": "public"

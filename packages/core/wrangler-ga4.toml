@@ -1,0 +1,7 @@
+name = "mirage-cli-ga4-test"
+main = "tests/ga4-worker-entry.ts"
+compatibility_date = "2025-05-01"
+compatibility_flags = ["nodejs_compat"]
+
+[dev]
+port = 3004

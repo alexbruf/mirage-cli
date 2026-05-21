@@ -31,17 +31,3 @@ export function buildProgram(): Command {
 
   return program;
 }
-
-// Run as a CLI only when this file is the entry point. Importing this module
-// from @mirage-cli/ahrefs (or anywhere else) does NOT trigger argv parsing.
-if (import.meta.main) {
-  process.on("uncaughtException", (e) => {
-    process.stderr.write(pc.red("Error: ") + (e as Error).message + "\n");
-    process.exit(1);
-  });
-  process.on("unhandledRejection", (e) => {
-    process.stderr.write(pc.red("Error: ") + (e as Error).message + "\n");
-    process.exit(1);
-  });
-  await buildProgram().parseAsync(process.argv);
-}

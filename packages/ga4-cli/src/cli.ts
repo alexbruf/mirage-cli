@@ -144,19 +144,3 @@ function registerAuthCommands(program: Command): void {
       );
     });
 }
-
-if (import.meta.main) {
-  const program = buildProgram();
-  if (process.argv.length <= 2) {
-    program.outputHelp();
-    process.exit(0);
-  }
-  program.parseAsync().catch((err: unknown) => {
-    if (err instanceof CommanderError) {
-      process.exit((err as { exitCode?: number }).exitCode ?? 1);
-    }
-    const message = err instanceof Error ? err.message : String(err);
-    process.stderr.write(JSON.stringify({ error: message }) + "\n");
-    process.exit(1);
-  });
-}

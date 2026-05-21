@@ -403,14 +403,3 @@ export function buildProgram(): Command {
 
   return program;
 }
-
-// Run as a CLI only when this file is the entry point. Importing this module
-// from `@mirage-cli/reddit` (or anywhere else) does NOT trigger argv parsing.
-if (import.meta.main) {
-  buildProgram()
-    .parseAsync(process.argv)
-    .catch((e: unknown) => {
-      console.error(e instanceof Error ? e.message : e);
-      process.exit(1);
-    });
-}

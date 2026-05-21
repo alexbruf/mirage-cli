@@ -47,14 +47,3 @@ export function buildProgram(): Command {
 
   return program;
 }
-
-// Run as a CLI only when this file is the entry point. Importing this module
-// from @mirage-cli/dataforseo (or anywhere else) does NOT trigger argv parsing.
-if (import.meta.main) {
-  try {
-    await buildProgram().parseAsync(process.argv);
-  } catch (err) {
-    process.stderr.write(`error: ${(err as Error).message}\n`);
-    process.exit(1);
-  }
-}

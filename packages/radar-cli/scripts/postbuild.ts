@@ -3,7 +3,7 @@ import { chmodSync, readFileSync, writeFileSync, existsSync } from "node:fs";
 import { join } from "node:path";
 
 const distDir = join(import.meta.dir, "..", "dist");
-const cliPath = join(distDir, "cli.js");
+const cliPath = join(distDir, "bin.js");
 
 if (!existsSync(cliPath)) {
   console.error(`postbuild: ${cliPath} not found — skipping`);

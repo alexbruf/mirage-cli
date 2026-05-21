@@ -1,6 +1,6 @@
 {
   "name": "@mirage-cli/clarity-cli",
-  "version": "0.1.2",
+  "version": "0.1.3",
   "description": "Microsoft Clarity CLI — dashboard queries, session recordings, AI-traffic visibility, docs. Mirage-compatible command shape.",
   "license": "MIT",
   "repository": {
@@ -35,7 +35,7 @@
     }
   },
   "bin": {
-    "clarity": "./dist/cli.js"
+    "clarity": "./dist/bin.js"
   },
   "files": [
     "dist",
@@ -44,7 +44,7 @@
   ],
   "scripts": {
     "dev": "bun run src/cli.ts",
-    "build": "bun build src/cli.ts src/index.ts --target=node --outdir=dist && bun run scripts/postbuild.ts && bun run build:types",
+    "build": "bun build src/bin.ts src/cli.ts src/index.ts --target=node --outdir=dist && bun run scripts/postbuild.ts && bun run build:types",
     "build:types": "tsc -p tsconfig.build.json",
     "test": "bun test --reporter=dots",
     "typecheck": "tsc --noEmit"

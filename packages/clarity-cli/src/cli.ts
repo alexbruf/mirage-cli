@@ -228,10 +228,3 @@ export function buildProgram(): Command {
 
   return program;
 }
-
-if (import.meta.main) {
-  buildProgram().parseAsync().catch((err: Error) => {
-    console.error(`Error: ${err.message}`);
-    process.exit(1);
-  });
-}

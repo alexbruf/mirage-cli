@@ -185,24 +185,11 @@ export function registerReportingCommands(program: Command): void {
       }, format);
     });
 
-  program
-    .command("audience-export-create [property_id]")
-    .description("Create an audience export")
-    .requiredOption("--audience <name>", "Audience resource name (e.g. properties/123/audiences/456)")
-    .option("--dimensions <names>", "Comma-separated dimension names")
-    .action(async (_propertyId, opts, cmd: Command) => {
-      const format = cmd.optsWithGlobals().format;
-      const parent = resolvePropertyId(cmd);
-      await run(async () => {
-        const body: Record<string, unknown> = { audience: opts.audience };
-        if (opts.dimensions) {
-          body.dimensions = opts.dimensions
-            .split(",")
-            .map((s: string) => ({ dimensionName: s.trim() }));
-        }
-        return gaRequest(`${DATA_BETA}/${parent}/audienceExports`, { method: "POST", body });
-      }, format);
-    });
+  // NOTE: `audience-export-create` deliberately omitted. It is the only
+  // mutating endpoint in the Data API surface (creates a long-running export
+  // resource). The CLI is scoped to read-only operations against
+  // `analytics.readonly`; users who need to create audience exports should
+  // do so via the GA4 UI or a dedicated tool.
 
   program
     .command("audience-export [property_id] <name>")

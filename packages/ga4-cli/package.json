@@ -1,6 +1,6 @@
 {
   "name": "@mirage-cli/ga4-cli",
-  "version": "0.1.4",
+  "version": "0.1.5",
   "description": "Google Analytics 4 CLI — wraps the GA4 Data + Admin APIs. Service-account, OAuth, or Application Default Credentials.",
   "license": "Apache-2.0",
   "repository": {

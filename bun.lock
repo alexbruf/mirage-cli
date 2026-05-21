@@ -25,7 +25,7 @@
     },
     "packages/ahrefs": {
       "name": "@mirage-cli/ahrefs",
-      "version": "0.1.1",
+      "version": "0.1.4",
       "dependencies": {
         "@mirage-cli/core": "workspace:^",
       },
@@ -45,9 +45,9 @@
     },
     "packages/ahrefs-cli": {
       "name": "@mirage-cli/ahrefs-cli",
-      "version": "0.1.1",
+      "version": "0.1.4",
       "bin": {
-        "ahrefs": "./dist/cli.js",
+        "ahrefs": "./dist/bin.js",
       },
       "dependencies": {
         "cli-table3": "^0.6.5",
@@ -61,7 +61,7 @@
     },
     "packages/clarity": {
       "name": "@mirage-cli/clarity",
-      "version": "0.1.1",
+      "version": "0.1.4",
       "dependencies": {
         "@mirage-cli/core": "workspace:^",
       },
@@ -81,9 +81,9 @@
     },
     "packages/clarity-cli": {
       "name": "@mirage-cli/clarity-cli",
-      "version": "0.1.1",
+      "version": "0.1.4",
       "bin": {
-        "clarity": "./dist/cli.js",
+        "clarity": "./dist/bin.js",
       },
       "dependencies": {
         "commander": "^14.0.3",
@@ -91,7 +91,7 @@
     },
     "packages/core": {
       "name": "@mirage-cli/core",
-      "version": "0.1.1",
+      "version": "0.1.4",
       "devDependencies": {
         "commander": "^12.1.0",
         "firecrawl-cli": "^1.18.0",
@@ -104,7 +104,7 @@
     },
     "packages/dataforseo": {
       "name": "@mirage-cli/dataforseo",
-      "version": "0.1.1",
+      "version": "0.1.4",
       "dependencies": {
         "@mirage-cli/core": "workspace:^",
       },
@@ -124,10 +124,10 @@
     },
     "packages/dataforseo-cli": {
       "name": "@mirage-cli/dataforseo-cli",
-      "version": "0.1.1",
+      "version": "0.1.4",
       "bin": {
-        "dfs": "./dist/dfs.js",
-        "dataforseo": "./dist/dfs.js",
+        "dfs": "./dist/bin.js",
+        "dataforseo": "./dist/bin.js",
       },
       "dependencies": {
         "commander": "^12.1.0",
@@ -139,13 +139,14 @@
     },
     "packages/firecrawl": {
       "name": "@mirage-cli/firecrawl",
-      "version": "0.1.1",
+      "version": "0.1.4",
       "dependencies": {
-        "@mirage-cli/core": "workspace:*",
+        "@mirage-cli/core": "workspace:^",
+        "commander": "^14.0.0",
       },
       "devDependencies": {
         "@struktoai/mirage-core": "^0.0.1",
-        "commander": "^12.1.0",
+        "commander": "^14.0.0",
         "firecrawl-cli": "^1.18.0",
         "tsup": "^8.5.1",
       },
@@ -159,7 +160,7 @@
     },
     "packages/ga4": {
       "name": "@mirage-cli/ga4",
-      "version": "0.1.1",
+      "version": "0.1.4",
       "dependencies": {
         "@mirage-cli/core": "workspace:^",
       },
@@ -179,9 +180,9 @@
     },
     "packages/ga4-cli": {
       "name": "@mirage-cli/ga4-cli",
-      "version": "0.1.1",
+      "version": "0.1.4",
       "bin": {
-        "ga4": "./dist/cli.js",
+        "ga4": "./dist/bin.js",
       },
       "dependencies": {
         "commander": "^14.0.3",
@@ -189,7 +190,7 @@
     },
     "packages/presscart": {
       "name": "@mirage-cli/presscart",
-      "version": "0.1.1",
+      "version": "0.1.4",
       "dependencies": {
         "@mirage-cli/core": "workspace:^",
       },
@@ -209,9 +210,9 @@
     },
     "packages/presscart-cli": {
       "name": "@mirage-cli/presscart-cli",
-      "version": "0.1.1",
+      "version": "0.1.4",
       "bin": {
-        "presscart": "./dist/cli.js",
+        "presscart": "./dist/bin.js",
       },
       "dependencies": {
         "commander": "^14.0.3",
@@ -219,7 +220,7 @@
     },
     "packages/pulse": {
       "name": "@mirage-cli/pulse",
-      "version": "0.1.1",
+      "version": "0.1.4",
       "dependencies": {
         "@mirage-cli/core": "workspace:^",
       },
@@ -239,9 +240,9 @@
     },
     "packages/pulse-cli": {
       "name": "@mirage-cli/pulse-cli",
-      "version": "0.1.1",
+      "version": "0.1.4",
       "bin": {
-        "pulse": "./dist/cli.js",
+        "pulse": "./dist/bin.js",
       },
       "dependencies": {
         "commander": "^14.0.3",
@@ -249,7 +250,7 @@
     },
     "packages/radar": {
       "name": "@mirage-cli/radar",
-      "version": "0.1.1",
+      "version": "0.1.4",
       "dependencies": {
         "@mirage-cli/core": "workspace:^",
       },
@@ -269,9 +270,9 @@
     },
     "packages/radar-cli": {
       "name": "@mirage-cli/radar-cli",
-      "version": "0.1.1",
+      "version": "0.1.4",
       "bin": {
-        "radar": "./dist/cli.js",
+        "radar": "./dist/bin.js",
       },
       "dependencies": {
         "commander": "^14.0.3",
@@ -279,7 +280,7 @@
     },
     "packages/reddit": {
       "name": "@mirage-cli/reddit",
-      "version": "0.1.1",
+      "version": "0.1.4",
       "dependencies": {
         "@mirage-cli/core": "workspace:^",
       },
@@ -299,9 +300,9 @@
     },
     "packages/reddit-cli": {
       "name": "@mirage-cli/reddit-cli",
-      "version": "0.1.1",
+      "version": "0.1.4",
       "bin": {
-        "reddit": "./dist/cli.js",
+        "reddit": "./dist/bin.js",
       },
       "dependencies": {
         "commander": "^14.0.3",
@@ -309,7 +310,7 @@
     },
     "packages/seogets": {
       "name": "@mirage-cli/seogets",
-      "version": "0.1.1",
+      "version": "0.1.4",
       "dependencies": {
         "@mirage-cli/core": "workspace:^",
       },
@@ -329,9 +330,9 @@
     },
     "packages/seogets-cli": {
       "name": "@mirage-cli/seogets-cli",
-      "version": "0.1.1",
+      "version": "0.1.4",
       "bin": {
-        "seogets": "./dist/cli.js",
+        "seogets": "./dist/bin.js",
       },
       "dependencies": {
         "commander": "^14.0.3",
@@ -1528,8 +1529,6 @@
     "@mirage-cli/dataforseo/commander": ["commander@12.1.0", "", {}, "sha512-Vw8qHK3bZM9y/P10u3Vib8o/DdkvA2OtPtZvD871QKjy74Wj1WSKFILMPRPSdUSx5RFK1arlJzEtA4PkFgnbuA=="],
 
     "@mirage-cli/dataforseo-cli/commander": ["commander@12.1.0", "", {}, "sha512-Vw8qHK3bZM9y/P10u3Vib8o/DdkvA2OtPtZvD871QKjy74Wj1WSKFILMPRPSdUSx5RFK1arlJzEtA4PkFgnbuA=="],
-
-    "@mirage-cli/firecrawl/commander": ["commander@12.1.0", "", {}, "sha512-Vw8qHK3bZM9y/P10u3Vib8o/DdkvA2OtPtZvD871QKjy74Wj1WSKFILMPRPSdUSx5RFK1arlJzEtA4PkFgnbuA=="],
 
     "apache-arrow/@types/node": ["@types/node@24.12.4", "", { "dependencies": { "undici-types": "~7.16.0" } }, "sha512-GUUEShf+PBCGW2KaXwcIt3Yk+e3pkKwWKb9GSyM9WQVE+ep2jzmHdGsHzu4wgcZy5fN9FBdVzjpBQsYlpfpgLA=="],
 

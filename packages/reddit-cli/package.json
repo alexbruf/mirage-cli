@@ -1,6 +1,6 @@
 {
   "name": "@mirage-cli/reddit-cli",
-  "version": "0.1.4",
+  "version": "0.1.5",
   "description": "Reddit CLI (drives the reddit.viewengine.ai service). Mirage-compatible command shape.",
   "license": "MIT",
   "repository": {

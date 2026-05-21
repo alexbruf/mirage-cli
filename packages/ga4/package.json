@@ -1,6 +1,6 @@
 {
   "name": "@mirage-cli/ga4",
-  "version": "0.1.4",
+  "version": "0.1.5",
   "description": "GA4 CLI as an importable mirage / Cloudflare-Worker command via @mirage-cli/core.",
   "type": "module",
   "main": "./dist/index.js",

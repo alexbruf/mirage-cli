@@ -24,17 +24,19 @@
  *
  * ## Worker compatibility
  *
- * Uses `node:module` `createRequire` to resolve firecrawl-cli's nested
- * commander instance. Works on Bun and Node. On workerd, `node:module` is
- * available under `nodejs_compat` — verified to import successfully; runtime
- * behavior depends on whether the specific firecrawl subcommand you invoke
- * touches `fs`/`child_process`. `--help`, `--version`, and the API-call
- * subcommands (`scrape`, `search`, `map`, `crawl`, `parse`) work; `init`,
- * `setup`, `browser`, `interact` will fail at runtime in workers.
+ * Hot path is pure ESM imports — no `createRequire`. We rely on npm/bun
+ * deduping `commander` between this wrapper and the installed `firecrawl-cli`
+ * (both declare `^14`), so monkey-patching `Command.prototype.parseAsync`
+ * here affects the prototype firecrawl-cli's CJS code will see at
+ * `require("commander")` time. workerd's `nodejs_compat` handles the rest.
+ *
+ * Runtime behavior depends on whether the specific firecrawl subcommand you
+ * invoke touches `fs`/`child_process`. `--help`, `--version`, and the
+ * API-call subcommands (`scrape`, `search`, `map`, `crawl`, `parse`) work;
+ * `init`, `setup`, `browser`, `interact` will fail at runtime in workers.
  */
 
-import { createRequire } from "node:module";
-import type { Command } from "commander";
+import { Command } from "commander";
 import { toMirageCommandFn, type IOResultCtor, type MirageCommandFn } from "@mirage-cli/core";
 // @struktoai/mirage-core is an optional peer dep — only needed for
 // `firecrawlResource()`. Type-only at compile time.
@@ -55,18 +57,10 @@ export async function buildProgram(): Promise<Command> {
   if (buildPromise !== null) return buildPromise;
 
   buildPromise = (async () => {
-    // firecrawl-cli bundles its own nested commander (v14). Resolve the same
-    // module instance the CJS code will get via require("commander"), then
-    // monkey-patch that instance's Command.prototype.parseAsync.
-    const require = createRequire(import.meta.url);
-    const fcCommanderPath = require.resolve("commander", {
-      paths: [require.resolve("firecrawl-cli")],
-    });
-    const commander = require(fcCommanderPath) as {
-      Command: typeof import("commander").Command;
-    };
-    const { Command } = commander;
-
+    // Monkey-patch Command.prototype.parseAsync. firecrawl-cli's CJS does
+    // `require("commander").Command` at module-init; npm/bun dedupes that
+    // to the same instance we just imported (both declare ^14), so the
+    // patch fires when firecrawl-cli's main() calls parseAsync.
     const origParseAsync = Command.prototype.parseAsync;
     let captured: Command | null = null;
     Command.prototype.parseAsync = async function (

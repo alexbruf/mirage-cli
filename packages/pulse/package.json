@@ -1,6 +1,6 @@
 {
   "name": "@mirage-cli/pulse",
-  "version": "0.1.4",
+  "version": "0.1.5",
   "description": "Pulse CLI as an importable mirage / Cloudflare-Worker command via @mirage-cli/core.",
   "type": "module",
   "main": "./dist/index.js",

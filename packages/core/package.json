@@ -19,7 +19,7 @@
     "README.md"
   ],
   "scripts": {
-    "build": "bun build src/index.ts --target=node --outdir=dist --external commander && tsc -p tsconfig.build.json",
+    "build": "tsup src/index.ts --format esm --target node18 --dts --external commander --clean --silent",
     "test": "bun test --reporter=dots",
     "test:worker": "wrangler dev --port 3003 --local --log-level=warn & sleep 3 && bun tests/drive-worker.ts; ec=$?; kill %1 2>/dev/null; exit $ec",
     "typecheck": "tsc --noEmit"
@@ -30,6 +30,7 @@
   "devDependencies": {
     "commander": "^12.1.0",
     "firecrawl-cli": "^1.18.0",
+    "tsup": "^8.5.1",
     "wrangler": "^4.93.1"
   },
   "publishConfig": {

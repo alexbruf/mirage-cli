@@ -19,7 +19,7 @@
     "README.md"
   ],
   "scripts": {
-    "build": "bun build src/index.ts --target=node --outdir=dist --external @mirage-cli/core --external ahrefs-cli --external commander && tsc -p tsconfig.build.json",
+    "build": "tsup src/index.ts --format esm --target node18 --dts --external @mirage-cli/core --external ahrefs-cli --external commander --external @struktoai/mirage-core --clean --silent",
     "test": "bun test --reporter=dots",
     "typecheck": "tsc --noEmit"
   },
@@ -31,12 +31,15 @@
     "@mirage-cli/ahrefs-cli": "workspace:*"
   },
   "peerDependenciesMeta": {
-    "@struktoai/mirage-core": { "optional": true }
+    "@struktoai/mirage-core": {
+      "optional": true
+    }
   },
   "devDependencies": {
-    "@struktoai/mirage-core": "^0.0.1",
     "@mirage-cli/ahrefs-cli": "workspace:*",
-    "commander": "^14.0.3"
+    "@struktoai/mirage-core": "^0.0.1",
+    "commander": "^14.0.3",
+    "tsup": "^8.5.1"
   },
   "publishConfig": {
     "access": "public"

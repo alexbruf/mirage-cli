@@ -1,6 +1,6 @@
 {
   "name": "@mirage-cli/presscart",
-  "version": "0.1.1",
+  "version": "0.1.2",
   "description": "Presscart CLI as an importable mirage / Cloudflare-Worker command via @mirage-cli/core.",
   "type": "module",
   "main": "./dist/index.js",

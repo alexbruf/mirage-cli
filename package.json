@@ -23,7 +23,7 @@
     "typecheck": "bun run --filter '*' typecheck",
     "changeset": "bunx changeset",
     "version": "bunx changeset version",
-    "release": "bun run build && bunx changeset publish"
+    "release": "bun run build && bun scripts/release.ts"
   },
   "devDependencies": {
     "@changesets/cli": "^2.27.0",

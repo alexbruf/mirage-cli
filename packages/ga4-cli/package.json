@@ -1,0 +1,66 @@
+{
+  "name": "@mirage-cli/ga4-cli",
+  "version": "0.1.0",
+  "description": "Google Analytics 4 CLI — wraps the GA4 Data + Admin APIs. Service-account, OAuth, or Application Default Credentials.",
+  "license": "Apache-2.0",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/alexbruf/mirage-cli.git",
+    "directory": "packages/ga4-cli"
+  },
+  "bugs": {
+    "url": "https://github.com/alexbruf/mirage-cli/issues"
+  },
+  "homepage": "https://github.com/alexbruf/mirage-cli/tree/main/packages/ga4-cli#readme",
+  "keywords": [
+    "ga4",
+    "google-analytics",
+    "google-analytics-data-api",
+    "google-analytics-admin-api",
+    "cli",
+    "mirage"
+  ],
+  "type": "module",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "bun": "./src/index.ts",
+      "import": "./dist/index.js"
+    },
+    "./cli": {
+      "types": "./dist/cli.d.ts",
+      "bun": "./src/cli.ts",
+      "import": "./dist/cli.js"
+    }
+  },
+  "bin": {
+    "ga4": "./dist/cli.js"
+  },
+  "files": [
+    "dist",
+    "README.md",
+    "LICENSE"
+  ],
+  "scripts": {
+    "dev": "bun run src/cli.ts",
+    "build": "bun build src/cli.ts src/index.ts --target=node --outdir=dist --external @google-analytics/admin --external @google-analytics/data --external google-auth-library && bun run scripts/postbuild.ts && bun run build:types",
+    "build:types": "tsc -p tsconfig.build.json",
+    "test": "bun test --reporter=dots",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@google-analytics/admin": "^9.0.1",
+    "@google-analytics/data": "^5.2.1",
+    "commander": "^14.0.3",
+    "google-auth-library": "^10.6.2"
+  },
+  "publishConfig": {
+    "access": "public"
+  },
+  "engines": {
+    "bun": ">=1.1.0",
+    "node": ">=18.0.0"
+  }
+}

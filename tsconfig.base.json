@@ -40,7 +40,13 @@
       "@mirage-cli/pulse-cli": ["./packages/pulse-cli/src/index.ts"],
       "@mirage-cli/pulse-cli/*": ["./packages/pulse-cli/src/*"],
       "@mirage-cli/presscart-cli": ["./packages/presscart-cli/src/index.ts"],
-      "@mirage-cli/presscart-cli/*": ["./packages/presscart-cli/src/*"]
+      "@mirage-cli/presscart-cli/*": ["./packages/presscart-cli/src/*"],
+      "@mirage-cli/clarity-cli": ["./packages/clarity-cli/src/index.ts"],
+      "@mirage-cli/clarity-cli/*": ["./packages/clarity-cli/src/*"],
+      "@mirage-cli/seogets-cli": ["./packages/seogets-cli/src/index.ts"],
+      "@mirage-cli/seogets-cli/*": ["./packages/seogets-cli/src/*"],
+      "@mirage-cli/ga4-cli": ["./packages/ga4-cli/src/index.ts"],
+      "@mirage-cli/ga4-cli/*": ["./packages/ga4-cli/src/*"]
     }
   }
 }

@@ -3,6 +3,11 @@ dist/
 *.tsbuildinfo
 .claude/
 
+# tsc declaration output (emit lands in dist/, but tsc -b leaves stray
+# .d.ts / .d.ts.map next to source if rootDir/outDir disagree). Keep src/ clean.
+packages/*/src/**/*.d.ts
+packages/*/src/**/*.d.ts.map
+
 # Env files (NEVER commit)
 .env
 .env.*

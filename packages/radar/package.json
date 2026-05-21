@@ -1,6 +1,6 @@
 {
   "name": "@mirage-cli/radar",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "Radar CLI as an importable mirage / Cloudflare-Worker command via @mirage-cli/core.",
   "type": "module",
   "main": "./dist/index.js",
@@ -24,11 +24,11 @@
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
-    "@mirage-cli/core": "workspace:*"
+    "@mirage-cli/core": "workspace:^"
   },
   "peerDependencies": {
     "@struktoai/mirage-core": ">=0.0.1",
-    "@mirage-cli/radar-cli": "workspace:*"
+    "@mirage-cli/radar-cli": "workspace:^"
   },
   "peerDependenciesMeta": {
     "@struktoai/mirage-core": {
@@ -36,7 +36,7 @@
     }
   },
   "devDependencies": {
-    "@mirage-cli/radar-cli": "workspace:*",
+    "@mirage-cli/radar-cli": "workspace:^",
     "@struktoai/mirage-core": "^0.0.1",
     "commander": "^14.0.3",
     "tsup": "^8.5.1"

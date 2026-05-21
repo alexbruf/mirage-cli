@@ -313,6 +313,29 @@ function ensurePatched(): void {
   }
 }
 
+/**
+ * Walk a commander program tree and call `exitOverride()` on every command
+ * (root + every subcommand recursively). Commander v14's `Command.prototype._exit`
+ * has no parent-chain walk — a leaf without its own `_exitCallback` falls
+ * through to `process.exit()`, which we can't always patch in workerd. By
+ * setting `exitOverride()` on every node, commander throws `CommanderError`
+ * consistently on --help/--version/error paths regardless of where in the
+ * tree the path was triggered.
+ */
+function applyExitOverrideRecursively(program: CommanderProgram): void {
+  const seen = new WeakSet<object>();
+  const visit = (node: unknown): void => {
+    if (!node || typeof node !== "object" || seen.has(node)) return;
+    seen.add(node);
+    const n = node as { exitOverride?: () => unknown; commands?: unknown[] };
+    if (typeof n.exitOverride === "function") n.exitOverride();
+    if (Array.isArray(n.commands)) {
+      for (const sub of n.commands) visit(sub);
+    }
+  };
+  visit(program);
+}
+
 export function streamCommander(
   program: CommanderProgram,
   argv: readonly string[],
@@ -331,7 +354,19 @@ export function streamCommander(
     stdin: opts.stdin != null ? makeStdin(opts.stdin) : null,
   };
 
-  program.exitOverride();
+  // Apply exitOverride() to the entire command tree, not just the root.
+  // Commander's `_exit()` does NOT walk up the parent chain to find an
+  // inherited `_exitCallback` — so a leaf subcommand without its own override
+  // falls through to `process.exit()` on --help/--version/error paths. We
+  // patch `process.exit` too (see `ensurePatched`), but in workerd that
+  // patch is silently rejected (process.exit is non-writable). That combo
+  // leads to leaf `--help` invocations hanging: commander returns from the
+  // help-printing path back into `_parseCommand`, which then runs the
+  // action handler with empty args, firing a no-param API call that
+  // never completes. Setting exitOverride on every node makes commander
+  // throw a CommanderError consistently, which the catch below converts
+  // to an exitCode.
+  applyExitOverrideRecursively(program);
 
   const done = als.run(ctx, async (): Promise<{ exitCode: number; error: unknown }> => {
     let exitCode = 0;

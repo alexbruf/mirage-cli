@@ -1,6 +1,6 @@
 {
   "name": "@mirage-cli/ahrefs-cli",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "Ahrefs API v3 — CLI and programmatic library. Mirage-compatible command shape.",
   "license": "MIT",
   "repository": {

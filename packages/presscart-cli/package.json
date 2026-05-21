@@ -1,6 +1,6 @@
 {
   "name": "@mirage-cli/presscart-cli",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "Presscart CLI — drives the Presscart API (api.presscart.com). Mirage-compatible command shape.",
   "license": "MIT",
   "repository": {

@@ -25,18 +25,18 @@
     },
     "packages/ahrefs": {
       "name": "@mirage-cli/ahrefs",
-      "version": "0.1.0",
+      "version": "0.1.1",
       "dependencies": {
-        "@mirage-cli/core": "workspace:*",
+        "@mirage-cli/core": "workspace:^",
       },
       "devDependencies": {
-        "@mirage-cli/ahrefs-cli": "workspace:*",
+        "@mirage-cli/ahrefs-cli": "workspace:^",
         "@struktoai/mirage-core": "^0.0.1",
         "commander": "^14.0.3",
         "tsup": "^8.5.1",
       },
       "peerDependencies": {
-        "@mirage-cli/ahrefs-cli": "workspace:*",
+        "@mirage-cli/ahrefs-cli": "workspace:^",
         "@struktoai/mirage-core": ">=0.0.1",
       },
       "optionalPeers": [
@@ -45,7 +45,7 @@
     },
     "packages/ahrefs-cli": {
       "name": "@mirage-cli/ahrefs-cli",
-      "version": "0.1.0",
+      "version": "0.1.1",
       "bin": {
         "ahrefs": "./dist/cli.js",
       },
@@ -61,18 +61,18 @@
     },
     "packages/clarity": {
       "name": "@mirage-cli/clarity",
-      "version": "0.1.0",
+      "version": "0.1.1",
       "dependencies": {
-        "@mirage-cli/core": "workspace:*",
+        "@mirage-cli/core": "workspace:^",
       },
       "devDependencies": {
-        "@mirage-cli/clarity-cli": "workspace:*",
+        "@mirage-cli/clarity-cli": "workspace:^",
         "@struktoai/mirage-core": "^0.0.1",
         "commander": "^14.0.3",
         "tsup": "^8.5.1",
       },
       "peerDependencies": {
-        "@mirage-cli/clarity-cli": "workspace:*",
+        "@mirage-cli/clarity-cli": "workspace:^",
         "@struktoai/mirage-core": ">=0.0.1",
       },
       "optionalPeers": [
@@ -81,7 +81,7 @@
     },
     "packages/clarity-cli": {
       "name": "@mirage-cli/clarity-cli",
-      "version": "0.1.0",
+      "version": "0.1.1",
       "bin": {
         "clarity": "./dist/cli.js",
       },
@@ -91,7 +91,7 @@
     },
     "packages/core": {
       "name": "@mirage-cli/core",
-      "version": "0.1.0",
+      "version": "0.1.1",
       "devDependencies": {
         "commander": "^12.1.0",
         "firecrawl-cli": "^1.18.0",
@@ -104,18 +104,18 @@
     },
     "packages/dataforseo": {
       "name": "@mirage-cli/dataforseo",
-      "version": "0.1.0",
+      "version": "0.1.1",
       "dependencies": {
-        "@mirage-cli/core": "workspace:*",
+        "@mirage-cli/core": "workspace:^",
       },
       "devDependencies": {
-        "@mirage-cli/dataforseo-cli": "workspace:*",
+        "@mirage-cli/dataforseo-cli": "workspace:^",
         "@struktoai/mirage-core": "^0.0.1",
         "commander": "^12.1.0",
         "tsup": "^8.5.1",
       },
       "peerDependencies": {
-        "@mirage-cli/dataforseo-cli": "workspace:*",
+        "@mirage-cli/dataforseo-cli": "workspace:^",
         "@struktoai/mirage-core": ">=0.0.1",
       },
       "optionalPeers": [
@@ -124,7 +124,7 @@
     },
     "packages/dataforseo-cli": {
       "name": "@mirage-cli/dataforseo-cli",
-      "version": "0.3.0",
+      "version": "0.1.1",
       "bin": {
         "dfs": "./dist/dfs.js",
         "dataforseo": "./dist/dfs.js",
@@ -139,7 +139,7 @@
     },
     "packages/firecrawl": {
       "name": "@mirage-cli/firecrawl",
-      "version": "0.1.0",
+      "version": "0.1.1",
       "dependencies": {
         "@mirage-cli/core": "workspace:*",
       },
@@ -159,18 +159,18 @@
     },
     "packages/ga4": {
       "name": "@mirage-cli/ga4",
-      "version": "0.1.0",
+      "version": "0.1.1",
       "dependencies": {
-        "@mirage-cli/core": "workspace:*",
+        "@mirage-cli/core": "workspace:^",
       },
       "devDependencies": {
-        "@mirage-cli/ga4-cli": "workspace:*",
+        "@mirage-cli/ga4-cli": "workspace:^",
         "@struktoai/mirage-core": "^0.0.1",
         "commander": "^14.0.3",
         "tsup": "^8.5.1",
       },
       "peerDependencies": {
-        "@mirage-cli/ga4-cli": "workspace:*",
+        "@mirage-cli/ga4-cli": "workspace:^",
         "@struktoai/mirage-core": ">=0.0.1",
       },
       "optionalPeers": [
@@ -179,7 +179,7 @@
     },
     "packages/ga4-cli": {
       "name": "@mirage-cli/ga4-cli",
-      "version": "0.1.0",
+      "version": "0.1.1",
       "bin": {
         "ga4": "./dist/cli.js",
       },
@@ -189,18 +189,18 @@
     },
     "packages/presscart": {
       "name": "@mirage-cli/presscart",
-      "version": "0.1.0",
+      "version": "0.1.1",
       "dependencies": {
-        "@mirage-cli/core": "workspace:*",
+        "@mirage-cli/core": "workspace:^",
       },
       "devDependencies": {
-        "@mirage-cli/presscart-cli": "workspace:*",
+        "@mirage-cli/presscart-cli": "workspace:^",
         "@struktoai/mirage-core": "^0.0.1",
         "commander": "^14.0.3",
         "tsup": "^8.5.1",
       },
       "peerDependencies": {
-        "@mirage-cli/presscart-cli": "workspace:*",
+        "@mirage-cli/presscart-cli": "workspace:^",
         "@struktoai/mirage-core": ">=0.0.1",
       },
       "optionalPeers": [
@@ -209,7 +209,7 @@
     },
     "packages/presscart-cli": {
       "name": "@mirage-cli/presscart-cli",
-      "version": "0.1.0",
+      "version": "0.1.1",
       "bin": {
         "presscart": "./dist/cli.js",
       },
@@ -219,18 +219,18 @@
     },
     "packages/pulse": {
       "name": "@mirage-cli/pulse",
-      "version": "0.1.0",
+      "version": "0.1.1",
       "dependencies": {
-        "@mirage-cli/core": "workspace:*",
+        "@mirage-cli/core": "workspace:^",
       },
       "devDependencies": {
-        "@mirage-cli/pulse-cli": "workspace:*",
+        "@mirage-cli/pulse-cli": "workspace:^",
         "@struktoai/mirage-core": "^0.0.1",
         "commander": "^14.0.3",
         "tsup": "^8.5.1",
       },
       "peerDependencies": {
-        "@mirage-cli/pulse-cli": "workspace:*",
+        "@mirage-cli/pulse-cli": "workspace:^",
         "@struktoai/mirage-core": ">=0.0.1",
       },
       "optionalPeers": [
@@ -239,7 +239,7 @@
     },
     "packages/pulse-cli": {
       "name": "@mirage-cli/pulse-cli",
-      "version": "0.1.0",
+      "version": "0.1.1",
       "bin": {
         "pulse": "./dist/cli.js",
       },
@@ -249,18 +249,18 @@
     },
     "packages/radar": {
       "name": "@mirage-cli/radar",
-      "version": "0.1.0",
+      "version": "0.1.1",
       "dependencies": {
-        "@mirage-cli/core": "workspace:*",
+        "@mirage-cli/core": "workspace:^",
       },
       "devDependencies": {
-        "@mirage-cli/radar-cli": "workspace:*",
+        "@mirage-cli/radar-cli": "workspace:^",
         "@struktoai/mirage-core": "^0.0.1",
         "commander": "^14.0.3",
         "tsup": "^8.5.1",
       },
       "peerDependencies": {
-        "@mirage-cli/radar-cli": "workspace:*",
+        "@mirage-cli/radar-cli": "workspace:^",
         "@struktoai/mirage-core": ">=0.0.1",
       },
       "optionalPeers": [
@@ -269,7 +269,7 @@
     },
     "packages/radar-cli": {
       "name": "@mirage-cli/radar-cli",
-      "version": "0.1.0",
+      "version": "0.1.1",
       "bin": {
         "radar": "./dist/cli.js",
       },
@@ -279,18 +279,18 @@
     },
     "packages/reddit": {
       "name": "@mirage-cli/reddit",
-      "version": "0.1.0",
+      "version": "0.1.1",
       "dependencies": {
-        "@mirage-cli/core": "workspace:*",
+        "@mirage-cli/core": "workspace:^",
       },
       "devDependencies": {
-        "@mirage-cli/reddit-cli": "workspace:*",
+        "@mirage-cli/reddit-cli": "workspace:^",
         "@struktoai/mirage-core": "^0.0.1",
         "commander": "^14.0.3",
         "tsup": "^8.5.1",
       },
       "peerDependencies": {
-        "@mirage-cli/reddit-cli": "workspace:*",
+        "@mirage-cli/reddit-cli": "workspace:^",
         "@struktoai/mirage-core": ">=0.0.1",
       },
       "optionalPeers": [
@@ -299,7 +299,7 @@
     },
     "packages/reddit-cli": {
       "name": "@mirage-cli/reddit-cli",
-      "version": "0.1.0",
+      "version": "0.1.1",
       "bin": {
         "reddit": "./dist/cli.js",
       },
@@ -309,18 +309,18 @@
     },
     "packages/seogets": {
       "name": "@mirage-cli/seogets",
-      "version": "0.1.0",
+      "version": "0.1.1",
       "dependencies": {
-        "@mirage-cli/core": "workspace:*",
+        "@mirage-cli/core": "workspace:^",
       },
       "devDependencies": {
-        "@mirage-cli/seogets-cli": "workspace:*",
+        "@mirage-cli/seogets-cli": "workspace:^",
         "@struktoai/mirage-core": "^0.0.1",
         "commander": "^14.0.3",
         "tsup": "^8.5.1",
       },
       "peerDependencies": {
-        "@mirage-cli/seogets-cli": "workspace:*",
+        "@mirage-cli/seogets-cli": "workspace:^",
         "@struktoai/mirage-core": ">=0.0.1",
       },
       "optionalPeers": [
@@ -329,7 +329,7 @@
     },
     "packages/seogets-cli": {
       "name": "@mirage-cli/seogets-cli",
-      "version": "0.1.0",
+      "version": "0.1.1",
       "bin": {
         "seogets": "./dist/cli.js",
       },

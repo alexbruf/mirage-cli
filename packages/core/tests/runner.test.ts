@@ -85,6 +85,31 @@ describe("runCommander", () => {
     expect(dec.decode(r.stdout).trim()).toBe("1.2.3");
     expect(r.exitCode).toBe(0);
   });
+
+  // Regression: leaf-subcommand --help must not fall through to the action
+  // handler. Bug surfaced in vendored ahrefs/dataforseo CLIs that use
+  // `.addCommand()` for groups + leaves; commander v14's `_exit()` does not
+  // walk the parent chain to find an inherited `_exitCallback`, and in
+  // workerd `process.exit` can't be patched, so the leaf's action would
+  // fire (with no args) and hang forever inside an API call.
+  test("nested-subcommand --help does NOT trigger the leaf action", async () => {
+    const program = new Command();
+    program.name("nested").version("9.9.9").description("nested cli");
+
+    const group = new Command("group").description("a group");
+    const leaf = new Command("leaf")
+      .description("a leaf that would hang if reached")
+      .action(async () => {
+        // If this runs, the test deadlocks — that's the bug.
+        await new Promise(() => {});
+      });
+    group.addCommand(leaf);
+    program.addCommand(group);
+
+    const r = await runCommander(program, ["group", "leaf", "--help"]);
+    expect(r.exitCode).toBe(0);
+    expect(dec.decode(r.stdout)).toContain("a leaf that would hang");
+  });
 });
 
 describe("streamCommander", () => {

@@ -1,6 +1,6 @@
 {
   "name": "@mirage-cli/pulse-cli",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "ViewEngine Pulse CLI — batch AI visibility jobs. Mirage-compatible command shape.",
   "license": "MIT",
   "repository": {

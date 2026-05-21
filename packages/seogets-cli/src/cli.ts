@@ -73,8 +73,13 @@ export function buildProgram(): Command {
       .option("--page <n>", "page number (1-based)", (v: string) => parseInt(v, 10), 1)
       .option("--page-size <n>", "rows per page", (v: string) => parseInt(v, 10), 1000)
       .option(
-        "--branded",
-        "only branded queries (use --no-branded for non-branded only; omit for both)",
+        "--branded-queries <bool>",
+        "filter to branded (true) or non-branded (false) queries; omit for both",
+        (v: string) => {
+          if (v === "true") return true;
+          if (v === "false") return false;
+          throw new Error("--branded-queries must be 'true' or 'false'");
+        },
       )
       .option(
         "--filters <json>",
@@ -86,7 +91,7 @@ export function buildProgram(): Command {
       start: string,
       end: string,
       dims: string | undefined,
-      opts: GscOpts & { branded?: boolean },
+      opts: GscOpts,
       cmd: Command,
     ) => {
       const globals = cmd.optsWithGlobals();
@@ -98,7 +103,7 @@ export function buildProgram(): Command {
         page_size: opts.pageSize ?? 1000,
       };
       if (dims) args.dimensions = dims.split(",").map((d) => d.trim()).filter(Boolean);
-      if (opts.branded !== undefined) args.branded_queries = opts.branded;
+      if (opts.brandedQueries !== undefined) args.branded_queries = opts.brandedQueries;
       if (opts.filters) Object.assign(args, JSON.parse(opts.filters));
       const result = await newClient(globals).callTool("get_gsc_performance", args);
       writeObject(unwrapToolResult(result), opts);

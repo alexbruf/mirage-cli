@@ -1,0 +1,57 @@
+{
+  "name": "@mirage-cli/reddit",
+  "version": "0.1.0",
+  "description": "Reddit CLI as an importable mirage / Cloudflare-Worker command via @mirage-cli/core.",
+  "type": "module",
+  "main": "./dist/index.js",
+  "module": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "bun": "./src/index.ts",
+      "import": "./dist/index.js"
+    },
+    "./package.json": "./package.json"
+  },
+  "files": [
+    "dist/",
+    "README.md"
+  ],
+  "scripts": {
+    "build": "bun build src/index.ts --target=node --outdir=dist --external @mirage-cli/core --external @mirage-cli/reddit-cli --external commander && tsc -p tsconfig.build.json",
+    "test": "bun test --reporter=dots",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@mirage-cli/core": "workspace:*"
+  },
+  "peerDependencies": {
+    "@struktoai/mirage-core": ">=0.0.1",
+    "@mirage-cli/reddit-cli": "workspace:*"
+  },
+  "peerDependenciesMeta": {
+    "@struktoai/mirage-core": { "optional": true }
+  },
+  "devDependencies": {
+    "@struktoai/mirage-core": "^0.0.1",
+    "@mirage-cli/reddit-cli": "workspace:*",
+    "commander": "^14.0.3"
+  },
+  "publishConfig": {
+    "access": "public"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/alexbruf/mirage-cli.git",
+    "directory": "packages/reddit"
+  },
+  "keywords": [
+    "reddit",
+    "viewengine",
+    "commander",
+    "mirage",
+    "cloudflare-workers"
+  ],
+  "license": "MIT"
+}

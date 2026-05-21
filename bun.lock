@@ -10,6 +10,10 @@
         "@mirage-cli/core": "workspace:*",
         "@mirage-cli/dataforseo": "workspace:*",
         "@mirage-cli/firecrawl": "workspace:*",
+        "@mirage-cli/presscart": "workspace:*",
+        "@mirage-cli/pulse": "workspace:*",
+        "@mirage-cli/radar": "workspace:*",
+        "@mirage-cli/reddit": "workspace:*",
         "@struktoai/mirage-core": "^0.0.1",
         "@struktoai/mirage-node": "^0.0.1",
         "@types/bun": "latest",
@@ -115,6 +119,122 @@
       "optionalPeers": [
         "@struktoai/mirage-core",
       ],
+    },
+    "packages/presscart": {
+      "name": "@mirage-cli/presscart",
+      "version": "0.1.0",
+      "dependencies": {
+        "@mirage-cli/core": "workspace:*",
+      },
+      "devDependencies": {
+        "@mirage-cli/presscart-cli": "workspace:*",
+        "@struktoai/mirage-core": "^0.0.1",
+        "commander": "^14.0.3",
+      },
+      "peerDependencies": {
+        "@mirage-cli/presscart-cli": "workspace:*",
+        "@struktoai/mirage-core": ">=0.0.1",
+      },
+      "optionalPeers": [
+        "@struktoai/mirage-core",
+      ],
+    },
+    "packages/presscart-cli": {
+      "name": "@mirage-cli/presscart-cli",
+      "version": "0.1.0",
+      "bin": {
+        "presscart": "./dist/cli.js",
+      },
+      "dependencies": {
+        "commander": "^14.0.3",
+      },
+    },
+    "packages/pulse": {
+      "name": "@mirage-cli/pulse",
+      "version": "0.1.0",
+      "dependencies": {
+        "@mirage-cli/core": "workspace:*",
+      },
+      "devDependencies": {
+        "@mirage-cli/pulse-cli": "workspace:*",
+        "@struktoai/mirage-core": "^0.0.1",
+        "commander": "^14.0.3",
+      },
+      "peerDependencies": {
+        "@mirage-cli/pulse-cli": "workspace:*",
+        "@struktoai/mirage-core": ">=0.0.1",
+      },
+      "optionalPeers": [
+        "@struktoai/mirage-core",
+      ],
+    },
+    "packages/pulse-cli": {
+      "name": "@mirage-cli/pulse-cli",
+      "version": "0.1.0",
+      "bin": {
+        "pulse": "./dist/cli.js",
+      },
+      "dependencies": {
+        "commander": "^14.0.3",
+      },
+    },
+    "packages/radar": {
+      "name": "@mirage-cli/radar",
+      "version": "0.1.0",
+      "dependencies": {
+        "@mirage-cli/core": "workspace:*",
+      },
+      "devDependencies": {
+        "@mirage-cli/radar-cli": "workspace:*",
+        "@struktoai/mirage-core": "^0.0.1",
+        "commander": "^14.0.3",
+      },
+      "peerDependencies": {
+        "@mirage-cli/radar-cli": "workspace:*",
+        "@struktoai/mirage-core": ">=0.0.1",
+      },
+      "optionalPeers": [
+        "@struktoai/mirage-core",
+      ],
+    },
+    "packages/radar-cli": {
+      "name": "@mirage-cli/radar-cli",
+      "version": "0.1.0",
+      "bin": {
+        "radar": "./dist/cli.js",
+      },
+      "dependencies": {
+        "commander": "^14.0.3",
+      },
+    },
+    "packages/reddit": {
+      "name": "@mirage-cli/reddit",
+      "version": "0.1.0",
+      "dependencies": {
+        "@mirage-cli/core": "workspace:*",
+      },
+      "devDependencies": {
+        "@mirage-cli/reddit-cli": "workspace:*",
+        "@struktoai/mirage-core": "^0.0.1",
+        "commander": "^14.0.3",
+      },
+      "peerDependencies": {
+        "@mirage-cli/reddit-cli": "workspace:*",
+        "@struktoai/mirage-core": ">=0.0.1",
+      },
+      "optionalPeers": [
+        "@struktoai/mirage-core",
+      ],
+    },
+    "packages/reddit-cli": {
+      "name": "@mirage-cli/reddit-cli",
+      "version": "0.1.0",
+      "bin": {
+        "reddit": "./dist/cli.js",
+      },
+      "dependencies": {
+        "commander": "^14.0.3",
+      },
     },
   },
   "packages": {
@@ -387,6 +507,22 @@
     "@mirage-cli/dataforseo-cli": ["@mirage-cli/dataforseo-cli@workspace:packages/dataforseo-cli"],
 
     "@mirage-cli/firecrawl": ["@mirage-cli/firecrawl@workspace:packages/firecrawl"],
+
+    "@mirage-cli/presscart": ["@mirage-cli/presscart@workspace:packages/presscart"],
+
+    "@mirage-cli/presscart-cli": ["@mirage-cli/presscart-cli@workspace:packages/presscart-cli"],
+
+    "@mirage-cli/pulse": ["@mirage-cli/pulse@workspace:packages/pulse"],
+
+    "@mirage-cli/pulse-cli": ["@mirage-cli/pulse-cli@workspace:packages/pulse-cli"],
+
+    "@mirage-cli/radar": ["@mirage-cli/radar@workspace:packages/radar"],
+
+    "@mirage-cli/radar-cli": ["@mirage-cli/radar-cli@workspace:packages/radar-cli"],
+
+    "@mirage-cli/reddit": ["@mirage-cli/reddit@workspace:packages/reddit"],
+
+    "@mirage-cli/reddit-cli": ["@mirage-cli/reddit-cli@workspace:packages/reddit-cli"],
 
     "@modelcontextprotocol/sdk": ["@modelcontextprotocol/sdk@1.29.0", "", { "dependencies": { "@hono/node-server": "^1.19.9", "ajv": "^8.17.1", "ajv-formats": "^3.0.1", "content-type": "^1.0.5", "cors": "^2.8.5", "cross-spawn": "^7.0.5", "eventsource": "^3.0.2", "eventsource-parser": "^3.0.0", "express": "^5.2.1", "express-rate-limit": "^8.2.1", "hono": "^4.11.4", "jose": "^6.1.3", "json-schema-typed": "^8.0.2", "pkce-challenge": "^5.0.0", "raw-body": "^3.0.0", "zod": "^3.25 || ^4.0", "zod-to-json-schema": "^3.25.1" }, "peerDependencies": { "@cfworker/json-schema": "^4.1.1" }, "optionalPeers": ["@cfworker/json-schema"] }, "sha512-zo37mZA9hJWpULgkRpowewez1y6ML5GsXJPY8FI0tBBCd77HEvza4jDqRKOXgHNn867PVGCyTdzqpz0izu5ZjQ=="],
 

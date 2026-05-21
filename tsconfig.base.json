@@ -32,7 +32,15 @@
       "@mirage-cli/dataforseo-cli": ["./packages/dataforseo-cli/src/index.ts"],
       "@mirage-cli/dataforseo-cli/*": ["./packages/dataforseo-cli/src/*"],
       "@mirage-cli/ahrefs-cli": ["./packages/ahrefs-cli/src/index.ts"],
-      "@mirage-cli/ahrefs-cli/*": ["./packages/ahrefs-cli/src/*"]
+      "@mirage-cli/ahrefs-cli/*": ["./packages/ahrefs-cli/src/*"],
+      "@mirage-cli/reddit-cli": ["./packages/reddit-cli/src/index.ts"],
+      "@mirage-cli/reddit-cli/*": ["./packages/reddit-cli/src/*"],
+      "@mirage-cli/radar-cli": ["./packages/radar-cli/src/index.ts"],
+      "@mirage-cli/radar-cli/*": ["./packages/radar-cli/src/*"],
+      "@mirage-cli/pulse-cli": ["./packages/pulse-cli/src/index.ts"],
+      "@mirage-cli/pulse-cli/*": ["./packages/pulse-cli/src/*"],
+      "@mirage-cli/presscart-cli": ["./packages/presscart-cli/src/index.ts"],
+      "@mirage-cli/presscart-cli/*": ["./packages/presscart-cli/src/*"]
     }
   }
 }

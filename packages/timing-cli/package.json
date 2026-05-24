@@ -1,6 +1,6 @@
 {
   "name": "@mirage-cli/timing-cli",
-  "version": "0.1.7",
+  "version": "0.1.9",
   "description": "CLI for the Timing app API — projects, entries, reports, teams, activities. Mirage / Cloudflare-Worker compatible.",
   "license": "MIT",
   "repository": {

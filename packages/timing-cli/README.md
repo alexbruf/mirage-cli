@@ -132,11 +132,11 @@ claude skill add --global ./skill/SKILL.md
 
 Once installed, just talk to Claude naturally:
 
-- "Start tracking time on the ViewEngine project"
+- "Start tracking time on the Acme project"
 - "What am I working on right now?"
 - "Stop the timer"
 - "What did I work on today?"
-- "How much time did I spend on SPACInsider this week?"
+- "How much time did I spend on the documentation project this week?"
 - "Create a new project called Research"
 - "Show me a report for last month grouped by project"
 

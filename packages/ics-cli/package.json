@@ -1,6 +1,6 @@
 {
   "name": "@mirage-cli/ics-cli",
-  "version": "0.1.7",
+  "version": "0.1.9",
   "description": "Read and query ICS / iCal calendar feeds. Today, this week, next N events. Mirage / Cloudflare-Worker compatible.",
   "license": "MIT",
   "repository": {

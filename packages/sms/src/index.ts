@@ -6,7 +6,7 @@
  *
  * ## Env vars
  *
- * - `SMS_SERVER_URL=...` — base URL of the Cloudflare Worker (e.g. https://sms.clanqi.org).
+ * - `SMS_SERVER_URL=...` — base URL of the Cloudflare Worker (e.g. https://sms.example.com).
  * - `SMS_API_KEY=...`    — bearer token for the worker.
  *
  * ## Worker compatibility

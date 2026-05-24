@@ -1,6 +1,6 @@
 {
   "name": "@mirage-cli/call-cli",
-  "version": "0.1.7",
+  "version": "0.1.9",
   "description": "Phone call + audio injection CLI — make calls with TTS or pre-uploaded audio via an Android-bridge Cloudflare Worker. Mirage / Cloudflare-Worker compatible.",
   "license": "MIT",
   "repository": {

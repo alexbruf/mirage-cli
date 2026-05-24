@@ -1,6 +1,6 @@
 {
   "name": "@mirage-cli/oura-cli",
-  "version": "0.1.7",
+  "version": "0.1.9",
   "description": "Oura Ring API v2 CLI. Sleep, activity, readiness, HRV, SpO2, workouts. Mirage / Cloudflare-Worker compatible.",
   "license": "MIT",
   "repository": {

@@ -1,6 +1,6 @@
 {
   "name": "@mirage-cli/timing",
-  "version": "0.1.7",
+  "version": "0.1.9",
   "description": "Timing app CLI as an importable mirage / Cloudflare-Worker command via @mirage-cli/core.",
   "type": "module",
   "main": "./dist/index.js",

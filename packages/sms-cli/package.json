@@ -1,6 +1,6 @@
 {
   "name": "@mirage-cli/sms-cli",
-  "version": "0.1.7",
+  "version": "0.1.9",
   "description": "SMS inbox CLI — list, read, send, reply, search messages via an SMS Gateway-backed Cloudflare Worker. Mirage / Cloudflare-Worker compatible.",
   "license": "MIT",
   "repository": {

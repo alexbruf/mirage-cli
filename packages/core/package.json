@@ -1,6 +1,6 @@
 {
   "name": "@mirage-cli/core",
-  "version": "0.1.7",
+  "version": "0.1.9",
   "description": "Wrap any Commander.js CLI for in-process execution. ALS-isolated, streaming stdout/stderr, ByteSource stdin, Cloudflare Worker-compatible.",
   "type": "module",
   "main": "./dist/index.js",

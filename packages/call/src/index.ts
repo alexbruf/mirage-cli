@@ -6,7 +6,7 @@
  *
  * ## Env vars
  *
- * - `CALL_SERVER_URL=...`     — base URL of the Cloudflare Worker (e.g. https://call.clanqi.org).
+ * - `CALL_SERVER_URL=...`     — base URL of the Cloudflare Worker (e.g. https://call.example.com).
  * - `CALL_API_KEY=...`        — bearer token for the worker.
  * - `ELEVENLABS_API_KEY=...`  — ElevenLabs API key for TTS (optional, only for TTS calls).
  *

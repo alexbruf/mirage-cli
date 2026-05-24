@@ -1,6 +1,6 @@
 {
   "name": "@mirage-cli/clarity-cli",
-  "version": "0.1.7",
+  "version": "0.1.9",
   "description": "Microsoft Clarity CLI — dashboard queries, session recordings, AI-traffic visibility, docs. Mirage-compatible command shape.",
   "license": "MIT",
   "repository": {

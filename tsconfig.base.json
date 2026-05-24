@@ -46,7 +46,17 @@
       "@mirage-cli/seogets-cli": ["./packages/seogets-cli/src/index.ts"],
       "@mirage-cli/seogets-cli/*": ["./packages/seogets-cli/src/*"],
       "@mirage-cli/ga4-cli": ["./packages/ga4-cli/src/index.ts"],
-      "@mirage-cli/ga4-cli/*": ["./packages/ga4-cli/src/*"]
+      "@mirage-cli/ga4-cli/*": ["./packages/ga4-cli/src/*"],
+      "@mirage-cli/oura-cli": ["./packages/oura-cli/src/index.ts"],
+      "@mirage-cli/oura-cli/*": ["./packages/oura-cli/src/*"],
+      "@mirage-cli/ics-cli": ["./packages/ics-cli/src/index.ts"],
+      "@mirage-cli/ics-cli/*": ["./packages/ics-cli/src/*"],
+      "@mirage-cli/timing-cli": ["./packages/timing-cli/src/index.ts"],
+      "@mirage-cli/timing-cli/*": ["./packages/timing-cli/src/*"],
+      "@mirage-cli/sms-cli": ["./packages/sms-cli/src/index.ts"],
+      "@mirage-cli/sms-cli/*": ["./packages/sms-cli/src/*"],
+      "@mirage-cli/call-cli": ["./packages/call-cli/src/index.ts"],
+      "@mirage-cli/call-cli/*": ["./packages/call-cli/src/*"]
     }
   }
 }

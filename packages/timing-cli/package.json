@@ -1,0 +1,61 @@
+{
+  "name": "@mirage-cli/timing-cli",
+  "version": "0.1.7",
+  "description": "CLI for the Timing app API — projects, entries, reports, teams, activities. Mirage / Cloudflare-Worker compatible.",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/alexbruf/mirage-cli.git",
+    "directory": "packages/timing-cli"
+  },
+  "bugs": {
+    "url": "https://github.com/alexbruf/mirage-cli/issues"
+  },
+  "homepage": "https://github.com/alexbruf/mirage-cli/tree/main/packages/timing-cli#readme",
+  "keywords": [
+    "timing",
+    "time-tracking",
+    "cli",
+    "mirage"
+  ],
+  "type": "module",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "bun": "./src/index.ts",
+      "import": "./dist/index.js"
+    },
+    "./cli": {
+      "types": "./dist/cli.d.ts",
+      "bun": "./src/cli.ts",
+      "import": "./dist/cli.js"
+    }
+  },
+  "bin": {
+    "timing": "./dist/bin.js"
+  },
+  "files": [
+    "dist",
+    "README.md",
+    "LICENSE"
+  ],
+  "scripts": {
+    "dev": "bun run src/cli.ts",
+    "build": "bun build src/bin.ts src/cli.ts src/index.ts --target=node --outdir=dist --external commander && bun run scripts/postbuild.ts && bun run build:types",
+    "build:types": "tsc -p tsconfig.build.json",
+    "test": "bun test --reporter=dots",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "commander": "^14.0.3"
+  },
+  "publishConfig": {
+    "access": "public"
+  },
+  "engines": {
+    "bun": ">=1.1.0",
+    "node": ">=18.0.0"
+  }
+}

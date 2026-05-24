@@ -7,16 +7,21 @@
       "devDependencies": {
         "@changesets/cli": "^2.27.0",
         "@mirage-cli/ahrefs": "workspace:*",
+        "@mirage-cli/call": "workspace:*",
         "@mirage-cli/clarity": "workspace:*",
         "@mirage-cli/core": "workspace:*",
         "@mirage-cli/dataforseo": "workspace:*",
         "@mirage-cli/firecrawl": "workspace:*",
         "@mirage-cli/ga4": "workspace:*",
+        "@mirage-cli/ics": "workspace:*",
+        "@mirage-cli/oura": "workspace:*",
         "@mirage-cli/presscart": "workspace:*",
         "@mirage-cli/pulse": "workspace:*",
         "@mirage-cli/radar": "workspace:*",
         "@mirage-cli/reddit": "workspace:*",
         "@mirage-cli/seogets": "workspace:*",
+        "@mirage-cli/sms": "workspace:*",
+        "@mirage-cli/timing": "workspace:*",
         "@struktoai/mirage-core": "^0.0.1",
         "@struktoai/mirage-node": "^0.0.1",
         "@types/bun": "latest",
@@ -25,7 +30,7 @@
     },
     "packages/ahrefs": {
       "name": "@mirage-cli/ahrefs",
-      "version": "0.1.4",
+      "version": "0.1.6",
       "dependencies": {
         "@mirage-cli/core": "workspace:^",
       },
@@ -45,7 +50,7 @@
     },
     "packages/ahrefs-cli": {
       "name": "@mirage-cli/ahrefs-cli",
-      "version": "0.1.4",
+      "version": "0.1.6",
       "bin": {
         "ahrefs": "./dist/bin.js",
       },
@@ -59,9 +64,40 @@
         "openapi-typescript": "^7.13.0",
       },
     },
+    "packages/call": {
+      "name": "@mirage-cli/call",
+      "version": "0.1.6",
+      "dependencies": {
+        "@mirage-cli/core": "workspace:^",
+      },
+      "devDependencies": {
+        "@mirage-cli/call-cli": "workspace:^",
+        "@struktoai/mirage-core": "^0.0.1",
+        "commander": "^14.0.3",
+        "tsup": "^8.5.1",
+      },
+      "peerDependencies": {
+        "@mirage-cli/call-cli": "workspace:^",
+        "@struktoai/mirage-core": ">=0.0.1",
+      },
+      "optionalPeers": [
+        "@struktoai/mirage-core",
+      ],
+    },
+    "packages/call-cli": {
+      "name": "@mirage-cli/call-cli",
+      "version": "0.1.6",
+      "bin": {
+        "call": "./dist/bin.js",
+      },
+      "dependencies": {
+        "chalk": "^5.6.2",
+        "commander": "^14.0.3",
+      },
+    },
     "packages/clarity": {
       "name": "@mirage-cli/clarity",
-      "version": "0.1.4",
+      "version": "0.1.6",
       "dependencies": {
         "@mirage-cli/core": "workspace:^",
       },
@@ -81,7 +117,7 @@
     },
     "packages/clarity-cli": {
       "name": "@mirage-cli/clarity-cli",
-      "version": "0.1.4",
+      "version": "0.1.6",
       "bin": {
         "clarity": "./dist/bin.js",
       },
@@ -91,7 +127,7 @@
     },
     "packages/core": {
       "name": "@mirage-cli/core",
-      "version": "0.1.4",
+      "version": "0.1.6",
       "devDependencies": {
         "commander": "^12.1.0",
         "firecrawl-cli": "^1.18.0",
@@ -104,7 +140,7 @@
     },
     "packages/dataforseo": {
       "name": "@mirage-cli/dataforseo",
-      "version": "0.1.4",
+      "version": "0.1.6",
       "dependencies": {
         "@mirage-cli/core": "workspace:^",
       },
@@ -124,7 +160,7 @@
     },
     "packages/dataforseo-cli": {
       "name": "@mirage-cli/dataforseo-cli",
-      "version": "0.1.4",
+      "version": "0.1.6",
       "bin": {
         "dfs": "./dist/bin.js",
         "dataforseo": "./dist/bin.js",
@@ -139,7 +175,7 @@
     },
     "packages/firecrawl": {
       "name": "@mirage-cli/firecrawl",
-      "version": "0.1.4",
+      "version": "0.1.6",
       "dependencies": {
         "@mirage-cli/core": "workspace:^",
         "commander": "^14.0.0",
@@ -160,7 +196,7 @@
     },
     "packages/ga4": {
       "name": "@mirage-cli/ga4",
-      "version": "0.1.4",
+      "version": "0.1.6",
       "dependencies": {
         "@mirage-cli/core": "workspace:^",
       },
@@ -180,7 +216,7 @@
     },
     "packages/ga4-cli": {
       "name": "@mirage-cli/ga4-cli",
-      "version": "0.1.4",
+      "version": "0.1.6",
       "bin": {
         "ga4": "./dist/bin.js",
       },
@@ -188,9 +224,70 @@
         "commander": "^14.0.3",
       },
     },
+    "packages/ics": {
+      "name": "@mirage-cli/ics",
+      "version": "0.1.6",
+      "dependencies": {
+        "@mirage-cli/core": "workspace:^",
+      },
+      "devDependencies": {
+        "@mirage-cli/ics-cli": "workspace:^",
+        "@struktoai/mirage-core": "^0.0.1",
+        "commander": "^14.0.3",
+        "tsup": "^8.5.1",
+      },
+      "peerDependencies": {
+        "@mirage-cli/ics-cli": "workspace:^",
+        "@struktoai/mirage-core": ">=0.0.1",
+      },
+      "optionalPeers": [
+        "@struktoai/mirage-core",
+      ],
+    },
+    "packages/ics-cli": {
+      "name": "@mirage-cli/ics-cli",
+      "version": "0.1.6",
+      "bin": {
+        "ics-cli": "./dist/bin.js",
+      },
+      "dependencies": {
+        "commander": "^14.0.3",
+        "ical.js": "^2.1.0",
+      },
+    },
+    "packages/oura": {
+      "name": "@mirage-cli/oura",
+      "version": "0.1.6",
+      "dependencies": {
+        "@mirage-cli/core": "workspace:^",
+      },
+      "devDependencies": {
+        "@mirage-cli/oura-cli": "workspace:^",
+        "@struktoai/mirage-core": "^0.0.1",
+        "commander": "^14.0.3",
+        "tsup": "^8.5.1",
+      },
+      "peerDependencies": {
+        "@mirage-cli/oura-cli": "workspace:^",
+        "@struktoai/mirage-core": ">=0.0.1",
+      },
+      "optionalPeers": [
+        "@struktoai/mirage-core",
+      ],
+    },
+    "packages/oura-cli": {
+      "name": "@mirage-cli/oura-cli",
+      "version": "0.1.6",
+      "bin": {
+        "oura": "./dist/bin.js",
+      },
+      "dependencies": {
+        "commander": "^14.0.3",
+      },
+    },
     "packages/presscart": {
       "name": "@mirage-cli/presscart",
-      "version": "0.1.4",
+      "version": "0.1.6",
       "dependencies": {
         "@mirage-cli/core": "workspace:^",
       },
@@ -210,7 +307,7 @@
     },
     "packages/presscart-cli": {
       "name": "@mirage-cli/presscart-cli",
-      "version": "0.1.4",
+      "version": "0.1.6",
       "bin": {
         "presscart": "./dist/bin.js",
       },
@@ -220,7 +317,7 @@
     },
     "packages/pulse": {
       "name": "@mirage-cli/pulse",
-      "version": "0.1.4",
+      "version": "0.1.6",
       "dependencies": {
         "@mirage-cli/core": "workspace:^",
       },
@@ -240,7 +337,7 @@
     },
     "packages/pulse-cli": {
       "name": "@mirage-cli/pulse-cli",
-      "version": "0.1.4",
+      "version": "0.1.6",
       "bin": {
         "pulse": "./dist/bin.js",
       },
@@ -250,7 +347,7 @@
     },
     "packages/radar": {
       "name": "@mirage-cli/radar",
-      "version": "0.1.4",
+      "version": "0.1.6",
       "dependencies": {
         "@mirage-cli/core": "workspace:^",
       },
@@ -270,7 +367,7 @@
     },
     "packages/radar-cli": {
       "name": "@mirage-cli/radar-cli",
-      "version": "0.1.4",
+      "version": "0.1.6",
       "bin": {
         "radar": "./dist/bin.js",
       },
@@ -280,7 +377,7 @@
     },
     "packages/reddit": {
       "name": "@mirage-cli/reddit",
-      "version": "0.1.4",
+      "version": "0.1.6",
       "dependencies": {
         "@mirage-cli/core": "workspace:^",
       },
@@ -300,7 +397,7 @@
     },
     "packages/reddit-cli": {
       "name": "@mirage-cli/reddit-cli",
-      "version": "0.1.4",
+      "version": "0.1.6",
       "bin": {
         "reddit": "./dist/bin.js",
       },
@@ -310,7 +407,7 @@
     },
     "packages/seogets": {
       "name": "@mirage-cli/seogets",
-      "version": "0.1.4",
+      "version": "0.1.6",
       "dependencies": {
         "@mirage-cli/core": "workspace:^",
       },
@@ -330,9 +427,70 @@
     },
     "packages/seogets-cli": {
       "name": "@mirage-cli/seogets-cli",
-      "version": "0.1.4",
+      "version": "0.1.6",
       "bin": {
         "seogets": "./dist/bin.js",
+      },
+      "dependencies": {
+        "commander": "^14.0.3",
+      },
+    },
+    "packages/sms": {
+      "name": "@mirage-cli/sms",
+      "version": "0.1.6",
+      "dependencies": {
+        "@mirage-cli/core": "workspace:^",
+      },
+      "devDependencies": {
+        "@mirage-cli/sms-cli": "workspace:^",
+        "@struktoai/mirage-core": "^0.0.1",
+        "commander": "^14.0.3",
+        "tsup": "^8.5.1",
+      },
+      "peerDependencies": {
+        "@mirage-cli/sms-cli": "workspace:^",
+        "@struktoai/mirage-core": ">=0.0.1",
+      },
+      "optionalPeers": [
+        "@struktoai/mirage-core",
+      ],
+    },
+    "packages/sms-cli": {
+      "name": "@mirage-cli/sms-cli",
+      "version": "0.1.6",
+      "bin": {
+        "sms": "./dist/bin.js",
+      },
+      "dependencies": {
+        "chalk": "^5.6.2",
+        "commander": "^14.0.3",
+      },
+    },
+    "packages/timing": {
+      "name": "@mirage-cli/timing",
+      "version": "0.1.6",
+      "dependencies": {
+        "@mirage-cli/core": "workspace:^",
+      },
+      "devDependencies": {
+        "@mirage-cli/timing-cli": "workspace:^",
+        "@struktoai/mirage-core": "^0.0.1",
+        "commander": "^14.0.3",
+        "tsup": "^8.5.1",
+      },
+      "peerDependencies": {
+        "@mirage-cli/timing-cli": "workspace:^",
+        "@struktoai/mirage-core": ">=0.0.1",
+      },
+      "optionalPeers": [
+        "@struktoai/mirage-core",
+      ],
+    },
+    "packages/timing-cli": {
+      "name": "@mirage-cli/timing-cli",
+      "version": "0.1.6",
+      "bin": {
+        "timing": "./dist/bin.js",
       },
       "dependencies": {
         "commander": "^14.0.3",
@@ -618,6 +776,10 @@
 
     "@mirage-cli/ahrefs-cli": ["@mirage-cli/ahrefs-cli@workspace:packages/ahrefs-cli"],
 
+    "@mirage-cli/call": ["@mirage-cli/call@workspace:packages/call"],
+
+    "@mirage-cli/call-cli": ["@mirage-cli/call-cli@workspace:packages/call-cli"],
+
     "@mirage-cli/clarity": ["@mirage-cli/clarity@workspace:packages/clarity"],
 
     "@mirage-cli/clarity-cli": ["@mirage-cli/clarity-cli@workspace:packages/clarity-cli"],
@@ -633,6 +795,14 @@
     "@mirage-cli/ga4": ["@mirage-cli/ga4@workspace:packages/ga4"],
 
     "@mirage-cli/ga4-cli": ["@mirage-cli/ga4-cli@workspace:packages/ga4-cli"],
+
+    "@mirage-cli/ics": ["@mirage-cli/ics@workspace:packages/ics"],
+
+    "@mirage-cli/ics-cli": ["@mirage-cli/ics-cli@workspace:packages/ics-cli"],
+
+    "@mirage-cli/oura": ["@mirage-cli/oura@workspace:packages/oura"],
+
+    "@mirage-cli/oura-cli": ["@mirage-cli/oura-cli@workspace:packages/oura-cli"],
 
     "@mirage-cli/presscart": ["@mirage-cli/presscart@workspace:packages/presscart"],
 
@@ -653,6 +823,14 @@
     "@mirage-cli/seogets": ["@mirage-cli/seogets@workspace:packages/seogets"],
 
     "@mirage-cli/seogets-cli": ["@mirage-cli/seogets-cli@workspace:packages/seogets-cli"],
+
+    "@mirage-cli/sms": ["@mirage-cli/sms@workspace:packages/sms"],
+
+    "@mirage-cli/sms-cli": ["@mirage-cli/sms-cli@workspace:packages/sms-cli"],
+
+    "@mirage-cli/timing": ["@mirage-cli/timing@workspace:packages/timing"],
+
+    "@mirage-cli/timing-cli": ["@mirage-cli/timing-cli@workspace:packages/timing-cli"],
 
     "@modelcontextprotocol/sdk": ["@modelcontextprotocol/sdk@1.29.0", "", { "dependencies": { "@hono/node-server": "^1.19.9", "ajv": "^8.17.1", "ajv-formats": "^3.0.1", "content-type": "^1.0.5", "cors": "^2.8.5", "cross-spawn": "^7.0.5", "eventsource": "^3.0.2", "eventsource-parser": "^3.0.0", "express": "^5.2.1", "express-rate-limit": "^8.2.1", "hono": "^4.11.4", "jose": "^6.1.3", "json-schema-typed": "^8.0.2", "pkce-challenge": "^5.0.0", "raw-body": "^3.0.0", "zod": "^3.25 || ^4.0", "zod-to-json-schema": "^3.25.1" }, "peerDependencies": { "@cfworker/json-schema": "^4.1.1" }, "optionalPeers": ["@cfworker/json-schema"] }, "sha512-zo37mZA9hJWpULgkRpowewez1y6ML5GsXJPY8FI0tBBCd77HEvza4jDqRKOXgHNn867PVGCyTdzqpz0izu5ZjQ=="],
 
@@ -858,7 +1036,7 @@
 
     "call-bound": ["call-bound@1.0.4", "", { "dependencies": { "call-bind-apply-helpers": "^1.0.2", "get-intrinsic": "^1.3.0" } }, "sha512-+ys997U96po4Kx/ABpBCqhA9EuxJaQWDQg7295H4hBphv3IZg0boBKuwYpt4YXp6MZ5AmZQnU/tyMTlRpaSejg=="],
 
-    "chalk": ["chalk@4.1.2", "", { "dependencies": { "ansi-styles": "^4.1.0", "supports-color": "^7.1.0" } }, "sha512-oKnbhFyRIXpUuez8iBMmyEa4nbj4IOQyuhc/wy9kY7/WVPcwIO9VA668Pu8RkO7+0G76SLROeyw9CpQ061i4mA=="],
+    "chalk": ["chalk@5.6.2", "", {}, "sha512-7NzBL0rN6fMUW+f7A6Io4h40qQlG+xGmtMxfbnH/K7TAtt8JQWVQK+6g0UXKMeVJoyV5EkkNsErQ8pVD3bLHbA=="],
 
     "chalk-template": ["chalk-template@0.4.0", "", { "dependencies": { "chalk": "^4.1.2" } }, "sha512-/ghrgmhfY8RaSdeo43hNXxpoHAtxdbskUHjPpfqUWGttFgycUhYPGx3YZBCnUCvOa7Doivn1IZec3DEGFoMgLg=="],
 
@@ -1069,6 +1247,8 @@
     "human-id": ["human-id@4.1.3", "", { "bin": { "human-id": "dist/cli.js" } }, "sha512-tsYlhAYpjCKa//8rXZ9DqKEawhPoSytweBC2eNvcaDK+57RZLHGqNs3PZTQO6yekLFSuvA6AlnAfrw1uBvtb+Q=="],
 
     "hyparquet": ["hyparquet@1.25.8", "", {}, "sha512-KYRKZCHBgEY9FOuqTe9m+zdrKBcTo9ZcaIUqG7SdZygv5hwrGD3C6wuTrGt07cbEkgO71UIih+KbojLKf3ENbg=="],
+
+    "ical.js": ["ical.js@2.2.1", "", {}, "sha512-yK/UlPbEs316igb/tjRgbFA8ZV75rCsBJp/hWOatpyaPNlgw0dGDmU+FoicOcwX4xXkeXOkYiOmCqNPFpNPkQg=="],
 
     "iconv-lite": ["iconv-lite@0.7.2", "", { "dependencies": { "safer-buffer": ">= 2.1.2 < 3.0.0" } }, "sha512-im9DjEDQ55s9fL4EYzOAv0yMqmMBSZp6G0VvFyTMPKWxiSBHUj9NW/qqLmXUwXrrM7AvqSlTCfvqRb0cM8yYqw=="],
 
@@ -1532,7 +1712,7 @@
 
     "apache-arrow/@types/node": ["@types/node@24.12.4", "", { "dependencies": { "undici-types": "~7.16.0" } }, "sha512-GUUEShf+PBCGW2KaXwcIt3Yk+e3pkKwWKb9GSyM9WQVE+ep2jzmHdGsHzu4wgcZy5fN9FBdVzjpBQsYlpfpgLA=="],
 
-    "chalk/supports-color": ["supports-color@7.2.0", "", { "dependencies": { "has-flag": "^4.0.0" } }, "sha512-qpCAvRl9stuOHveKsn7HncJRvv501qIacKzQlO/+Lwxc9+0q2wLyv4Dfvt80/DPn2pqOBsJdDiogXGR9+OvwRw=="],
+    "chalk-template/chalk": ["chalk@4.1.2", "", { "dependencies": { "ansi-styles": "^4.1.0", "supports-color": "^7.1.0" } }, "sha512-oKnbhFyRIXpUuez8iBMmyEa4nbj4IOQyuhc/wy9kY7/WVPcwIO9VA668Pu8RkO7+0G76SLROeyw9CpQ061i4mA=="],
 
     "form-data/mime-types": ["mime-types@2.1.35", "", { "dependencies": { "mime-db": "1.52.0" } }, "sha512-ZDY+bPm5zTTF+YpCrAU9nK0UgICYPT0QtT1NZWFv4s++TNkcgVaT0g6+4R2uI4MjQjzysHB1zxuWL50hzaeXiw=="],
 
@@ -1557,6 +1737,8 @@
     "youch/cookie": ["cookie@1.1.1", "", {}, "sha512-ei8Aos7ja0weRpFzJnEA9UHJ/7XQmqglbRwnf2ATjcB9Wq874VKH9kfjjirM6UhU2/E5fFYadylyhFldcqSidQ=="],
 
     "apache-arrow/@types/node/undici-types": ["undici-types@7.16.0", "", {}, "sha512-Zz+aZWSj8LE6zoxD+xrjh4VfkIG8Ya6LvYkZqtUQGJPZjYl53ypCaUwWqo7eI0x66KBGeRo+mlBEkMSeSZ38Nw=="],
+
+    "chalk-template/chalk/supports-color": ["supports-color@7.2.0", "", { "dependencies": { "has-flag": "^4.0.0" } }, "sha512-qpCAvRl9stuOHveKsn7HncJRvv501qIacKzQlO/+Lwxc9+0q2wLyv4Dfvt80/DPn2pqOBsJdDiogXGR9+OvwRw=="],
 
     "form-data/mime-types/mime-db": ["mime-db@1.52.0", "", {}, "sha512-sPU4uV7dYlvtWJxwwxHD0PuihVNiE7TyAbQ5SWxDCB9mUYvOgroQOwYQQOKPJ8CIbE+1ETVlOoK1UC2nU3gYvg=="],
 

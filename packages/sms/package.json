@@ -1,0 +1,61 @@
+{
+  "name": "@mirage-cli/sms",
+  "version": "0.1.7",
+  "description": "SMS inbox CLI as an importable mirage / Cloudflare-Worker command via @mirage-cli/core.",
+  "type": "module",
+  "main": "./dist/index.js",
+  "module": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "bun": "./src/index.ts",
+      "import": "./dist/index.js"
+    },
+    "./package.json": "./package.json"
+  },
+  "files": [
+    "dist/",
+    "README.md"
+  ],
+  "scripts": {
+    "build": "tsup src/index.ts --format esm --target node18 --dts --external @mirage-cli/core --external @mirage-cli/sms-cli --external commander --external chalk --external @struktoai/mirage-core --clean --silent",
+    "test": "bun test --reporter=dots",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@mirage-cli/core": "workspace:^"
+  },
+  "peerDependencies": {
+    "@struktoai/mirage-core": ">=0.0.1",
+    "@mirage-cli/sms-cli": "workspace:^"
+  },
+  "peerDependenciesMeta": {
+    "@struktoai/mirage-core": {
+      "optional": true
+    }
+  },
+  "devDependencies": {
+    "@mirage-cli/sms-cli": "workspace:^",
+    "@struktoai/mirage-core": "^0.0.1",
+    "commander": "^14.0.3",
+    "tsup": "^8.5.1"
+  },
+  "publishConfig": {
+    "access": "public"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/alexbruf/mirage-cli.git",
+    "directory": "packages/sms"
+  },
+  "keywords": [
+    "sms",
+    "messaging",
+    "android-sms-gateway",
+    "commander",
+    "mirage",
+    "cloudflare-workers"
+  ],
+  "license": "MIT"
+}

@@ -1,6 +1,6 @@
 {
   "name": "@mirage-cli/ahrefs",
-  "version": "0.1.6",
+  "version": "0.1.7",
   "description": "Ahrefs CLI as an importable mirage / Cloudflare-Worker command via @mirage-cli/core.",
   "type": "module",
   "main": "./dist/index.js",

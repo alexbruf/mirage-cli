@@ -1,6 +1,6 @@
 {
   "name": "@mirage-cli/dataforseo-cli",
-  "version": "0.1.6",
+  "version": "0.1.7",
   "description": "Ergonomic CLI wrapper around the DataForSEO API (curated commands + raw escape hatch).",
   "license": "MIT",
   "repository": {

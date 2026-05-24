@@ -1,6 +1,6 @@
 {
   "name": "@mirage-cli/firecrawl",
-  "version": "0.1.6",
+  "version": "0.1.7",
   "description": "Wraps the published firecrawl-cli npm package as an importable mirage / Cloudflare-Worker command via @mirage-cli/core.",
   "type": "module",
   "main": "./dist/index.js",

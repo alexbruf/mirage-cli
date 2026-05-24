@@ -1,0 +1,64 @@
+{
+  "name": "@mirage-cli/call-cli",
+  "version": "0.1.7",
+  "description": "Phone call + audio injection CLI — make calls with TTS or pre-uploaded audio via an Android-bridge Cloudflare Worker. Mirage / Cloudflare-Worker compatible.",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/alexbruf/mirage-cli.git",
+    "directory": "packages/call-cli"
+  },
+  "bugs": {
+    "url": "https://github.com/alexbruf/mirage-cli/issues"
+  },
+  "homepage": "https://github.com/alexbruf/mirage-cli/tree/main/packages/call-cli#readme",
+  "keywords": [
+    "call",
+    "telephony",
+    "tts",
+    "elevenlabs",
+    "cli",
+    "mirage"
+  ],
+  "type": "module",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "bun": "./src/index.ts",
+      "import": "./dist/index.js"
+    },
+    "./cli": {
+      "types": "./dist/cli.d.ts",
+      "bun": "./src/cli.ts",
+      "import": "./dist/cli.js"
+    }
+  },
+  "bin": {
+    "call": "./dist/bin.js"
+  },
+  "files": [
+    "dist",
+    "README.md",
+    "LICENSE"
+  ],
+  "scripts": {
+    "dev": "bun run src/cli.ts",
+    "build": "bun build src/bin.ts src/cli.ts src/index.ts --target=node --outdir=dist --external commander --external chalk && bun run scripts/postbuild.ts && bun run build:types",
+    "build:types": "tsc -p tsconfig.build.json",
+    "test": "bun test --reporter=dots",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "chalk": "^5.6.2",
+    "commander": "^14.0.3"
+  },
+  "publishConfig": {
+    "access": "public"
+  },
+  "engines": {
+    "bun": ">=1.1.0",
+    "node": ">=18.0.0"
+  }
+}

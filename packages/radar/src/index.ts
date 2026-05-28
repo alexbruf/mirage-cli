@@ -19,10 +19,11 @@
  *
  * ## Worker compatibility
  *
- * API-call subcommands (`jobs`, `analytics`, `models`) are pure `fetch`. The
- * `login` subcommand uses `node:http` (loopback) and `node:child_process`
- * (open browser) and will fail at runtime in workerd. Pre-provision a session
- * (or set `RADAR_API_KEY`) and other subcommands work fine.
+ * The data subcommands (`projects`, `queries`, `game-plans`, `results`,
+ * `jobs`, `credits`, `export`, `orgs`) are pure `fetch`. The `login`
+ * subcommand uses `node:http` (loopback) and `node:child_process` (open
+ * browser) and will fail at runtime in workerd. Pre-provision a session
+ * (or set `RADAR_API_KEY` / `RADAR_OAUTH_ACCESS_TOKEN`) and the rest work fine.
  */
 
 import type { Command } from "commander";
@@ -90,9 +91,9 @@ export async function radarResource(): Promise<Resource> {
     kind: "radar",
     isRemote: true,
     prompt:
-      "ViewEngine Radar CLI — batch AI visibility jobs against radar.viewengine.ai. " +
+      "ViewEngine Radar CLI — org-scoped AI visibility data from radar.viewengine.ai. " +
       "Auth via `radar login` (Clerk OAuth) or RADAR_API_KEY env var. " +
-      "Use `radar --help` to discover subcommands (jobs, models, analytics).",
+      "Use `radar --help` to discover subcommands (projects, queries, game-plans, results, jobs, credits, export, orgs).",
     async open() {},
     async close() {},
     commands(): readonly RegisteredCommand[] {

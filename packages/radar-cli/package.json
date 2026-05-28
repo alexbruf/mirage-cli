@@ -1,7 +1,7 @@
 {
   "name": "@mirage-cli/radar-cli",
-  "version": "0.1.9",
-  "description": "ViewEngine Radar CLI — batch AI visibility jobs. Mirage-compatible command shape.",
+  "version": "0.2.0",
+  "description": "ViewEngine Radar CLI — org-scoped AI visibility (projects, queries, game-plans, results, jobs, credits). Mirage-compatible command shape.",
   "license": "MIT",
   "repository": {
     "type": "git",

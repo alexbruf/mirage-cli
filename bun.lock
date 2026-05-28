@@ -347,7 +347,7 @@
     },
     "packages/radar": {
       "name": "@mirage-cli/radar",
-      "version": "0.1.9",
+      "version": "1.0.0",
       "dependencies": {
         "@mirage-cli/core": "workspace:^",
       },
@@ -367,7 +367,7 @@
     },
     "packages/radar-cli": {
       "name": "@mirage-cli/radar-cli",
-      "version": "0.1.9",
+      "version": "0.2.0",
       "bin": {
         "radar": "./dist/bin.js",
       },

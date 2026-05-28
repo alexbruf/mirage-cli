@@ -1,7 +1,7 @@
 {
   "name": "@mirage-cli/radar",
-  "version": "0.1.9",
-  "description": "Radar CLI as an importable mirage / Cloudflare-Worker command via @mirage-cli/core.",
+  "version": "1.0.0",
+  "description": "ViewEngine Radar (org-scoped AI visibility) CLI as an importable mirage / Cloudflare-Worker command via @mirage-cli/core.",
   "type": "module",
   "main": "./dist/index.js",
   "module": "./dist/index.js",

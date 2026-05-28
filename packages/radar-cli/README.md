@@ -1,21 +1,48 @@
 # @mirage-cli/radar-cli
 
-ViewEngine Radar CLI — batch AI visibility jobs against `radar.viewengine.ai`.
+ViewEngine Radar CLI — org-scoped access to the ViewEngine AI Visibility API at
+`radar.viewengine.ai`. Read projects, queries, query-results, execution-jobs,
+and credits; manage game plans; switch between organizations.
 
 ```
 bun add -g @mirage-cli/radar-cli
 radar login                    # Clerk OAuth (browser)
 radar login --api-key sk_...   # headless / CI
-radar jobs list
-radar jobs create --file in.csv --name "Q1 audit" --prompt-column query --models chatgpt_api,perplexity
-radar jobs download <id> -o results.csv
+
+radar orgs list                # orgs you belong to
+radar orgs use <id-or-slug>    # set the active org (persisted)
+
+radar projects list --search acme
+radar queries list --project-id <id>
+radar game-plans list --status open
+radar game-plans complete-action <planId> <actionIndex>
+radar results list --provider perplexity --query-id <id>
+radar jobs list --status running
+radar credits list
+radar export game-plans > game-plans.json
 ```
 
-## Auth
+## Commands
+
+- `projects {list, get}`
+- `queries {list}`
+- `game-plans {list, get, update, complete-action}`
+- `results {list, get}` (query-results)
+- `jobs {list}` (execution-jobs)
+- `credits {list}`
+- `export <entity>` — page through every row of an entity
+- `orgs {list, use, current, clear}` — multi-tenant switching
+- `login / whoami / logout`
+
+All list commands accept `--page`, `--limit`, `--sort <field>`, `--dir <asc|desc>`.
+Output is JSON (ideal for piping / bot consumption).
+
+## Auth & org scoping
 
 - `radar login` — Clerk OAuth (PKCE + RFC 7591 DCR + loopback). Persists to `~/.config/radar/session.json` (0600).
 - `radar login --api-key sk_...` — Clerk machine API key for headless use.
 - Env override: `RADAR_API_KEY` (preferred) or `RADAR_OAUTH_ACCESS_TOKEN`. `RADAR_API_BASE_URL` overrides the base URL.
+- Active org: `radar orgs use <id>` persists it; override per-command with `--org <id-or-slug>` or the `RADAR_ACTIVE_ORG_ID` env var. It rides on every request as the `X-Active-Org-Id` header.
 
 ## Programmatic use
 
@@ -24,13 +51,14 @@ import { buildProgram, ApiClient, loadSession } from "@mirage-cli/radar-cli";
 
 // As a Commander program (drives the same CLI surface):
 const program = buildProgram();
-await program.parseAsync(["node", "radar", "jobs", "list", "--format", "json"]);
+await program.parseAsync(["node", "radar", "projects", "list"]);
 
 // As a typed API client:
 const session = loadSession();
 if (session) {
   const client = new ApiClient(session);
-  const { jobs } = await client.request<{ jobs: unknown[] }>("/jobs");
+  const { rows, total } = await client.list("projects", { search: "acme" });
+  const plan = await client.get("game-plans", "<id>");
 }
 ```
 

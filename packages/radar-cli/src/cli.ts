@@ -28,21 +28,59 @@ export function buildProgram(): Command {
 
   // Resolve an authenticated client from the program-level flags layered over
   // the persisted/env session (`RADAR_API_KEY` / `RADAR_OAUTH_ACCESS_TOKEN`).
-  function getClient(): ApiClient {
-    const opts = program.opts<{ apiKey?: string; url?: string; org?: string }>();
-    let session: Session;
+  // Base session (creds + base URL) from the program-level flags layered over
+  // the persisted/env session. No active org applied here.
+  function baseSession(): Session {
+    const opts = program.opts<{ apiKey?: string; url?: string }>();
     if (opts.apiKey) {
-      session = {
+      return {
         apiKey: opts.apiKey,
         baseUrl: opts.url ?? getDefaultBaseUrl(),
         savedAt: new Date().toISOString(),
       };
-    } else {
-      session = requireSession();
-      if (opts.url) session.baseUrl = opts.url;
     }
-    // --org flag wins; otherwise the session/env active org (if any) applies.
-    if (opts.org) session.activeOrgId = opts.org;
+    const session = requireSession();
+    if (opts.url) session.baseUrl = opts.url;
+    return session;
+  }
+
+  // `--org` takes an id OR a slug (like `orgs use`). The API validates the
+  // X-Active-Org-Id header by id, so a slug must be resolved to its id first —
+  // otherwise `--org <slug>` 403s. Resolve once, before any command action,
+  // via an org-agnostic /v1/orgs lookup (no active-org header on the probe).
+  let resolvedOrg: string | undefined;
+  let orgResolved = false;
+  program.hook("preAction", async () => {
+    if (orgResolved) return;
+    orgResolved = true;
+    const want = program.opts<{ org?: string }>().org;
+    if (!want || want.startsWith("org_")) {
+      resolvedOrg = want;
+      return;
+    }
+    const probe = new ApiClient({ ...baseSession(), activeOrgId: undefined });
+    let rows: { id: string; slug: string | null }[];
+    try {
+      ({ rows } = await probe.list<{ id: string; slug: string | null }>("orgs"));
+    } catch (err) {
+      console.error(`Could not resolve --org "${want}": ${(err as Error).message}`);
+      process.exit(1);
+    }
+    const match = rows.find((o) => o.slug === want || o.id === want);
+    if (!match) {
+      console.error(`Org not found: "${want}". Run \`radar orgs list\` to see your orgs.`);
+      process.exit(1);
+    }
+    resolvedOrg = match.id;
+  });
+
+  function getClient(): ApiClient {
+    const session = baseSession();
+    // --org (resolved to an id by the preAction hook) wins; otherwise the
+    // session/env active org (if any) applies.
+    const flagOrg = orgResolved ? resolvedOrg : program.opts<{ org?: string }>().org;
+    const org = flagOrg ?? session.activeOrgId;
+    if (org) session.activeOrgId = org;
     return new ApiClient(session);
   }
 

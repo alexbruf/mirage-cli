@@ -1,5 +1,16 @@
 # @mirage-cli/radar-cli
 
+## 0.2.1
+
+### Patch Changes
+
+- Fix `--org <slug>`: resolve a slug to its org id before sending the
+  `X-Active-Org-Id` header. The API validates that header by id, so previously
+  `--org <slug>` 403'd (and the help promised "id-or-slug", matching
+  `orgs use <slug>`). Resolution happens once, in a `preAction` hook, via an
+  org-agnostic `/v1/orgs` lookup; `--org <org_…>` ids and the no-org path are
+  unchanged (no extra request).
+
 ## 0.2.0
 
 ### Minor Changes

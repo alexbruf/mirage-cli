@@ -367,7 +367,7 @@
     },
     "packages/radar-cli": {
       "name": "@mirage-cli/radar-cli",
-      "version": "0.2.0",
+      "version": "0.2.1",
       "bin": {
         "radar": "./dist/bin.js",
       },

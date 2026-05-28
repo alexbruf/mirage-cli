@@ -29,11 +29,11 @@ import {
 import {
   bool,
   cacheTtl,
+  daysAgo,
   GLOBAL_OPTION_NAMES,
   globalOptions,
   resolveFormat,
   str,
-  today,
 } from "./shared.ts";
 
 export interface BuildOpts {
@@ -88,12 +88,19 @@ export function endpointCommand(opts: BuildOpts): CommandDef {
     if (GLOBAL_OPTION_NAMES.has(flag)) continue;
     if (p.name === "output") continue; // we override with --json/--csv
     const t = p.schema?.type;
-    const todayDefault =
+    // BLU-292: default required `date` params to YESTERDAY, not today.
+    // Ahrefs site-explorer snapshots (overview/metrics, domain-rating, …)
+    // publish a day's crawl partway through that day, so date=today returns
+    // 0 for every metric on every domain during the pre-publish window.
+    // metrics *requires* `date` (omitting → HTTP 400), so we can't just drop
+    // it — yesterday is always published and is the freshest reliably-
+    // available snapshot. Callers can still pass --date for any other day.
+    const yesterdayDefault =
       p.name === "date" && p.schema?.format === "date" && p.required
-        ? today()
+        ? daysAgo(1)
         : undefined;
     const rawDefault =
-      opts.defaults?.[p.name] ?? p.schema?.default ?? todayDefault;
+      opts.defaults?.[p.name] ?? p.schema?.default ?? yesterdayDefault;
     options.push(
       new Option({
         long: flag,

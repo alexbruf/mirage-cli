@@ -1,0 +1,95 @@
+name: publish
+
+# Publishes a single @mirage-cli/* package to npm via **trusted publishing**
+# (GitHub OIDC) — no NPM_TOKEN secret required. npm mints a short-lived token
+# from the workflow's OIDC identity and verifies it against the trusted
+# publisher configured on the package.
+#
+# Trigger: push a tag shaped `<pkg-dir>-v<version>`, e.g. `ahrefs-cli-v0.1.10`
+# (the dir under packages/, then `-v`, then the version). Or run manually via
+# workflow_dispatch with the package dir name.
+#
+# The tag's version MUST match packages/<pkg>/package.json — this workflow
+# publishes what's in the tagged tree, it does not bump. Bump + add a changeset
+# in a PR, merge, then tag.
+#
+# ONE-TIME SETUP per package, on npmjs.com → the package → Settings →
+# "Trusted Publisher":
+#   - Organization or user: alexbruf
+#   - Repository:           mirage-cli
+#   - Workflow filename:    publish.yml   (this file's name, exact, no path)
+# Provenance is generated automatically (repo is public). No environment needed.
+#
+# Requirements (handled below): npm >= 11.5.1, Node >= 22.14.0, cloud runner,
+# `id-token: write` permission. Package must already exist on npm.
+
+"on":
+  push:
+    tags: ["*-v*"]
+  workflow_dispatch:
+    inputs:
+      package:
+        description: "Package dir under packages/ (e.g. ahrefs-cli)"
+        required: true
+        type: string
+      dry_run:
+        description: "release.ts --dry-run only (no real publish)"
+        type: boolean
+        default: false
+
+permissions:
+  contents: read
+  id-token: write # required for npm trusted publishing (OIDC)
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          registry-url: "https://registry.npmjs.org"
+
+      - name: Upgrade npm (trusted publishing needs >= 11.5.1)
+        run: npm install -g npm@latest
+
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: latest
+
+      - name: Resolve target package + verify tag matches version
+        id: target
+        run: |
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            PKG="${{ inputs.package }}"
+          else
+            REF="${GITHUB_REF_NAME}"        # e.g. ahrefs-cli-v0.1.10
+            PKG="${REF%-v*}"                # ahrefs-cli
+            TAG_VERSION="${REF##*-v}"       # 0.1.10
+          fi
+          if [ ! -f "packages/$PKG/package.json" ]; then
+            echo "::error::no packages/$PKG/package.json (resolved pkg='$PKG')"
+            exit 1
+          fi
+          PKG_VERSION="$(node -p "require('./packages/$PKG/package.json').version")"
+          if [ "${{ github.event_name }}" = "push" ] && [ "$PKG_VERSION" != "$TAG_VERSION" ]; then
+            echo "::error::tag $REF implies $TAG_VERSION but packages/$PKG/package.json is $PKG_VERSION"
+            exit 1
+          fi
+          echo "pkg=$PKG" >> "$GITHUB_OUTPUT"
+          echo "Publishing packages/$PKG @ $PKG_VERSION"
+
+      - run: bun install --frozen-lockfile
+
+      - name: Build (all packages, dependency order — matches `bun run release`)
+        run: bun run build
+
+      - name: Publish (trusted publishing / OIDC)
+        run: |
+          if [ "${{ inputs.dry_run }}" = "true" ]; then
+            bun scripts/release.ts --only="${{ steps.target.outputs.pkg }}" --dry-run
+          else
+            bun scripts/release.ts --only="${{ steps.target.outputs.pkg }}"
+          fi

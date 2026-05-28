@@ -30,7 +30,7 @@
     },
     "packages/ahrefs": {
       "name": "@mirage-cli/ahrefs",
-      "version": "0.1.9",
+      "version": "0.1.10",
       "dependencies": {
         "@mirage-cli/core": "workspace:^",
       },

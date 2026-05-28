@@ -83,8 +83,8 @@ jobs:
 
       - run: bun install --frozen-lockfile
 
-      - name: Build
-        run: cd "packages/${{ steps.target.outputs.pkg }}" && bun run build
+      - name: Build (all packages, dependency order — matches `bun run release`)
+        run: bun run build
 
       - name: Publish (trusted publishing / OIDC)
         run: |

@@ -34,6 +34,8 @@
     "@mirage-cli/dataforseo": "workspace:*",
     "@mirage-cli/firecrawl": "workspace:*",
     "@mirage-cli/ga4": "workspace:*",
+    "@mirage-cli/gbp": "workspace:*",
+    "@mirage-cli/gbp-cli": "workspace:*",
     "@mirage-cli/ics": "workspace:*",
     "@mirage-cli/oura": "workspace:*",
     "@mirage-cli/presscart": "workspace:*",

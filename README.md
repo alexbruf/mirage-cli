@@ -12,6 +12,8 @@ Wrap any Commander.js TS CLI as an importable `@mirage-cli/<vendor>` package for
 | `@mirage-cli/dataforseo`   | Thin wrapper around `dataforseo-cli`'s `buildProgram` — `buildProgram` + `dataforseoCommand`.                      |
 | `ahrefs-cli`               | Ahrefs API v3 CLI source (lives in this monorepo). Exports `buildProgram()`.                                       |
 | `@mirage-cli/ahrefs`       | Thin wrapper around `ahrefs-cli`'s `buildProgram` — `buildProgram` + `ahrefsCommand`.                              |
+| `@mirage-cli/gbp-cli`      | Google Business Profile CLI source (locations, metrics, reviews, keywords via Windsor.ai). Exports `buildProgram()`. |
+| `@mirage-cli/gbp`          | Thin wrapper around `@mirage-cli/gbp-cli`'s `buildProgram` — `buildProgram` + `gbpCommand`.                        |
 
 **Source packages vs wrapper packages.** A `*-cli` package is the CLI itself (the binary + its programmatic API). A `@mirage-cli/<vendor>` package is the thin adapter that surfaces it as `buildProgram` + `<vendor>Command` for mirage / worker consumption.
 

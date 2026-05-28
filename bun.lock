@@ -13,6 +13,8 @@
         "@mirage-cli/dataforseo": "workspace:*",
         "@mirage-cli/firecrawl": "workspace:*",
         "@mirage-cli/ga4": "workspace:*",
+        "@mirage-cli/gbp": "workspace:*",
+        "@mirage-cli/gbp-cli": "workspace:*",
         "@mirage-cli/ics": "workspace:*",
         "@mirage-cli/oura": "workspace:*",
         "@mirage-cli/presscart": "workspace:*",
@@ -219,6 +221,36 @@
       "version": "0.1.9",
       "bin": {
         "ga4": "./dist/bin.js",
+      },
+      "dependencies": {
+        "commander": "^14.0.3",
+      },
+    },
+    "packages/gbp": {
+      "name": "@mirage-cli/gbp",
+      "version": "0.1.9",
+      "dependencies": {
+        "@mirage-cli/core": "workspace:^",
+      },
+      "devDependencies": {
+        "@mirage-cli/gbp-cli": "workspace:^",
+        "@struktoai/mirage-core": "^0.0.1",
+        "commander": "^14.0.3",
+        "tsup": "^8.5.1",
+      },
+      "peerDependencies": {
+        "@mirage-cli/gbp-cli": "workspace:^",
+        "@struktoai/mirage-core": ">=0.0.1",
+      },
+      "optionalPeers": [
+        "@struktoai/mirage-core",
+      ],
+    },
+    "packages/gbp-cli": {
+      "name": "@mirage-cli/gbp-cli",
+      "version": "0.1.9",
+      "bin": {
+        "gbp": "./dist/bin.js",
       },
       "dependencies": {
         "commander": "^14.0.3",
@@ -795,6 +827,10 @@
     "@mirage-cli/ga4": ["@mirage-cli/ga4@workspace:packages/ga4"],
 
     "@mirage-cli/ga4-cli": ["@mirage-cli/ga4-cli@workspace:packages/ga4-cli"],
+
+    "@mirage-cli/gbp": ["@mirage-cli/gbp@workspace:packages/gbp"],
+
+    "@mirage-cli/gbp-cli": ["@mirage-cli/gbp-cli@workspace:packages/gbp-cli"],
 
     "@mirage-cli/ics": ["@mirage-cli/ics@workspace:packages/ics"],
 

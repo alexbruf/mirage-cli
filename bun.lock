@@ -30,7 +30,7 @@
     },
     "packages/ahrefs": {
       "name": "@mirage-cli/ahrefs",
-      "version": "0.1.6",
+      "version": "0.1.9",
       "dependencies": {
         "@mirage-cli/core": "workspace:^",
       },
@@ -50,7 +50,7 @@
     },
     "packages/ahrefs-cli": {
       "name": "@mirage-cli/ahrefs-cli",
-      "version": "0.1.6",
+      "version": "0.1.10",
       "bin": {
         "ahrefs": "./dist/bin.js",
       },
@@ -66,7 +66,7 @@
     },
     "packages/call": {
       "name": "@mirage-cli/call",
-      "version": "0.1.6",
+      "version": "0.1.9",
       "dependencies": {
         "@mirage-cli/core": "workspace:^",
       },
@@ -86,7 +86,7 @@
     },
     "packages/call-cli": {
       "name": "@mirage-cli/call-cli",
-      "version": "0.1.6",
+      "version": "0.1.9",
       "bin": {
         "call": "./dist/bin.js",
       },
@@ -97,7 +97,7 @@
     },
     "packages/clarity": {
       "name": "@mirage-cli/clarity",
-      "version": "0.1.6",
+      "version": "0.1.9",
       "dependencies": {
         "@mirage-cli/core": "workspace:^",
       },
@@ -117,7 +117,7 @@
     },
     "packages/clarity-cli": {
       "name": "@mirage-cli/clarity-cli",
-      "version": "0.1.6",
+      "version": "0.1.9",
       "bin": {
         "clarity": "./dist/bin.js",
       },
@@ -127,7 +127,7 @@
     },
     "packages/core": {
       "name": "@mirage-cli/core",
-      "version": "0.1.6",
+      "version": "0.1.9",
       "devDependencies": {
         "commander": "^12.1.0",
         "firecrawl-cli": "^1.18.0",
@@ -140,7 +140,7 @@
     },
     "packages/dataforseo": {
       "name": "@mirage-cli/dataforseo",
-      "version": "0.1.6",
+      "version": "0.1.9",
       "dependencies": {
         "@mirage-cli/core": "workspace:^",
       },
@@ -160,7 +160,7 @@
     },
     "packages/dataforseo-cli": {
       "name": "@mirage-cli/dataforseo-cli",
-      "version": "0.1.6",
+      "version": "0.1.9",
       "bin": {
         "dfs": "./dist/bin.js",
         "dataforseo": "./dist/bin.js",
@@ -175,7 +175,7 @@
     },
     "packages/firecrawl": {
       "name": "@mirage-cli/firecrawl",
-      "version": "0.1.6",
+      "version": "0.1.9",
       "dependencies": {
         "@mirage-cli/core": "workspace:^",
         "commander": "^14.0.0",
@@ -196,7 +196,7 @@
     },
     "packages/ga4": {
       "name": "@mirage-cli/ga4",
-      "version": "0.1.6",
+      "version": "0.1.9",
       "dependencies": {
         "@mirage-cli/core": "workspace:^",
       },
@@ -216,7 +216,7 @@
     },
     "packages/ga4-cli": {
       "name": "@mirage-cli/ga4-cli",
-      "version": "0.1.6",
+      "version": "0.1.9",
       "bin": {
         "ga4": "./dist/bin.js",
       },
@@ -226,7 +226,7 @@
     },
     "packages/ics": {
       "name": "@mirage-cli/ics",
-      "version": "0.1.6",
+      "version": "0.1.9",
       "dependencies": {
         "@mirage-cli/core": "workspace:^",
       },
@@ -246,7 +246,7 @@
     },
     "packages/ics-cli": {
       "name": "@mirage-cli/ics-cli",
-      "version": "0.1.6",
+      "version": "0.1.9",
       "bin": {
         "ics-cli": "./dist/bin.js",
       },
@@ -257,7 +257,7 @@
     },
     "packages/oura": {
       "name": "@mirage-cli/oura",
-      "version": "0.1.6",
+      "version": "0.1.9",
       "dependencies": {
         "@mirage-cli/core": "workspace:^",
       },
@@ -277,7 +277,7 @@
     },
     "packages/oura-cli": {
       "name": "@mirage-cli/oura-cli",
-      "version": "0.1.6",
+      "version": "0.1.9",
       "bin": {
         "oura": "./dist/bin.js",
       },
@@ -287,7 +287,7 @@
     },
     "packages/presscart": {
       "name": "@mirage-cli/presscart",
-      "version": "0.1.6",
+      "version": "0.1.9",
       "dependencies": {
         "@mirage-cli/core": "workspace:^",
       },
@@ -307,7 +307,7 @@
     },
     "packages/presscart-cli": {
       "name": "@mirage-cli/presscart-cli",
-      "version": "0.1.6",
+      "version": "0.1.9",
       "bin": {
         "presscart": "./dist/bin.js",
       },
@@ -317,7 +317,7 @@
     },
     "packages/pulse": {
       "name": "@mirage-cli/pulse",
-      "version": "0.1.6",
+      "version": "0.1.9",
       "dependencies": {
         "@mirage-cli/core": "workspace:^",
       },
@@ -337,7 +337,7 @@
     },
     "packages/pulse-cli": {
       "name": "@mirage-cli/pulse-cli",
-      "version": "0.1.6",
+      "version": "0.1.9",
       "bin": {
         "pulse": "./dist/bin.js",
       },
@@ -347,7 +347,7 @@
     },
     "packages/radar": {
       "name": "@mirage-cli/radar",
-      "version": "0.1.6",
+      "version": "0.1.9",
       "dependencies": {
         "@mirage-cli/core": "workspace:^",
       },
@@ -367,7 +367,7 @@
     },
     "packages/radar-cli": {
       "name": "@mirage-cli/radar-cli",
-      "version": "0.1.6",
+      "version": "0.1.9",
       "bin": {
         "radar": "./dist/bin.js",
       },
@@ -377,7 +377,7 @@
     },
     "packages/reddit": {
       "name": "@mirage-cli/reddit",
-      "version": "0.1.6",
+      "version": "0.1.9",
       "dependencies": {
         "@mirage-cli/core": "workspace:^",
       },
@@ -397,7 +397,7 @@
     },
     "packages/reddit-cli": {
       "name": "@mirage-cli/reddit-cli",
-      "version": "0.1.6",
+      "version": "0.1.9",
       "bin": {
         "reddit": "./dist/bin.js",
       },
@@ -407,7 +407,7 @@
     },
     "packages/seogets": {
       "name": "@mirage-cli/seogets",
-      "version": "0.1.6",
+      "version": "0.1.9",
       "dependencies": {
         "@mirage-cli/core": "workspace:^",
       },
@@ -427,7 +427,7 @@
     },
     "packages/seogets-cli": {
       "name": "@mirage-cli/seogets-cli",
-      "version": "0.1.6",
+      "version": "0.1.9",
       "bin": {
         "seogets": "./dist/bin.js",
       },
@@ -437,7 +437,7 @@
     },
     "packages/sms": {
       "name": "@mirage-cli/sms",
-      "version": "0.1.6",
+      "version": "0.1.9",
       "dependencies": {
         "@mirage-cli/core": "workspace:^",
       },
@@ -457,7 +457,7 @@
     },
     "packages/sms-cli": {
       "name": "@mirage-cli/sms-cli",
-      "version": "0.1.6",
+      "version": "0.1.9",
       "bin": {
         "sms": "./dist/bin.js",
       },
@@ -468,7 +468,7 @@
     },
     "packages/timing": {
       "name": "@mirage-cli/timing",
-      "version": "0.1.6",
+      "version": "0.1.9",
       "dependencies": {
         "@mirage-cli/core": "workspace:^",
       },
@@ -488,7 +488,7 @@
     },
     "packages/timing-cli": {
       "name": "@mirage-cli/timing-cli",
-      "version": "0.1.6",
+      "version": "0.1.9",
       "bin": {
         "timing": "./dist/bin.js",
       },

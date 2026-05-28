@@ -50,7 +50,7 @@
     },
     "packages/ahrefs-cli": {
       "name": "@mirage-cli/ahrefs-cli",
-      "version": "0.1.10",
+      "version": "0.1.11",
       "bin": {
         "ahrefs": "./dist/bin.js",
       },

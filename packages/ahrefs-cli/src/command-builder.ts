@@ -88,19 +88,14 @@ export function endpointCommand(opts: BuildOpts): CommandDef {
     if (GLOBAL_OPTION_NAMES.has(flag)) continue;
     if (p.name === "output") continue; // we override with --json/--csv
     const t = p.schema?.type;
-    // BLU-292: default required `date` params to YESTERDAY, not today.
-    // Ahrefs site-explorer snapshots (overview/metrics, domain-rating, …)
-    // publish a day's crawl partway through that day, so date=today returns
-    // 0 for every metric on every domain during the pre-publish window.
-    // metrics *requires* `date` (omitting → HTTP 400), so we can't just drop
-    // it — yesterday is always published and is the freshest reliably-
-    // available snapshot. Callers can still pass --date for any other day.
-    const yesterdayDefault =
-      p.name === "date" && p.schema?.format === "date" && p.required
-        ? daysAgo(1)
-        : undefined;
-    const rawDefault =
-      opts.defaults?.[p.name] ?? p.schema?.default ?? yesterdayDefault;
+    // NOTE: required `date` params are defaulted to YESTERDAY at RUN time in
+    // fn() below (BLU-292), NOT here. Baking daysAgo(1) into the option's
+    // static defaultValue freezes it at build time — and the program can be
+    // built when the runtime clock reads epoch 0 (e.g. Cloudflare workerd
+    // module init / cached program), which yields a `1969-12-31` default and
+    // 0 for every site-explorer metric. Only genuinely static defaults belong
+    // here.
+    const rawDefault = opts.defaults?.[p.name] ?? p.schema?.default;
     options.push(
       new Option({
         long: flag,
@@ -217,6 +212,22 @@ export function endpointCommand(opts: BuildOpts): CommandDef {
       let v: string | number | boolean | undefined;
       if (typeof raw === "string" && raw.length > 0) v = raw;
       else if (typeof raw === "boolean") v = raw ? "true" : undefined;
+
+      // BLU-292: default a required `date` param to YESTERDAY, resolved HERE at
+      // run time (request context with a valid clock) rather than baked into
+      // the option default at build time — which freezes to 1969-12-31 when the
+      // program is built under a zeroed clock (workerd module init) and zeros
+      // every metric. site-explorer/metrics *requires* date (omitting → 400);
+      // yesterday is the freshest reliably-published snapshot. --date overrides.
+      if (
+        v === undefined &&
+        p.required &&
+        p.schema?.format === "date" &&
+        opts.defaults?.[p.name] === undefined &&
+        p.schema?.default === undefined
+      ) {
+        v = daysAgo(1);
+      }
 
       if (p.name === opts.positional && !v && positionalVal !== undefined) {
         v = positionalVal;

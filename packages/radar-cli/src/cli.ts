@@ -26,10 +26,9 @@ export function buildProgram(): Command {
     .option("--url <url>", "API base URL (or set RADAR_API_BASE_URL env)")
     .option("--org <id-or-slug>", "Override the active org for this command only");
 
-  // Resolve an authenticated client from the program-level flags layered over
-  // the persisted/env session (`RADAR_API_KEY` / `RADAR_OAUTH_ACCESS_TOKEN`).
   // Base session (creds + base URL) from the program-level flags layered over
-  // the persisted/env session. No active org applied here.
+  // the persisted/env session (`RADAR_API_KEY` / `RADAR_OAUTH_ACCESS_TOKEN`).
+  // No active org applied here.
   function baseSession(): Session {
     const opts = program.opts<{ apiKey?: string; url?: string }>();
     if (opts.apiKey) {
@@ -44,42 +43,32 @@ export function buildProgram(): Command {
     return session;
   }
 
-  // `--org` takes an id OR a slug (like `orgs use`). The API validates the
-  // X-Active-Org-Id header by id, so a slug must be resolved to its id first —
-  // otherwise `--org <slug>` 403s. Resolve once, before any command action,
-  // via an org-agnostic /v1/orgs lookup (no active-org header on the probe).
-  let resolvedOrg: string | undefined;
-  let orgResolved = false;
-  program.hook("preAction", async () => {
-    if (orgResolved) return;
-    orgResolved = true;
-    const want = program.opts<{ org?: string }>().org;
-    if (!want || want.startsWith("org_")) {
-      resolvedOrg = want;
-      return;
-    }
-    const probe = new ApiClient({ ...baseSession(), activeOrgId: undefined });
-    let rows: { id: string; slug: string | null }[];
-    try {
-      ({ rows } = await probe.list<{ id: string; slug: string | null }>("orgs"));
-    } catch (err) {
-      console.error(`Could not resolve --org "${want}": ${(err as Error).message}`);
-      process.exit(1);
-    }
-    const match = rows.find((o) => o.slug === want || o.id === want);
-    if (!match) {
-      console.error(`Org not found: "${want}". Run \`radar orgs list\` to see your orgs.`);
-      process.exit(1);
-    }
-    resolvedOrg = match.id;
-  });
-
-  function getClient(): ApiClient {
+  // Resolve an authenticated client. `--org` takes an id OR a slug (like
+  // `orgs use`); the API validates the X-Active-Org-Id header by id, so a slug
+  // is resolved here via an org-agnostic /v1/orgs lookup (no active-org header
+  // on the probe). Async + stateless on purpose: `buildProgram()` is cached and
+  // reused across calls in long-lived hosts (workers), so this must NOT keep
+  // any cross-call closure state — it resolves fresh per invocation.
+  async function getClient(): Promise<ApiClient> {
     const session = baseSession();
-    // --org (resolved to an id by the preAction hook) wins; otherwise the
-    // session/env active org (if any) applies.
-    const flagOrg = orgResolved ? resolvedOrg : program.opts<{ org?: string }>().org;
-    const org = flagOrg ?? session.activeOrgId;
+    // --org flag wins; otherwise the session/env active org (if any) applies.
+    let org = program.opts<{ org?: string }>().org ?? session.activeOrgId;
+    if (org && !org.startsWith("org_")) {
+      const probe = new ApiClient({ ...session, activeOrgId: undefined });
+      let rows: { id: string; slug: string | null }[];
+      try {
+        ({ rows } = await probe.list<{ id: string; slug: string | null }>("orgs"));
+      } catch (err) {
+        console.error(`Could not resolve --org "${org}": ${(err as Error).message}`);
+        process.exit(1);
+      }
+      const match = rows.find((o) => o.slug === org || o.id === org);
+      if (!match) {
+        console.error(`Org not found: "${org}". Run \`radar orgs list\` to see your orgs.`);
+        process.exit(1);
+      }
+      org = match.id;
+    }
     if (org) session.activeOrgId = org;
     return new ApiClient(session);
   }
@@ -102,7 +91,7 @@ export function buildProgram(): Command {
     .option("--dir <asc|desc>", "Sort direction", "desc")
     .action(async (opts) => {
       out(
-        await getClient().list("projects", {
+        await (await getClient()).list("projects", {
           search: opts.search,
           page: opts.page,
           limit: opts.limit,
@@ -114,7 +103,7 @@ export function buildProgram(): Command {
 
   projects
     .command("get <id>")
-    .action(async (id) => out(await getClient().get("projects", id)));
+    .action(async (id) => out(await (await getClient()).get("projects", id)));
 
   // ── Queries ──
 
@@ -131,7 +120,7 @@ export function buildProgram(): Command {
     .option("--dir <asc|desc>", "Sort direction", "desc")
     .action(async (opts) => {
       out(
-        await getClient().list("queries", {
+        await (await getClient()).list("queries", {
           search: opts.search,
           category: opts.category,
           projectId: opts.projectId,
@@ -157,7 +146,7 @@ export function buildProgram(): Command {
     .option("--dir <asc|desc>", "Sort direction", "desc")
     .action(async (opts) => {
       out(
-        await getClient().list("game-plans", {
+        await (await getClient()).list("game-plans", {
           status: opts.status,
           search: opts.search,
           page: opts.page,
@@ -170,7 +159,7 @@ export function buildProgram(): Command {
 
   gamePlans
     .command("get <id>")
-    .action(async (id) => out(await getClient().get("game-plans", id)));
+    .action(async (id) => out(await (await getClient()).get("game-plans", id)));
 
   gamePlans
     .command("update <id>")
@@ -180,14 +169,14 @@ export function buildProgram(): Command {
       const body: Record<string, unknown> = {};
       if (opts.status) body.status = opts.status;
       if (opts.actions) body.actions = JSON.parse(opts.actions);
-      out(await getClient().patch("game-plans", id, body));
+      out(await (await getClient()).patch("game-plans", id, body));
     });
 
   gamePlans
     .command("complete-action <planId> <actionIndex>")
     .description("Mark an action as completed")
     .action(async (planId, indexStr) => {
-      const client = getClient();
+      const client = await getClient();
       const plan = await client.get<{ actions: Record<string, unknown>[] }>("game-plans", planId);
       const idx = Number(indexStr);
       const action = Number.isInteger(idx) ? plan.actions[idx] : undefined;
@@ -213,7 +202,7 @@ export function buildProgram(): Command {
     .option("--dir <asc|desc>", "Sort direction", "desc")
     .action(async (opts) => {
       out(
-        await getClient().list("query-results", {
+        await (await getClient()).list("query-results", {
           provider: opts.provider,
           queryId: opts.queryId,
           page: opts.page,
@@ -227,7 +216,7 @@ export function buildProgram(): Command {
   results
     .command("get <id>")
     .description("Get full result detail (includes response text, citations)")
-    .action(async (id) => out(await getClient().get("query-results", id)));
+    .action(async (id) => out(await (await getClient()).get("query-results", id)));
 
   // ── Execution Jobs ──
 
@@ -242,7 +231,7 @@ export function buildProgram(): Command {
     .option("--dir <asc|desc>", "Sort direction", "desc")
     .action(async (opts) => {
       out(
-        await getClient().list("execution-jobs", {
+        await (await getClient()).list("execution-jobs", {
           status: opts.status,
           page: opts.page,
           limit: opts.limit,
@@ -265,7 +254,7 @@ export function buildProgram(): Command {
     .option("--dir <asc|desc>", "Sort direction", "desc")
     .action(async (opts) => {
       out(
-        await getClient().list("credits", {
+        await (await getClient()).list("credits", {
           type: opts.type,
           page: opts.page,
           limit: opts.limit,
@@ -286,7 +275,7 @@ export function buildProgram(): Command {
     .option("--provider <p>", "Filter by provider")
     .option("--search <term>", "Search filter")
     .action(async (entity, opts) => {
-      const client = getClient();
+      const client = await getClient();
       const allRows: unknown[] = [];
       let page = 1;
       for (;;) {

@@ -1,5 +1,17 @@
 # @mirage-cli/radar-cli
 
+## 0.2.2
+
+### Patch Changes
+
+- Fix `--org <slug>` resolution (0.2.1 was broken). The 0.2.1 implementation
+  cached the resolved org in closure state guarded by a one-shot flag, but
+  `buildProgram()` is cached and reused across calls in long-lived hosts (e.g.
+  the ve-brain worker) — so it resolved once and then ignored `--org` on every
+  later call, silently falling back to the default org (a cross-call scoping
+  bug). `getClient()` is now async and resolves the slug fresh per invocation
+  with no shared state.
+
 ## 0.2.1
 
 ### Patch Changes

@@ -18,7 +18,7 @@ interface Org {
 
 export function registerOrgsCommands(
   program: Command,
-  getClient: () => ApiClient,
+  getClient: () => Promise<ApiClient>,
 ): void {
   const orgs = program.command("orgs").description("List and switch organizations");
 
@@ -26,7 +26,7 @@ export function registerOrgsCommands(
     .command("list")
     .description("List the orgs you're a member of")
     .action(async () => {
-      const data = await getClient().list<Org>("orgs");
+      const data = await (await getClient()).list<Org>("orgs");
       const active = loadFileSession()?.activeOrgId ?? process.env.RADAR_ACTIVE_ORG_ID;
       const rows = data.rows.map((o) => ({ ...o, active: o.id === active }));
       console.log(
@@ -38,7 +38,7 @@ export function registerOrgsCommands(
     .command("use <id-or-slug>")
     .description("Set the active org. Accepts an org ID or slug.")
     .action(async (idOrSlug: string) => {
-      const data = await getClient().list<Org>("orgs");
+      const data = await (await getClient()).list<Org>("orgs");
       const match = data.rows.find((o) => o.id === idOrSlug || o.slug === idOrSlug);
       if (!match) {
         console.error(`Org not found: ${idOrSlug}`);

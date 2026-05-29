@@ -1,6 +1,6 @@
 {
   "name": "@mirage-cli/gbp-cli",
-  "version": "0.1.9",
+  "version": "0.2.1",
   "description": "Google Business Profile CLI — query GBP locations, performance metrics, reviews, and search keywords across many businesses via Windsor.ai. Mirage / Cloudflare-Worker compatible.",
   "license": "MIT",
   "repository": {

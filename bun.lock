@@ -228,7 +228,7 @@
     },
     "packages/gbp": {
       "name": "@mirage-cli/gbp",
-      "version": "0.2.1",
+      "version": "0.2.2",
       "dependencies": {
         "@mirage-cli/core": "workspace:^",
       },
@@ -248,7 +248,7 @@
     },
     "packages/gbp-cli": {
       "name": "@mirage-cli/gbp-cli",
-      "version": "0.2.1",
+      "version": "0.2.2",
       "bin": {
         "gbp": "./dist/bin.js",
       },

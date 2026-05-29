@@ -1,5 +1,13 @@
 # @mirage-cli/gbp-cli
 
+## 0.2.2
+
+### Patch Changes
+
+- Lockstep maintenance release. No functional changes — published through the
+  `publish.yml` trusted-publishing (OIDC) CI to validate the automated release
+  path end-to-end.
+
 ## 0.2.1
 
 ### Patch Changes

@@ -1,6 +1,6 @@
 {
   "name": "@mirage-cli/gbp",
-  "version": "0.2.1",
+  "version": "0.2.2",
   "description": "Google Business Profile CLI as an importable mirage / Cloudflare-Worker command via @mirage-cli/core.",
   "type": "module",
   "main": "./dist/index.js",

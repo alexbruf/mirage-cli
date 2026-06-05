@@ -8,6 +8,7 @@
         "@changesets/cli": "^2.27.0",
         "@mirage-cli/ahrefs": "workspace:*",
         "@mirage-cli/call": "workspace:*",
+        "@mirage-cli/callrail": "workspace:*",
         "@mirage-cli/clarity": "workspace:*",
         "@mirage-cli/core": "workspace:*",
         "@mirage-cli/dataforseo": "workspace:*",
@@ -94,6 +95,36 @@
       },
       "dependencies": {
         "chalk": "^5.6.2",
+        "commander": "^14.0.3",
+      },
+    },
+    "packages/callrail": {
+      "name": "@mirage-cli/callrail",
+      "version": "0.1.0",
+      "dependencies": {
+        "@mirage-cli/core": "workspace:^",
+      },
+      "devDependencies": {
+        "@mirage-cli/callrail-cli": "workspace:^",
+        "@struktoai/mirage-core": "^0.0.1",
+        "commander": "^14.0.3",
+        "tsup": "^8.5.1",
+      },
+      "peerDependencies": {
+        "@mirage-cli/callrail-cli": "workspace:^",
+        "@struktoai/mirage-core": ">=0.0.1",
+      },
+      "optionalPeers": [
+        "@struktoai/mirage-core",
+      ],
+    },
+    "packages/callrail-cli": {
+      "name": "@mirage-cli/callrail-cli",
+      "version": "0.1.0",
+      "bin": {
+        "callrail": "./dist/bin.js",
+      },
+      "dependencies": {
         "commander": "^14.0.3",
       },
     },
@@ -811,6 +842,10 @@
     "@mirage-cli/call": ["@mirage-cli/call@workspace:packages/call"],
 
     "@mirage-cli/call-cli": ["@mirage-cli/call-cli@workspace:packages/call-cli"],
+
+    "@mirage-cli/callrail": ["@mirage-cli/callrail@workspace:packages/callrail"],
+
+    "@mirage-cli/callrail-cli": ["@mirage-cli/callrail-cli@workspace:packages/callrail-cli"],
 
     "@mirage-cli/clarity": ["@mirage-cli/clarity@workspace:packages/clarity"],
 

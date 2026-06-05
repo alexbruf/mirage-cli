@@ -29,6 +29,7 @@
     "@changesets/cli": "^2.27.0",
     "@mirage-cli/ahrefs": "workspace:*",
     "@mirage-cli/call": "workspace:*",
+    "@mirage-cli/callrail": "workspace:*",
     "@mirage-cli/clarity": "workspace:*",
     "@mirage-cli/core": "workspace:*",
     "@mirage-cli/dataforseo": "workspace:*",

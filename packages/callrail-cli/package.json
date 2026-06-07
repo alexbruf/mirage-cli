@@ -1,6 +1,6 @@
 {
   "name": "@mirage-cli/callrail-cli",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "CallRail CLI — read-only call tracking data (calls, companies, trackers, conversations, form submissions, summaries) with multi-account profiles. Mirage-compatible command shape.",
   "license": "MIT",
   "repository": {

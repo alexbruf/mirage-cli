@@ -1,6 +1,6 @@
 {
   "name": "@mirage-cli/callrail",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "CallRail (read-only call tracking) CLI as an importable mirage / Cloudflare-Worker command via @mirage-cli/core.",
   "type": "module",
   "main": "./dist/index.js",

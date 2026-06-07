@@ -100,7 +100,7 @@
     },
     "packages/callrail": {
       "name": "@mirage-cli/callrail",
-      "version": "0.1.0",
+      "version": "0.1.1",
       "dependencies": {
         "@mirage-cli/core": "workspace:^",
       },
@@ -120,7 +120,7 @@
     },
     "packages/callrail-cli": {
       "name": "@mirage-cli/callrail-cli",
-      "version": "0.1.0",
+      "version": "0.1.1",
       "bin": {
         "callrail": "./dist/bin.js",
       },

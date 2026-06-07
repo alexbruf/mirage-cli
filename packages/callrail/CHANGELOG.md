@@ -1,5 +1,14 @@
 # @mirage-cli/callrail
 
+## 0.1.1
+
+### Patch Changes
+
+- Patch release to validate the OIDC trusted-publishing pipeline (tag-driven
+  GitHub Actions publish). No functional changes.
+- Updated dependencies
+  - @mirage-cli/callrail-cli@0.1.1
+
 ## 0.1.0
 
 ### Minor Changes

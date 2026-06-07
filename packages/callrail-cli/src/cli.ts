@@ -32,7 +32,7 @@ export function buildProgram(): Command {
       "CallRail v3 CLI — read-only call tracking data (calls, companies, trackers, " +
         "text conversations, form submissions, summaries) with multi-account profiles.",
     )
-    .version("0.1.0")
+    .version("0.1.1")
     .option("--api-key <key>", "API key (or CALLRAIL_API_KEY / CALLRAIL_API_KEYS env)")
     .option("--profile <name>", "Profile to use (or CALLRAIL_PROFILE env)")
     .option("--account <id>", "CallRail account id (or CALLRAIL_ACCOUNT_ID env)")

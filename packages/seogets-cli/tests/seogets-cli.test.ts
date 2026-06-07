@@ -1,4 +1,5 @@
 import { describe, expect, test } from "bun:test";
+import packageJson from "../package.json" with { type: "json" };
 import { buildProgram } from "../src/cli.ts";
 import { unwrapToolResult } from "../src/mcp.ts";
 
@@ -14,6 +15,11 @@ describe("@mirage-cli/seogets-cli", () => {
     expect(names).toContain("gsc");
     expect(names).toContain("indexing");
     expect(names).toContain("call");
+  });
+
+  test("buildProgram() exposes the package version", () => {
+    const program = buildProgram();
+    expect(program.version()).toBe(packageJson.version);
   });
 
   test("indexing subcommand has overview + status children", () => {

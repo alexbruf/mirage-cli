@@ -149,6 +149,16 @@ export function buildProgram(): Command {
     .option("--state <s>", "Filter by state")
     .option("--city <c>", "Filter by city")
     .option("--tag <t>", "Filter by tag")
+    .option(
+      "--min-price <usd>",
+      "Client-side: keep rows whose lowest price >= this many whole US dollars (unit_amount is USD, not cents)",
+      (v: string) => Number.parseInt(v, 10),
+    )
+    .option(
+      "--max-price <usd>",
+      "Client-side: keep rows whose lowest price <= this many whole US dollars (filters the current page only — paginate for the whole catalog)",
+      (v: string) => Number.parseInt(v, 10),
+    )
     .action(async (opts: outlets.ListOutletsOpts) => outlets.listOutlets(opts));
 
   fmt(out.command("get <id>"))
@@ -232,6 +242,16 @@ export function buildProgram(): Command {
     .option("--page <n>", "Page number", (v: string) => Number.parseInt(v, 10))
     .option("--channel <c>", "Filter by social channel")
     .option("--outlet <id>", "Filter by outlet ID")
+    .option(
+      "--min-price <usd>",
+      "Client-side: keep rows whose lowest price >= this many whole US dollars (unit_amount is USD, not cents)",
+      (v: string) => Number.parseInt(v, 10),
+    )
+    .option(
+      "--max-price <usd>",
+      "Client-side: keep rows whose lowest price <= this many whole US dollars (filters the current page only — paginate for the whole catalog)",
+      (v: string) => Number.parseInt(v, 10),
+    )
     .action(async (opts: products.ListingsOpts) => products.listings(opts));
 
   fmt(prod.command("categories"))

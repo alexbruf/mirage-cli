@@ -26,6 +26,97 @@ export function unwrapList(res: unknown, extraKeys: readonly string[] = []): unk
   return [];
 }
 
+export interface PriceFilterOpts {
+  minPrice?: number;
+  maxPrice?: number;
+}
+
+/**
+ * Lowest `unit_amount` across a marketplace row's `prices[]`, in whole US
+ * dollars. IMPORTANT: Presscart's `unit_amount` is whole USD, NOT Stripe cents
+ * (e.g. Apple News carries `unit_amount: 775`, meaning $775, not $7.75).
+ * Returns undefined when the row has no numeric price.
+ */
+export function rowPriceUsd(row: unknown): number | undefined {
+  if (!row || typeof row !== "object") return undefined;
+  const prices = (row as { prices?: unknown }).prices;
+  if (!Array.isArray(prices)) return undefined;
+  const amounts = prices
+    .map((p) =>
+      p && typeof p === "object" ? (p as { unit_amount?: unknown }).unit_amount : undefined,
+    )
+    .filter((n): n is number => typeof n === "number");
+  return amounts.length > 0 ? Math.min(...amounts) : undefined;
+}
+
+/**
+ * Client-side budget filter over `prices[].unit_amount` (whole USD). Presscart
+ * exposes no server-side price filter, so the CLI fetches the page and filters
+ * here. Note this filters only the rows on the current page — paginate with
+ * `--page`/`--limit` to budget-filter the whole catalog. Rows with no price are
+ * excluded whenever a bound is set (they can't be shown to satisfy a budget).
+ */
+export function filterByPrice(rows: unknown[], opts: PriceFilterOpts): unknown[] {
+  const { minPrice, maxPrice } = opts;
+  if (minPrice === undefined && maxPrice === undefined) return rows;
+  return rows.filter((row) => {
+    const price = rowPriceUsd(row);
+    if (price === undefined) return false;
+    if (minPrice !== undefined && price < minPrice) return false;
+    if (maxPrice !== undefined && price > maxPrice) return false;
+    return true;
+  });
+}
+
+/** Pagination metadata Presscart returns alongside list `records`. */
+export function listMeta(res: unknown): {
+  totalRecords?: number;
+  totalPages?: number;
+  page?: number;
+} {
+  if (res && typeof res === "object") {
+    const o = res as Record<string, unknown>;
+    const num = (v: unknown): number | undefined => (typeof v === "number" ? v : undefined);
+    return {
+      totalRecords: num(o.total_records),
+      totalPages: num(o.total_pages),
+      page: num(o.page) ?? num(o.current_page),
+    };
+  }
+  return {};
+}
+
+/**
+ * Write a marketplace list: unwrap records, apply the client-side price filter,
+ * render to the chosen format on stdout, then print a one-line pagination/filter
+ * summary to stderr. Data stays clean on stdout (safe to pipe/parse); the
+ * summary tells callers when more pages exist so they don't mistake a single
+ * default page (25 rows) for the whole catalog.
+ */
+export function writeList(
+  res: unknown,
+  unwrapKeys: readonly string[],
+  opts: OutputOpts & PriceFilterOpts,
+): void {
+  const fetched = unwrapList(res, unwrapKeys);
+  const shown = filterByPrice(fetched, opts);
+  writeOutput(shown, opts);
+  emitListSummary(res, fetched.length, shown.length);
+}
+
+function emitListSummary(res: unknown, fetched: number, shown: number): void {
+  const meta = listMeta(res);
+  const parts: string[] = [`${shown} shown`];
+  if (shown !== fetched) parts.push(`(${fetched} fetched before price filter)`);
+  if (meta.totalRecords !== undefined) {
+    parts.push(`of ${meta.totalRecords} total`);
+    if (meta.totalPages !== undefined && meta.totalPages > 1) {
+      parts.push(`— page ${meta.page ?? "?"}/${meta.totalPages}, pass --page/--limit for more`);
+    }
+  }
+  process.stderr.write(`# ${parts.join(" ")}\n`);
+}
+
 const MAX_CELL = 60;
 
 export function writeOutput(rows: unknown[], opts: OutputOpts = {}): void {

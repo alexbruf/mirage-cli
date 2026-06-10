@@ -32,6 +32,27 @@ See https://docs.presscart.com/getting-started/authentication.
 
 Every list/get supports `--format ascii|json|csv|markdown` and `--output <file>`.
 
+## Budget filtering on the marketplace
+
+The Presscart API has **no server-side price filter**. `outlets list` and
+`products listings` therefore accept client-side `--min-price` / `--max-price`
+flags that filter the fetched page by each row's lowest `prices[].unit_amount`:
+
+```
+presscart outlets list --limit 500 --country US --max-price 500 --format json
+```
+
+Two things to know:
+
+- **`unit_amount` is whole US dollars, not Stripe cents.** Apple News carries
+  `unit_amount: 775`, meaning **$775** (not $7.75). `--max-price 500` keeps rows
+  priced at $500 or less. Do not divide by 100.
+- **The price filter applies to the current page only.** List responses default
+  to a small page (25) and the API returns ~1,466 outlets total. Pass a large
+  `--limit` and paginate with `--page` to budget-filter the whole catalog. Every
+  list command prints a `# N shown … of M total — page X/Y` summary to **stderr**
+  (stdout stays clean for piping) so you can see when more pages exist.
+
 ## Programmatic use
 
 ```ts

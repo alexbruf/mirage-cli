@@ -1,12 +1,19 @@
 import { ApiClient } from "../client.ts";
 import { requireSession } from "../config.ts";
-import { type OutputOpts, unwrapList, writeObject, writeOutput } from "../output.ts";
+import {
+  type OutputOpts,
+  type PriceFilterOpts,
+  unwrapList,
+  writeList,
+  writeObject,
+  writeOutput,
+} from "../output.ts";
 
 function client(): ApiClient {
   return new ApiClient(requireSession());
 }
 
-export interface ListOutletsOpts extends OutputOpts {
+export interface ListOutletsOpts extends OutputOpts, PriceFilterOpts {
   limit?: number;
   page?: number;
   search?: string;
@@ -28,7 +35,9 @@ export async function listOutlets(opts: ListOutletsOpts): Promise<void> {
       tag: opts.tag,
     },
   });
-  writeOutput(unwrapList(res, ["outlets"]), opts);
+  // Presscart has no server-side price filter; `writeList` applies --min/max-price
+  // client-side over prices[].unit_amount (whole USD) and notes totals on stderr.
+  writeList(res, ["outlets"], opts);
 }
 
 export async function getOutlet(id: string, opts: OutputOpts): Promise<void> {

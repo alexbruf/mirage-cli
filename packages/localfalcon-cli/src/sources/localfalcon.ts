@@ -5,9 +5,10 @@
 // API also accepts it as a query param or a Bearer header). Every endpoint is
 // POST + application/x-www-form-urlencoded. Fetch-only, so it runs in workerd.
 //
-// Response envelope: the API wraps payloads as `{ status, code, data }`. We
-// unwrap `data` and pull the documented collection key (reports/locations).
-// Shapes follow the documented API; verify against a live key when one exists.
+// Response envelope (verified live): `{ code, success, message, data }`, where
+// list payloads are `data.<collection>` (data.locations, data.reports) with
+// `total` / `count` / `next_token` alongside. We unwrap `data` and pull the
+// collection key.
 import type {
   DataSource,
   KeywordsFilter,
@@ -99,12 +100,20 @@ export class LocalFalconSource implements DataSource {
     } catch {
       throw new Error(`Local Falcon returned non-JSON (HTTP ${res.status}): ${text.slice(0, 200)}`);
     }
+    // Envelope (verified live): { code: number, success: boolean, message:
+    // string|false, data: ... }. Treat a non-2xx HTTP, success:false, or a
+    // >=400 body code as an error; `message` carries the reason on failure.
     const failed =
       !res.ok ||
-      json?.error ||
-      (typeof json?.status === "string" && json.status.toLowerCase() !== "success");
+      json?.success === false ||
+      (typeof json?.code === "number" && json.code >= 400) ||
+      Boolean(json?.error);
     if (failed) {
-      const msg = json?.error?.message ?? json?.message ?? json?.error ?? `HTTP ${res.status}`;
+      const msg =
+        (typeof json?.message === "string" && json.message) ||
+        json?.error?.message ||
+        json?.error ||
+        `HTTP ${res.status}`;
       throw new Error(`Local Falcon API error: ${msg}`);
     }
     return json;

@@ -38,6 +38,8 @@
     "@mirage-cli/gbp": "workspace:*",
     "@mirage-cli/gbp-cli": "workspace:*",
     "@mirage-cli/ics": "workspace:*",
+    "@mirage-cli/localfalcon": "workspace:*",
+    "@mirage-cli/localfalcon-cli": "workspace:*",
     "@mirage-cli/oura": "workspace:*",
     "@mirage-cli/presscart": "workspace:*",
     "@mirage-cli/pulse": "workspace:*",

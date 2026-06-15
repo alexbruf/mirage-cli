@@ -17,6 +17,8 @@
         "@mirage-cli/gbp": "workspace:*",
         "@mirage-cli/gbp-cli": "workspace:*",
         "@mirage-cli/ics": "workspace:*",
+        "@mirage-cli/localfalcon": "workspace:*",
+        "@mirage-cli/localfalcon-cli": "workspace:*",
         "@mirage-cli/oura": "workspace:*",
         "@mirage-cli/presscart": "workspace:*",
         "@mirage-cli/pulse": "workspace:*",
@@ -316,6 +318,36 @@
       "dependencies": {
         "commander": "^14.0.3",
         "ical.js": "^2.1.0",
+      },
+    },
+    "packages/localfalcon": {
+      "name": "@mirage-cli/localfalcon",
+      "version": "0.1.0",
+      "dependencies": {
+        "@mirage-cli/core": "workspace:^",
+      },
+      "devDependencies": {
+        "@mirage-cli/localfalcon-cli": "workspace:^",
+        "@struktoai/mirage-core": "^0.0.1",
+        "commander": "^14.0.3",
+        "tsup": "^8.5.1",
+      },
+      "peerDependencies": {
+        "@mirage-cli/localfalcon-cli": "workspace:^",
+        "@struktoai/mirage-core": ">=0.0.1",
+      },
+      "optionalPeers": [
+        "@struktoai/mirage-core",
+      ],
+    },
+    "packages/localfalcon-cli": {
+      "name": "@mirage-cli/localfalcon-cli",
+      "version": "0.1.0",
+      "bin": {
+        "localfalcon": "./dist/bin.js",
+      },
+      "dependencies": {
+        "commander": "^14.0.3",
       },
     },
     "packages/oura": {
@@ -870,6 +902,10 @@
     "@mirage-cli/ics": ["@mirage-cli/ics@workspace:packages/ics"],
 
     "@mirage-cli/ics-cli": ["@mirage-cli/ics-cli@workspace:packages/ics-cli"],
+
+    "@mirage-cli/localfalcon": ["@mirage-cli/localfalcon@workspace:packages/localfalcon"],
+
+    "@mirage-cli/localfalcon-cli": ["@mirage-cli/localfalcon-cli@workspace:packages/localfalcon-cli"],
 
     "@mirage-cli/oura": ["@mirage-cli/oura@workspace:packages/oura"],
 

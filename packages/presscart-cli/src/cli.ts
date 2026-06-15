@@ -149,6 +149,9 @@ export function buildProgram(): Command {
     .option("--state <s>", "Filter by state")
     .option("--city <c>", "Filter by city")
     .option("--tag <t>", "Filter by tag")
+    .option("--all", "Follow pagination and return every page (capped at 100)")
+    .option("--max-price <usd>", "Budget cap: only listings <= this price (whole USD)", (v: string) => Number.parseFloat(v))
+    .option("--min-price <usd>", "Only listings >= this price (whole USD)", (v: string) => Number.parseFloat(v))
     .action(async (opts: outlets.ListOutletsOpts) => outlets.listOutlets(opts));
 
   fmt(out.command("get <id>"))

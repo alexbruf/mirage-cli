@@ -28,6 +28,8 @@
   "devDependencies": {
     "@changesets/cli": "^2.27.0",
     "@mirage-cli/ahrefs": "workspace:*",
+    "@mirage-cli/airtable": "workspace:*",
+    "@mirage-cli/airtable-cli": "workspace:*",
     "@mirage-cli/call": "workspace:*",
     "@mirage-cli/callrail": "workspace:*",
     "@mirage-cli/clarity": "workspace:*",
@@ -37,6 +39,8 @@
     "@mirage-cli/ga4": "workspace:*",
     "@mirage-cli/gbp": "workspace:*",
     "@mirage-cli/gbp-cli": "workspace:*",
+    "@mirage-cli/hubspot": "workspace:*",
+    "@mirage-cli/hubspot-cli": "workspace:*",
     "@mirage-cli/ics": "workspace:*",
     "@mirage-cli/oura": "workspace:*",
     "@mirage-cli/presscart": "workspace:*",

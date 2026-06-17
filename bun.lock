@@ -7,6 +7,8 @@
       "devDependencies": {
         "@changesets/cli": "^2.27.0",
         "@mirage-cli/ahrefs": "workspace:*",
+        "@mirage-cli/airtable": "workspace:*",
+        "@mirage-cli/airtable-cli": "workspace:*",
         "@mirage-cli/call": "workspace:*",
         "@mirage-cli/callrail": "workspace:*",
         "@mirage-cli/clarity": "workspace:*",
@@ -16,6 +18,8 @@
         "@mirage-cli/ga4": "workspace:*",
         "@mirage-cli/gbp": "workspace:*",
         "@mirage-cli/gbp-cli": "workspace:*",
+        "@mirage-cli/hubspot": "workspace:*",
+        "@mirage-cli/hubspot-cli": "workspace:*",
         "@mirage-cli/ics": "workspace:*",
         "@mirage-cli/oura": "workspace:*",
         "@mirage-cli/presscart": "workspace:*",
@@ -65,6 +69,36 @@
       "devDependencies": {
         "@struktoai/mirage-core": "^0.0.1",
         "openapi-typescript": "^7.13.0",
+      },
+    },
+    "packages/airtable": {
+      "name": "@mirage-cli/airtable",
+      "version": "0.1.0",
+      "dependencies": {
+        "@mirage-cli/core": "workspace:^",
+      },
+      "devDependencies": {
+        "@mirage-cli/airtable-cli": "workspace:^",
+        "@struktoai/mirage-core": "^0.0.1",
+        "commander": "^14.0.3",
+        "tsup": "^8.5.1",
+      },
+      "peerDependencies": {
+        "@mirage-cli/airtable-cli": "workspace:^",
+        "@struktoai/mirage-core": ">=0.0.1",
+      },
+      "optionalPeers": [
+        "@struktoai/mirage-core",
+      ],
+    },
+    "packages/airtable-cli": {
+      "name": "@mirage-cli/airtable-cli",
+      "version": "0.1.0",
+      "bin": {
+        "airtable": "./dist/bin.js",
+      },
+      "dependencies": {
+        "commander": "^14.0.3",
       },
     },
     "packages/call": {
@@ -285,6 +319,37 @@
       },
       "dependencies": {
         "commander": "^14.0.3",
+      },
+    },
+    "packages/hubspot": {
+      "name": "@mirage-cli/hubspot",
+      "version": "0.1.0",
+      "dependencies": {
+        "@mirage-cli/core": "workspace:^",
+      },
+      "devDependencies": {
+        "@mirage-cli/hubspot-cli": "workspace:^",
+        "@struktoai/mirage-core": "^0.0.1",
+        "commander": "^14.0.3",
+        "tsup": "^8.5.1",
+      },
+      "peerDependencies": {
+        "@mirage-cli/hubspot-cli": "workspace:^",
+        "@struktoai/mirage-core": ">=0.0.1",
+      },
+      "optionalPeers": [
+        "@struktoai/mirage-core",
+      ],
+    },
+    "packages/hubspot-cli": {
+      "name": "@mirage-cli/hubspot-cli",
+      "version": "0.1.0",
+      "bin": {
+        "hubspot": "./dist/bin.js",
+      },
+      "dependencies": {
+        "commander": "^14.0.3",
+        "yaml": "^2.6.0",
       },
     },
     "packages/ics": {
@@ -839,6 +904,10 @@
 
     "@mirage-cli/ahrefs-cli": ["@mirage-cli/ahrefs-cli@workspace:packages/ahrefs-cli"],
 
+    "@mirage-cli/airtable": ["@mirage-cli/airtable@workspace:packages/airtable"],
+
+    "@mirage-cli/airtable-cli": ["@mirage-cli/airtable-cli@workspace:packages/airtable-cli"],
+
     "@mirage-cli/call": ["@mirage-cli/call@workspace:packages/call"],
 
     "@mirage-cli/call-cli": ["@mirage-cli/call-cli@workspace:packages/call-cli"],
@@ -866,6 +935,10 @@
     "@mirage-cli/gbp": ["@mirage-cli/gbp@workspace:packages/gbp"],
 
     "@mirage-cli/gbp-cli": ["@mirage-cli/gbp-cli@workspace:packages/gbp-cli"],
+
+    "@mirage-cli/hubspot": ["@mirage-cli/hubspot@workspace:packages/hubspot"],
+
+    "@mirage-cli/hubspot-cli": ["@mirage-cli/hubspot-cli@workspace:packages/hubspot-cli"],
 
     "@mirage-cli/ics": ["@mirage-cli/ics@workspace:packages/ics"],
 

@@ -7,7 +7,9 @@ bun add -g @mirage-cli/presscart-cli
 presscart login --token pc_xxx_xxxxxxx_xxxxxxxx_xxxxxxxx
 presscart campaigns list --format json
 presscart outlets list --country US --limit 50
+presscart outlets list --max-price 500 --all --format csv
 presscart products listings --channel facebook
+presscart products listings --max-price 500 --page 1 --limit 100
 ```
 
 ## Auth
@@ -31,6 +33,17 @@ See https://docs.presscart.com/getting-started/authentication.
 | `products` | `get`, `listings`, `categories` |
 
 Every list/get supports `--format ascii|json|csv|markdown` and `--output <file>`.
+
+## Marketplace budget filters
+
+`outlets list` and `products listings` support `--min-price <usd>` and
+`--max-price <usd>`. These filters are client-side because Presscart does not
+expose server-side price filtering. `unit_amount` is whole USD, not Stripe
+cents, so `775` means `$775`.
+
+`outlets list` also supports `--all`, which follows pagination through every
+page, capped at 100 pages for safety, adds a `price_usd` column, and writes a
+summary to stderr so `--format json|csv` stdout stays pipeable.
 
 ## Programmatic use
 

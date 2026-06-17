@@ -3,4 +3,4 @@
 "@mirage-cli/presscart": minor
 ---
 
-`presscart outlets list`: add budget filtering and pagination for buy-list workflows. New `--max-price`/`--min-price` (whole USD) filter listings by placement price, `--all` follows pagination through every page (capped at 100), a `price_usd` column formats the price, and a total-count summary (`# N of TOTAL total`) is written to stderr. Price is read from `unit_amount` (whole USD) with fallbacks.
+Add budget filtering for Presscart marketplace buy-list workflows. `presscart outlets list` gains `--max-price`/`--min-price` (whole USD), `--all` pagination, a `price_usd` column, and stderr total-count summaries. `presscart products listings` also gains `--max-price`/`--min-price` over `prices[].unit_amount` (whole USD, not Stripe cents), with pagination summaries kept on stderr so JSON/CSV stdout stays pipeable.

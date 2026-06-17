@@ -1,4 +1,5 @@
 import { Command, Option } from "commander";
+import packageJson from "../package.json" with { type: "json" };
 import { McpClient, unwrapToolResult } from "./mcp.ts";
 import { writeObject, type OutputOpts } from "./output.ts";
 
@@ -38,7 +39,7 @@ export function buildProgram(): Command {
       "CLI for the SEO Gets MCP — list GSC properties, pull GSC performance, " +
         "and inspect indexing status. Speaks JSON-RPC 2.0 to https://app.seogets.com/mcp.",
     )
-    .version("0.1.0")
+    .version(packageJson.version)
     .option("--token <token>", "MCP bearer token (defaults to SEOGETS_MCP_TOKEN env)")
     .option("--url <url>", "MCP endpoint URL (defaults to SEOGETS_MCP_URL or https://app.seogets.com/mcp)");
 

@@ -1,6 +1,11 @@
 import { ApiClient } from "../client.ts";
 import { requireSession } from "../config.ts";
-import { type OutputOpts, unwrapList, writeObject, writeOutput } from "../output.ts";
+import {
+  type OutputOpts,
+  type PriceFilterOpts,
+  writeList,
+  writeObject,
+} from "../output.ts";
 
 function client(): ApiClient {
   return new ApiClient(requireSession());
@@ -11,7 +16,7 @@ export async function getProduct(id: string, opts: OutputOpts): Promise<void> {
   writeObject(res, opts);
 }
 
-export interface ListingsOpts extends OutputOpts {
+export interface ListingsOpts extends OutputOpts, PriceFilterOpts {
   limit?: number;
   page?: number;
   channel?: string;
@@ -27,7 +32,7 @@ export async function listings(opts: ListingsOpts): Promise<void> {
       outlet: opts.outlet,
     },
   });
-  writeOutput(unwrapList(res, ["listings"]), opts);
+  writeList(res, ["listings"], opts);
 }
 
 export async function categories(opts: OutputOpts): Promise<void> {

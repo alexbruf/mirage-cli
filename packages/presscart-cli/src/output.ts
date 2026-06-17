@@ -26,6 +26,80 @@ export function unwrapList(res: unknown, extraKeys: readonly string[] = []): unk
   return [];
 }
 
+export interface PriceFilterOpts {
+  minPrice?: number;
+  maxPrice?: number;
+}
+
+/**
+ * Lowest `unit_amount` across a marketplace row's `prices[]`, in whole US
+ * dollars. Presscart's `unit_amount` is whole USD, not Stripe cents.
+ */
+export function rowPriceUsd(row: unknown): number | undefined {
+  if (!row || typeof row !== "object") return undefined;
+  const prices = (row as { prices?: unknown }).prices;
+  if (!Array.isArray(prices)) return undefined;
+  const amounts = prices
+    .map((p) =>
+      p && typeof p === "object" ? (p as { unit_amount?: unknown }).unit_amount : undefined,
+    )
+    .filter((n): n is number => typeof n === "number" && Number.isFinite(n));
+  return amounts.length > 0 ? Math.min(...amounts) : undefined;
+}
+
+export function filterByPrice(rows: unknown[], opts: PriceFilterOpts): unknown[] {
+  const { minPrice, maxPrice } = opts;
+  if (minPrice === undefined && maxPrice === undefined) return rows;
+  return rows.filter((row) => {
+    const price = rowPriceUsd(row);
+    if (price === undefined) return false;
+    if (minPrice !== undefined && price < minPrice) return false;
+    if (maxPrice !== undefined && price > maxPrice) return false;
+    return true;
+  });
+}
+
+export function listMeta(res: unknown): {
+  totalRecords?: number;
+  totalPages?: number;
+  page?: number;
+} {
+  if (res && typeof res === "object") {
+    const o = res as Record<string, unknown>;
+    const num = (v: unknown): number | undefined => (typeof v === "number" ? v : undefined);
+    return {
+      totalRecords: num(o.total_records),
+      totalPages: num(o.total_pages),
+      page: num(o.page) ?? num(o.current_page),
+    };
+  }
+  return {};
+}
+
+export function writeList(
+  res: unknown,
+  unwrapKeys: readonly string[],
+  opts: OutputOpts & PriceFilterOpts,
+): void {
+  const fetched = unwrapList(res, unwrapKeys);
+  const shown = filterByPrice(fetched, opts);
+  writeOutput(shown, opts);
+  emitListSummary(res, fetched.length, shown.length);
+}
+
+function emitListSummary(res: unknown, fetched: number, shown: number): void {
+  const meta = listMeta(res);
+  const parts: string[] = [`${shown} shown`];
+  if (shown !== fetched) parts.push(`(${fetched} fetched before price filter)`);
+  if (meta.totalRecords !== undefined) {
+    parts.push(`of ${meta.totalRecords} total`);
+    if (meta.totalPages !== undefined && meta.totalPages > 1) {
+      parts.push(`- page ${meta.page ?? "?"}/${meta.totalPages}, pass --page/--limit for more`);
+    }
+  }
+  process.stderr.write(`# ${parts.join(" ")}\n`);
+}
+
 const MAX_CELL = 60;
 
 export function writeOutput(rows: unknown[], opts: OutputOpts = {}): void {

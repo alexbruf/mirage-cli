@@ -149,6 +149,15 @@ export function buildProgram(): Command {
     .option("--state <s>", "Filter by state")
     .option("--city <c>", "Filter by city")
     .option("--tag <t>", "Filter by tag")
+    .option("--all", "Follow pagination and return every page (capped at 100)")
+    .option(
+      "--max-price <usd>",
+      "Budget cap: only listings <= this price (whole USD)",
+      (v: string) => Number.parseFloat(v),
+    )
+    .option("--min-price <usd>", "Only listings >= this price (whole USD)", (v: string) =>
+      Number.parseFloat(v),
+    )
     .action(async (opts: outlets.ListOutletsOpts) => outlets.listOutlets(opts));
 
   fmt(out.command("get <id>"))
@@ -232,6 +241,16 @@ export function buildProgram(): Command {
     .option("--page <n>", "Page number", (v: string) => Number.parseInt(v, 10))
     .option("--channel <c>", "Filter by social channel")
     .option("--outlet <id>", "Filter by outlet ID")
+    .option(
+      "--min-price <usd>",
+      "Client-side: keep rows whose lowest price >= this many whole US dollars",
+      (v: string) => Number.parseFloat(v),
+    )
+    .option(
+      "--max-price <usd>",
+      "Client-side: keep rows whose lowest price <= this many whole US dollars",
+      (v: string) => Number.parseFloat(v),
+    )
     .action(async (opts: products.ListingsOpts) => products.listings(opts));
 
   fmt(prod.command("categories"))

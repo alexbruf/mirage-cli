@@ -61,6 +61,8 @@
       "@mirage-cli/callrail-cli/*": ["./packages/callrail-cli/src/*"],
       "@mirage-cli/gbp-cli": ["./packages/gbp-cli/src/index.ts"],
       "@mirage-cli/gbp-cli/*": ["./packages/gbp-cli/src/*"],
+      "@mirage-cli/localfalcon-cli": ["./packages/localfalcon-cli/src/index.ts"],
+      "@mirage-cli/localfalcon-cli/*": ["./packages/localfalcon-cli/src/*"],
       "@mirage-cli/hubspot-cli": ["./packages/hubspot-cli/src/index.ts"],
       "@mirage-cli/hubspot-cli/*": ["./packages/hubspot-cli/src/*"],
       "@mirage-cli/airtable-cli": ["./packages/airtable-cli/src/index.ts"],

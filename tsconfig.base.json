@@ -60,7 +60,9 @@
       "@mirage-cli/callrail-cli": ["./packages/callrail-cli/src/index.ts"],
       "@mirage-cli/callrail-cli/*": ["./packages/callrail-cli/src/*"],
       "@mirage-cli/gbp-cli": ["./packages/gbp-cli/src/index.ts"],
-      "@mirage-cli/gbp-cli/*": ["./packages/gbp-cli/src/*"]
+      "@mirage-cli/gbp-cli/*": ["./packages/gbp-cli/src/*"],
+      "@mirage-cli/hubspot-cli": ["./packages/hubspot-cli/src/index.ts"],
+      "@mirage-cli/hubspot-cli/*": ["./packages/hubspot-cli/src/*"]
     }
   }
 }

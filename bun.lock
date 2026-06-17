@@ -467,7 +467,7 @@
     },
     "packages/presscart-cli": {
       "name": "@mirage-cli/presscart-cli",
-      "version": "0.1.9",
+      "version": "0.1.10",
       "bin": {
         "presscart": "./dist/bin.js",
       },
@@ -587,7 +587,7 @@
     },
     "packages/seogets-cli": {
       "name": "@mirage-cli/seogets-cli",
-      "version": "0.1.9",
+      "version": "0.1.10",
       "bin": {
         "seogets": "./dist/bin.js",
       },

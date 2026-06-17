@@ -147,19 +147,6 @@ export function buildProgram(): Command {
     );
   });
 
-  fmt(
-    program
-      .command("raw <path> [kv...]")
-      .description('POST any API path with form params, e.g. `localfalcon raw /v1/reports/ limit=5`'),
-  ).action(async (path: string, kv: string[], o: any) => {
-    const params: Record<string, string> = {};
-    for (const pair of kv ?? []) {
-      const i = pair.indexOf("=");
-      if (i > 0) params[pair.slice(0, i)] = pair.slice(i + 1);
-    }
-    console.log(JSON.stringify(await getSource().raw(path, params), null, 2));
-  });
-
   program.addHelpText(
     "after",
     `

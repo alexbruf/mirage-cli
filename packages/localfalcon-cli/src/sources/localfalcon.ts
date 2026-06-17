@@ -74,10 +74,6 @@ export class LocalFalconSource implements DataSource {
     return unwrap(json) as Row;
   }
 
-  raw(path: string, params: Record<string, string>): Promise<unknown> {
-    return this.post(path, params);
-  }
-
   private async post(path: string, params: Record<string, unknown>): Promise<any> {
     const body = new URLSearchParams();
     body.set("api_key", this.apiKey);

@@ -53,6 +53,4 @@ export interface DataSource {
   keywords(opts: KeywordsFilter): Promise<Row[]>;
   /** Run a NEW grid scan. Billable: consumes Local Falcon scan credits. */
   runScan(input: RunScanInput): Promise<Row>;
-  /** Escape hatch: POST any API path with arbitrary form params. */
-  raw(path: string, params: Record<string, string>): Promise<unknown>;
 }

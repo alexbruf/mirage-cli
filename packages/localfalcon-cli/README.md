@@ -11,7 +11,6 @@ Set `LOCALFALCON_API_KEY` (Local Falcon → Settings → API). The key is sent a
 - `localfalcon report <report_key>` — one report's full payload (ARP/ATRP/SoLV + image/heatmap/pdf URLs + grid data points).
 - `localfalcon keywords [-k <keyword>] [-n <limit>]` — keyword-level rollups (avg ARP/ATRP/SoLV).
 - `localfalcon scan -k <keyword> (-p <place_id> | --lat --lng) [-g <grid>] [-r <miles>]` — **runs a new grid scan; billable (consumes scan credits).**
-- `localfalcon raw <path> [k=v ...]` — POST any API path.
 
 All commands support `-f, --format table|json|csv`. Every command reads existing data except `scan`, which is billable.
 

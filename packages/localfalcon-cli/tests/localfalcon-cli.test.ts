@@ -6,7 +6,8 @@ describe("localfalcon buildProgram", () => {
   test("registers the expected commands with no import side effects", () => {
     const program = buildProgram();
     const names = program.commands.map((c) => c.name()).sort();
-    expect(names).toEqual(["keywords", "locations", "raw", "report", "reports", "scan"].sort());
+    expect(names).toEqual(["keywords", "locations", "report", "reports", "scan"].sort());
+    expect(names).not.toContain("raw");
   });
 
   test("scan requires a keyword (billable command is guarded)", () => {

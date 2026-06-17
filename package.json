@@ -28,6 +28,8 @@
   "devDependencies": {
     "@changesets/cli": "^2.27.0",
     "@mirage-cli/ahrefs": "workspace:*",
+    "@mirage-cli/airtable": "workspace:*",
+    "@mirage-cli/airtable-cli": "workspace:*",
     "@mirage-cli/call": "workspace:*",
     "@mirage-cli/callrail": "workspace:*",
     "@mirage-cli/clarity": "workspace:*",

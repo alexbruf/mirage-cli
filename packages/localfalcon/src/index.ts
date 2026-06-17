@@ -33,8 +33,9 @@ import type { RegisteredCommand, Resource } from "@struktoai/mirage-core";
 let cachedProgram: Command | null = null;
 
 export function buildProgram(): Command {
-  if (cachedProgram === null) cachedProgram = buildLocalfalconProgram();
-  return cachedProgram;
+  const program = cachedProgram ?? buildLocalfalconProgram();
+  cachedProgram = program;
+  return program;
 }
 
 let cachedFn: MirageCommandFn | null = null;

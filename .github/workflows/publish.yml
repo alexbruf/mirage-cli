@@ -66,8 +66,15 @@ jobs:
             PKG="${{ inputs.package }}"
           else
             REF="${GITHUB_REF_NAME}"        # e.g. ahrefs-cli-v0.1.10
-            PKG="${REF%-v*}"                # ahrefs-cli
-            TAG_VERSION="${REF##*-v}"       # 0.1.10
+            if [[ "$REF" != *-v* ]]; then
+              echo "::error::tag $REF must look like <pkg-dir>-v<version>"
+              exit 1
+            fi
+            # Split on the package/version delimiter, not on later "-v"
+            # substrings inside semver prerelease labels such as
+            # seogets-cli-v0.1.10-vebrain.1.
+            PKG="${REF%%-v*}"               # ahrefs-cli
+            TAG_VERSION="${REF#"$PKG-v"}"   # 0.1.10
           fi
           if [ ! -f "packages/$PKG/package.json" ]; then
             echo "::error::no packages/$PKG/package.json (resolved pkg='$PKG')"

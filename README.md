@@ -16,6 +16,8 @@ Wrap any Commander.js TS CLI as an importable `@mirage-cli/<vendor>` package for
 | `@mirage-cli/gbp`          | Thin wrapper around `@mirage-cli/gbp-cli`'s `buildProgram` — `buildProgram` + `gbpCommand`.                        |
 | `@mirage-cli/callrail-cli` | CallRail v3 CLI source — read-only call tracking (calls, summaries, trackers, SMS, forms) with multi-account profiles. |
 | `@mirage-cli/callrail`     | Thin wrapper around `@mirage-cli/callrail-cli`'s `buildProgram` — `buildProgram` + `callrailCommand`.              |
+| `@mirage-cli/ve-fanout-cli` | VE Fanout CLI source — AI query fan-out (ChatGPT/Gemini/Perplexity sub-queries) over the VE Fanout v1 API. Exports `buildProgram()`. |
+| `@mirage-cli/ve-fanout`    | Thin wrapper around `@mirage-cli/ve-fanout-cli`'s `buildProgram` — `buildProgram` + `veFanoutCommand`.            |
 
 **Source packages vs wrapper packages.** A `*-cli` package is the CLI itself (the binary + its programmatic API). A `@mirage-cli/<vendor>` package is the thin adapter that surfaces it as `buildProgram` + `<vendor>Command` for mirage / worker consumption.
 

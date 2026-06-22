@@ -52,6 +52,8 @@
     "@mirage-cli/seogets": "workspace:*",
     "@mirage-cli/sms": "workspace:*",
     "@mirage-cli/timing": "workspace:*",
+    "@mirage-cli/ve-fanout": "workspace:*",
+    "@mirage-cli/ve-fanout-cli": "workspace:*",
     "@struktoai/mirage-core": "^0.0.1",
     "@struktoai/mirage-node": "^0.0.1",
     "@types/bun": "latest",

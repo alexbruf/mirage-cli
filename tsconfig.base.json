@@ -66,7 +66,9 @@
       "@mirage-cli/hubspot-cli": ["./packages/hubspot-cli/src/index.ts"],
       "@mirage-cli/hubspot-cli/*": ["./packages/hubspot-cli/src/*"],
       "@mirage-cli/airtable-cli": ["./packages/airtable-cli/src/index.ts"],
-      "@mirage-cli/airtable-cli/*": ["./packages/airtable-cli/src/*"]
+      "@mirage-cli/airtable-cli/*": ["./packages/airtable-cli/src/*"],
+      "@mirage-cli/ve-fanout-cli": ["./packages/ve-fanout-cli/src/index.ts"],
+      "@mirage-cli/ve-fanout-cli/*": ["./packages/ve-fanout-cli/src/*"]
     }
   }
 }

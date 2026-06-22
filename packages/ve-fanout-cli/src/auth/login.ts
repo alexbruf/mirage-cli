@@ -19,7 +19,7 @@ export async function login(opts: { apiUrl?: string } = {}): Promise<void> {
 	const { metadata, authServer, resource } = await discover(apiUrl);
 	if (!metadata.registration_endpoint) {
 		throw new Error(
-			`Authorization server ${authServer} does not expose registration_endpoint. Enable Dynamic Client Registration in the Clerk dashboard.`,
+			`Authorization server ${authServer} does not advertise a registration_endpoint, so the CLI cannot register an OAuth client. The server must support OpenID Connect Dynamic Client Registration (RFC 7591) — or set VE_FANOUT_TOKEN to use an access token directly.`,
 		);
 	}
 

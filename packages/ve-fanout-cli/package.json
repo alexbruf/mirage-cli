@@ -1,6 +1,6 @@
 {
   "name": "@mirage-cli/ve-fanout-cli",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "VE Fanout CLI — query fan-out for AI visibility: submit a query and see the sub-queries ChatGPT, Gemini (AI Overviews/AI Mode) and Perplexity generate. Mirage / Cloudflare-Worker compatible.",
   "license": "MIT",
   "repository": {

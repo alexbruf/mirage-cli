@@ -34,6 +34,14 @@ export async function uploadOwnArticle(
   body: UploadOwnArticleBody,
   opts: OutputOpts,
 ): Promise<void> {
+  // The API requires the field that matches --source; fail locally with a clear
+  // message instead of sending an invalid body that 4xxs.
+  if (body.source === "google_doc" && !body.google_doc_url) {
+    throw new Error("--google-doc-url is required when --source is google_doc");
+  }
+  if (body.source === "file_attachment" && !body.file_id) {
+    throw new Error("--file-id is required when --source is file_attachment");
+  }
   const res = await client().json(
     "POST",
     `/teams/${slug}/articles/${articleId}/upload-own-article`,

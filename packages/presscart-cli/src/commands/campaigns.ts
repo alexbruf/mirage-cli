@@ -116,6 +116,15 @@ export async function uploadContent(
   body: UploadContentBody,
   opts: OutputOpts,
 ): Promise<void> {
+  // Every placement must belong to a campaign. Require either an existing
+  // campaign to attach to (--campaign-id) or a name to create a new one
+  // (--campaign-name); never let it fall through to an unfiled placement.
+  if (!body.campaign_id && !body.campaign_name) {
+    throw new Error(
+      "a campaign is required: pass --campaign-id to attach to an existing campaign, " +
+        "or --campaign-name to create a new one",
+    );
+  }
   const res = await client().json("POST", `/teams/${slug}/campaigns/upload-content`, body);
   writeObject(res, opts);
 }

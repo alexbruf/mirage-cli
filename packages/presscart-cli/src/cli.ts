@@ -362,13 +362,20 @@ export function buildProgram(): Command {
   fmt(file.command("upload <slug>"))
     .description(
       "Upload one or more files (POST /teams/:slug/files/upload, multipart). " +
-        "Returns file records with ids for `attachments create`.",
+        "Returns file records with ids for `attachments create`. Image EXIF/XMP/C2PA " +
+        "provenance metadata is stripped by default (lossless); --no-strip-metadata to keep it.",
     )
     .requiredOption("--file <paths...>", "One or more file paths to upload")
     .option("--folder-id <id>", "Optional destination folder UUID")
+    .option(
+      "--no-strip-metadata",
+      "Keep image metadata (EXIF/XMP/C2PA). Stripping is on by default.",
+    )
     .action(
-      async (slug: string, opts: { file: string[]; folderId?: string } & FmtOpts) =>
-        files.uploadFiles(slug, opts.file, opts.folderId, opts),
+      async (
+        slug: string,
+        opts: { file: string[]; folderId?: string; stripMetadata: boolean } & FmtOpts,
+      ) => files.uploadFiles(slug, opts.file, opts.folderId, opts.stripMetadata, opts),
     );
 
   // ── Attachments ──────────────────────────────────────────────────────────

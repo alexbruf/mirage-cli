@@ -1,4 +1,7 @@
 import { describe, expect, test } from "bun:test";
+import { uploadOwnArticle } from "../src/commands/articles.ts";
+import { createAttachment } from "../src/commands/attachments.ts";
+import { uploadContent } from "../src/commands/campaigns.ts";
 import { buildProgram } from "../src/cli.ts";
 import { filterByPrice, listMeta, rowPriceUsd } from "../src/output.ts";
 
@@ -119,7 +122,7 @@ describe("publishing commands (team-scoped)", () => {
   test("files upload + attachments create options", () => {
     expect(subnames("files")).toContain("upload");
     expect(subOptions("files", "upload")).toEqual(
-      expect.arrayContaining(["--file", "--folder-id"]),
+      expect.arrayContaining(["--file", "--folder-id", "--no-strip-metadata"]),
     );
     expect(subOptions("attachments", "create")).toEqual(
       expect.arrayContaining(["--file-ids", "--resource-type", "--resource-id"]),
@@ -135,6 +138,35 @@ describe("publishing commands (team-scoped)", () => {
         "--campaign-id",
         "--campaign-name",
       ]),
+    );
+  });
+});
+
+describe("publishing input guards (reject before hitting the API)", () => {
+  const opts = { format: "json" };
+
+  test("upload-own-article requires the field matching --source", async () => {
+    await expect(uploadOwnArticle("slug", "aid", { source: "google_doc" }, opts)).rejects.toThrow(
+      /google-doc-url is required/,
+    );
+    await expect(
+      uploadOwnArticle("slug", "aid", { source: "file_attachment" }, opts),
+    ).rejects.toThrow(/file-id is required/);
+  });
+
+  test("campaigns upload-content requires a campaign id or name", async () => {
+    await expect(
+      uploadContent("slug", { order_id: "o", profile_id: "p" }, opts),
+    ).rejects.toThrow(/campaign is required/);
+  });
+
+  test("attachments create rejects empty or oversized file-id lists", async () => {
+    await expect(createAttachment([], "article_photo", "aid", opts)).rejects.toThrow(
+      /between 1 and 50/,
+    );
+    const tooMany = Array.from({ length: 51 }, (_, i) => `id-${i}`);
+    await expect(createAttachment(tooMany, "article_photo", "aid", opts)).rejects.toThrow(
+      /between 1 and 50/,
     );
   });
 });

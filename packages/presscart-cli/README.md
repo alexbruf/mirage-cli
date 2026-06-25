@@ -68,6 +68,12 @@ Payment is intentionally not automated: `orders checkout` returns an order in
 `CREATED` status (with a Stripe `client_secret` / `checkout_link`) unless it is
 covered by Team Credits. Pay and review in the app, then submit.
 
+`files upload` strips image provenance metadata (EXIF/XMP and C2PA Content
+Credentials) by default — a lossless, pure-JS byte-level strip for JPEG/PNG/WebP,
+so uploaded AI images don't carry "made by ChatGPT/Gemini" markers. Pass
+`--no-strip-metadata` to keep it. (Invisible watermarks like SynthID are not
+metadata and are not removed.)
+
 ## Marketplace budget filters
 
 `outlets list` and `products listings` support `--min-price <usd>` and

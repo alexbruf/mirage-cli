@@ -19,6 +19,9 @@ export async function createAttachment(
   resourceId: string,
   opts: OutputOpts,
 ): Promise<void> {
+  if (fileIds.length < 1 || fileIds.length > 50) {
+    throw new Error(`--file-ids must contain between 1 and 50 ids (got ${fileIds.length})`);
+  }
   const res = await client().json("POST", "/attachments", {
     file_ids: fileIds,
     resource_type: resourceType,

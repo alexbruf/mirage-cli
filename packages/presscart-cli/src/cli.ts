@@ -1,10 +1,14 @@
 import { Command } from "commander";
 import * as auth from "./auth.ts";
+import * as articles from "./commands/articles.ts";
+import * as attachments from "./commands/attachments.ts";
 import * as campaigns from "./commands/campaigns.ts";
+import * as files from "./commands/files.ts";
 import * as orders from "./commands/orders.ts";
 import * as outlets from "./commands/outlets.ts";
 import * as profiles from "./commands/profiles.ts";
 import * as products from "./commands/products.ts";
+import * as teams from "./commands/teams.ts";
 
 type FmtOpts = { format?: string; output?: string };
 
@@ -110,6 +114,37 @@ export function buildProgram(): Command {
         .filter(Boolean);
       await campaigns.assignOrderItems(id, ids, opts);
     });
+
+  fmt(camp.command("upload-content <slug>"))
+    .description(
+      "Create/select a campaign and attach a paid order's items to it " +
+        "(POST /teams/:slug/campaigns/upload-content). Returns { campaign_id }.",
+    )
+    .requiredOption("--order-id <id>", "Order UUID whose items to attach")
+    .requiredOption("--profile-id <id>", "Client profile UUID")
+    .option("--campaign-id <id>", "Attach to an existing campaign")
+    .option("--campaign-name <name>", "Create a new campaign with this name")
+    .action(
+      async (
+        slug: string,
+        opts: {
+          orderId: string;
+          profileId: string;
+          campaignId?: string;
+          campaignName?: string;
+        } & FmtOpts,
+      ) =>
+        campaigns.uploadContent(
+          slug,
+          {
+            order_id: opts.orderId,
+            profile_id: opts.profileId,
+            campaign_id: opts.campaignId,
+            campaign_name: opts.campaignName,
+          },
+          opts,
+        ),
+    );
 
   // ── Orders ──────────────────────────────────────────────────────────────
   const ord = program.command("orders").description("Orders & checkout");
@@ -256,6 +291,115 @@ export function buildProgram(): Command {
   fmt(prod.command("categories"))
     .description("Product counts by placement & channel (GET /products/categories)")
     .action(async (opts: FmtOpts) => products.categories(opts));
+
+  // ── Teams ───────────────────────────────────────────────────────────────
+  const team = program.command("teams").description("Teams");
+
+  fmt(team.command("list"))
+    .description(
+      "List teams the token can see (GET /teams). Use to map the team_id from " +
+        "`whoami` to the `slug` the publishing commands need.",
+    )
+    .action(async (opts: FmtOpts) => teams.listTeams(opts));
+
+  // ── Articles (team-scoped publishing) ────────────────────────────────────
+  const art = program.command("articles").description("Articles — upload content & submit");
+
+  fmt(art.command("get <slug> <article-id>"))
+    .description("Get an article (GET /teams/:slug/articles/:id)")
+    .action(async (slug: string, articleId: string, opts: FmtOpts) =>
+      articles.getArticle(slug, articleId, opts),
+    );
+
+  fmt(art.command("upload-own-article <slug> <article-id>"))
+    .description(
+      "Attach the customer's own article content " +
+        "(POST /teams/:slug/articles/:id/upload-own-article).",
+    )
+    .option("--source <src>", "google_doc | file_attachment", "google_doc")
+    .option("--google-doc-url <url>", "Doc URL (share 'Anyone with the link → Editor')")
+    .option("--file-id <id>", "Uploaded file UUID (when --source file_attachment)")
+    .action(
+      async (
+        slug: string,
+        articleId: string,
+        opts: {
+          source: articles.UploadOwnArticleBody["source"];
+          googleDocUrl?: string;
+          fileId?: string;
+        } & FmtOpts,
+      ) =>
+        articles.uploadOwnArticle(
+          slug,
+          articleId,
+          { source: opts.source, google_doc_url: opts.googleDocUrl, file_id: opts.fileId },
+          opts,
+        ),
+    );
+
+  fmt(art.command("submit <slug> <article-id>"))
+    .description(
+      "Submit an article (POST /teams/:slug/articles/:id/submit). " +
+        "Use pending-publishing only after the order is paid and reviewed.",
+    )
+    .option(
+      "--action <action>",
+      "draft-ready-for-review | pending-publishing",
+      "draft-ready-for-review",
+    )
+    .requiredOption("--feedback <text>", "Required feedback/notes for the submission")
+    .action(
+      async (
+        slug: string,
+        articleId: string,
+        opts: { action: articles.SubmitAction; feedback: string } & FmtOpts,
+      ) => articles.submitArticle(slug, articleId, opts.action, opts.feedback, opts),
+    );
+
+  // ── Files (multipart upload) ─────────────────────────────────────────────
+  const file = program.command("files").description("File uploads");
+
+  fmt(file.command("upload <slug>"))
+    .description(
+      "Upload one or more files (POST /teams/:slug/files/upload, multipart). " +
+        "Returns file records with ids for `attachments create`. Image EXIF/XMP/C2PA " +
+        "provenance metadata is stripped by default (lossless); --no-strip-metadata to keep it.",
+    )
+    .requiredOption("--file <paths...>", "One or more file paths to upload")
+    .option("--folder-id <id>", "Optional destination folder UUID")
+    .option(
+      "--no-strip-metadata",
+      "Keep image metadata (EXIF/XMP/C2PA). Stripping is on by default.",
+    )
+    .action(
+      async (
+        slug: string,
+        opts: { file: string[]; folderId?: string; stripMetadata: boolean } & FmtOpts,
+      ) => files.uploadFiles(slug, opts.file, opts.folderId, opts.stripMetadata, opts),
+    );
+
+  // ── Attachments ──────────────────────────────────────────────────────────
+  const attach = program.command("attachments").description("Link uploaded files to resources");
+
+  fmt(attach.command("create"))
+    .description(
+      "Link uploaded files to a resource (POST /attachments). " +
+        "For article images: --resource-type article_photo --resource-id <article_id>.",
+    )
+    .requiredOption("--file-ids <ids>", "Comma-separated file UUIDs (1..50)")
+    .requiredOption("--resource-type <type>", "e.g. article_photo, article_document")
+    .requiredOption("--resource-id <id>", "Target resource UUID (e.g. the article id)")
+    .action(
+      async (
+        opts: { fileIds: string; resourceType: string; resourceId: string } & FmtOpts,
+      ) => {
+        const ids = opts.fileIds
+          .split(",")
+          .map((s) => s.trim())
+          .filter(Boolean);
+        await attachments.createAttachment(ids, opts.resourceType, opts.resourceId, opts);
+      },
+    );
 
   return program;
 }

@@ -97,3 +97,34 @@ export async function assignOrderItems(
   });
   writeObject(res, opts);
 }
+
+export interface UploadContentBody {
+  order_id: string;
+  profile_id: string;
+  /** Attach to an existing campaign; omit and pass `campaign_name` to create one. */
+  campaign_id?: string;
+  campaign_name?: string;
+}
+
+/**
+ * Create-or-select a campaign and attach a paid order's items to it in one call
+ * (POST /teams/:slug/campaigns/upload-content). Returns `{ campaign_id }`; read
+ * the generated article ids from the order's line items (`orders items`).
+ */
+export async function uploadContent(
+  slug: string,
+  body: UploadContentBody,
+  opts: OutputOpts,
+): Promise<void> {
+  // Every placement must belong to a campaign. Require either an existing
+  // campaign to attach to (--campaign-id) or a name to create a new one
+  // (--campaign-name); never let it fall through to an unfiled placement.
+  if (!body.campaign_id && !body.campaign_name) {
+    throw new Error(
+      "a campaign is required: pass --campaign-id to attach to an existing campaign, " +
+        "or --campaign-name to create a new one",
+    );
+  }
+  const res = await client().json("POST", `/teams/${slug}/campaigns/upload-content`, body);
+  writeObject(res, opts);
+}

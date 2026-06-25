@@ -75,6 +75,19 @@ export class ApiClient {
       body: JSON.stringify(body),
     });
   }
+
+  /**
+   * Multipart/form-data upload. Deliberately does NOT set a Content-Type header
+   * so `fetch` derives the `multipart/form-data; boundary=...` value from the
+   * FormData body. Setting it by hand would omit the boundary and break parsing.
+   */
+  async multipart<T = unknown>(
+    method: "POST" | "PUT" | "PATCH",
+    path: string,
+    form: FormData,
+  ): Promise<T> {
+    return this.request<T>(path, { method, body: form });
+  }
 }
 
 async function errorFromResponse(res: Response): Promise<ApiError> {

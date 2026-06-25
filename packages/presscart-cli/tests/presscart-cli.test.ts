@@ -11,6 +11,14 @@ function subOptions(parent: string, sub: string): string[] {
   return (s?.options ?? []).map((o) => o.long ?? "").filter(Boolean);
 }
 
+function subnames(parent: string): string[] {
+  const program = buildProgram();
+  const p = program.commands.find((c: { name: () => string }) => c.name() === parent) as {
+    commands: readonly { name: () => string }[];
+  };
+  return (p?.commands ?? []).map((c) => c.name());
+}
+
 describe("@mirage-cli/presscart-cli", () => {
   test("buildProgram() returns a configured Commander program", () => {
     const program = buildProgram();
@@ -86,5 +94,47 @@ describe("product listing price helpers", () => {
       page: 1,
     });
     expect(listMeta([])).toEqual({});
+  });
+});
+
+describe("publishing commands (team-scoped)", () => {
+  test("new top-level groups are registered", () => {
+    const program = buildProgram();
+    const names = program.commands.map((c: { name: () => string }) => c.name());
+    expect(names).toEqual(expect.arrayContaining(["teams", "articles", "files", "attachments"]));
+  });
+
+  test("articles subcommands + options", () => {
+    expect(subnames("articles")).toEqual(
+      expect.arrayContaining(["get", "upload-own-article", "submit"]),
+    );
+    expect(subOptions("articles", "upload-own-article")).toEqual(
+      expect.arrayContaining(["--source", "--google-doc-url", "--file-id"]),
+    );
+    expect(subOptions("articles", "submit")).toEqual(
+      expect.arrayContaining(["--action", "--feedback"]),
+    );
+  });
+
+  test("files upload + attachments create options", () => {
+    expect(subnames("files")).toContain("upload");
+    expect(subOptions("files", "upload")).toEqual(
+      expect.arrayContaining(["--file", "--folder-id"]),
+    );
+    expect(subOptions("attachments", "create")).toEqual(
+      expect.arrayContaining(["--file-ids", "--resource-type", "--resource-id"]),
+    );
+  });
+
+  test("campaigns upload-content registered with order/profile options", () => {
+    expect(subnames("campaigns")).toContain("upload-content");
+    expect(subOptions("campaigns", "upload-content")).toEqual(
+      expect.arrayContaining([
+        "--order-id",
+        "--profile-id",
+        "--campaign-id",
+        "--campaign-name",
+      ]),
+    );
   });
 });

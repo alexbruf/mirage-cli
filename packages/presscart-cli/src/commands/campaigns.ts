@@ -97,3 +97,25 @@ export async function assignOrderItems(
   });
   writeObject(res, opts);
 }
+
+export interface UploadContentBody {
+  order_id: string;
+  profile_id: string;
+  /** Attach to an existing campaign; omit and pass `campaign_name` to create one. */
+  campaign_id?: string;
+  campaign_name?: string;
+}
+
+/**
+ * Create-or-select a campaign and attach a paid order's items to it in one call
+ * (POST /teams/:slug/campaigns/upload-content). Returns `{ campaign_id }`; read
+ * the generated article ids from the order's line items (`orders items`).
+ */
+export async function uploadContent(
+  slug: string,
+  body: UploadContentBody,
+  opts: OutputOpts,
+): Promise<void> {
+  const res = await client().json("POST", `/teams/${slug}/campaigns/upload-content`, body);
+  writeObject(res, opts);
+}

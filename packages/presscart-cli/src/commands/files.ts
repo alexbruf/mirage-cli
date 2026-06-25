@@ -3,7 +3,7 @@ import { basename, extname } from "node:path";
 import { ApiClient } from "../client.ts";
 import { requireSession } from "../config.ts";
 import { type OutputOpts, writeObject } from "../output.ts";
-import { stripImageMetadata } from "../strip-metadata.ts";
+import { stripImageMetadata } from "@mirage-cli/image";
 
 function client(): ApiClient {
   return new ApiClient(requireSession());

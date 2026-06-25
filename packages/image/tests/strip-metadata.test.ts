@@ -1,5 +1,5 @@
 import { describe, expect, test } from "bun:test";
-import { isJpeg, isPng, isWebp, stripImageMetadata } from "../src/strip-metadata.ts";
+import { isJpeg, isPng, isWebp, stripImageMetadata } from "../src/index.ts";
 
 function ascii(s: string): number[] {
   return Array.from(s, (c) => c.charCodeAt(0));

@@ -50,6 +50,7 @@
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
+    "@mirage-cli/image": "workspace:^",
     "commander": "^14.0.3"
   },
   "publishConfig": {

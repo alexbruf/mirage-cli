@@ -3,7 +3,6 @@ import { basename, extname } from "node:path";
 import { ApiClient } from "../client.ts";
 import { requireSession } from "../config.ts";
 import { type OutputOpts, writeObject } from "../output.ts";
-import { stripImageMetadata } from "../strip-metadata.ts";
 
 function client(): ApiClient {
   return new ApiClient(requireSession());
@@ -33,15 +32,11 @@ export async function uploadFiles(
   slug: string,
   paths: string[],
   folderId: string | undefined,
-  stripMetadata: boolean,
   opts: OutputOpts,
 ): Promise<void> {
   const form = new FormData();
   for (const p of paths) {
-    const raw = new Uint8Array(readFileSync(p));
-    // Strip AI/EXIF/C2PA provenance metadata by default so uploaded images do
-    // not advertise that they were AI-generated. Lossless; pixels untouched.
-    const bytes = stripMetadata ? stripImageMetadata(raw) : raw;
+    const bytes = readFileSync(p);
     // Copy into a fresh ArrayBuffer so the Blob part is unambiguously typed.
     const ab = new ArrayBuffer(bytes.byteLength);
     new Uint8Array(ab).set(bytes);

@@ -122,7 +122,7 @@ describe("publishing commands (team-scoped)", () => {
   test("files upload + attachments create options", () => {
     expect(subnames("files")).toContain("upload");
     expect(subOptions("files", "upload")).toEqual(
-      expect.arrayContaining(["--file", "--folder-id", "--no-strip-metadata"]),
+      expect.arrayContaining(["--file", "--folder-id"]),
     );
     expect(subOptions("attachments", "create")).toEqual(
       expect.arrayContaining(["--file-ids", "--resource-type", "--resource-id"]),

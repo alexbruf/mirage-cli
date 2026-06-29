@@ -69,6 +69,7 @@ export class LocalFalconSource implements DataSource {
       keyword: input.keyword,
       grid_size: input.gridSize,
       radius: input.radius,
+      measurement: input.measurement ?? "mi",
       platform: input.platform,
     });
     return unwrap(json) as Row;

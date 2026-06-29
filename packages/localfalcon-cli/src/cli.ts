@@ -125,7 +125,8 @@ export function buildProgram(): Command {
       .option("--lat <deg>", "grid center latitude (with --lng)")
       .option("--lng <deg>", "grid center longitude (with --lat)")
       .option("-g, --grid-size <n>", "grid dimension, e.g. 7 for 7x7")
-      .option("-r, --radius <mi>", "miles between grid points")
+      .option("-r, --radius <n>", "distance between grid points (unit from --measurement)")
+      .option("-m, --measurement <unit>", "radius unit: mi (default) or km", "mi")
       .option("--platform <name>", "google (default) or a supported AI platform"),
   ).action(async (o: any) => {
     if (!o.placeId && !(o.lat && o.lng)) {
@@ -140,6 +141,7 @@ export function buildProgram(): Command {
           keyword: o.keyword,
           gridSize: o.gridSize,
           radius: o.radius,
+          measurement: o.measurement,
           platform: o.platform,
         }),
       ],

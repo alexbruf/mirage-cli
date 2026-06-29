@@ -409,7 +409,7 @@
     },
     "packages/localfalcon-cli": {
       "name": "@mirage-cli/localfalcon-cli",
-      "version": "0.1.0",
+      "version": "0.1.1",
       "bin": {
         "localfalcon": "./dist/bin.js",
       },
@@ -680,7 +680,7 @@
     },
     "packages/ve-fanout-cli": {
       "name": "@mirage-cli/ve-fanout-cli",
-      "version": "0.1.0",
+      "version": "0.1.1",
       "bin": {
         "ve-fanout": "./dist/bin.js",
       },

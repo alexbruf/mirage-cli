@@ -35,8 +35,10 @@ export interface RunScanInput {
   keyword: string;
   /** Grid dimension, e.g. "7" for a 7x7 grid. */
   gridSize?: string;
-  /** Radius in miles between grid points. */
+  /** Distance between grid points (unit set by `measurement`). */
   radius?: string;
+  /** Radius unit: "mi" (default) or "km". Local Falcon requires this on run-scan. */
+  measurement?: string;
   /** "google" (default) or an AI platform the account supports. */
   platform?: string;
 }

@@ -69,6 +69,9 @@ export class LocalFalconSource implements DataSource {
       keyword: input.keyword,
       grid_size: input.gridSize,
       radius: input.radius,
+      // Local Falcon's /v2/run-scan rejects the request with "You must specify a
+      // measurement" if this is absent. Default to miles (BLU-1013).
+      measurement: input.measurement ?? "mi",
       platform: input.platform,
     });
     return unwrap(json) as Row;

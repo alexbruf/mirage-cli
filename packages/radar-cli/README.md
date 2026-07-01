@@ -42,7 +42,7 @@ Output is JSON (ideal for piping / bot consumption).
 - `radar login` — Clerk OAuth (PKCE + RFC 7591 DCR + loopback). Persists to `~/.config/radar/session.json` (0600).
 - `radar login --api-key sk_...` — Clerk machine API key for headless use.
 - Env override: `RADAR_API_KEY` (preferred) or `RADAR_OAUTH_ACCESS_TOKEN`. `RADAR_API_BASE_URL` overrides the base URL.
-- Active org: `radar orgs use <id>` persists it; override per-command with `--org <id-or-slug>` or the `RADAR_ACTIVE_ORG_ID` env var. It rides on every request as the `X-Active-Org-Id` header, which the API resolves by **id or slug** server-side.
+- Active org: `radar orgs use <id-or-slug>` persists it; override per-command with `--org <id-or-slug>` or the `RADAR_ACTIVE_ORG_ID` env var. It rides on every request as the `X-Active-Org-Id` header, which the API resolves by **id or slug** server-side.
 - Shared projects: `projects`, `queries`, `results`, and `game-plans` scoped to the active org include projects **shared into** it (agency access), not just ones it owns. Each project row carries an `access` field — `"owner"` (your org owns/pays) or `"shared"` (shared in for view/run/edit; billing hidden). Jobs and credits stay owner-org-only.
 
 ## Programmatic use

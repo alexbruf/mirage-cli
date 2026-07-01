@@ -21,7 +21,7 @@ export function buildProgram(): Command {
   program
     .name("radar")
     .description("ViewEngine Radar — AI visibility CLI")
-    .version("0.2.0")
+    .version("0.2.3")
     .option("--api-key <key>", "Clerk API key (or set RADAR_API_KEY env)")
     .option("--url <url>", "API base URL (or set RADAR_API_BASE_URL env)")
     .option("--org <id-or-slug>", "Override the active org for this command only");
@@ -43,32 +43,18 @@ export function buildProgram(): Command {
     return session;
   }
 
-  // Resolve an authenticated client. `--org` takes an id OR a slug (like
-  // `orgs use`); the API validates the X-Active-Org-Id header by id, so a slug
-  // is resolved here via an org-agnostic /v1/orgs lookup (no active-org header
-  // on the probe). Async + stateless on purpose: `buildProgram()` is cached and
-  // reused across calls in long-lived hosts (workers), so this must NOT keep
-  // any cross-call closure state — it resolves fresh per invocation.
+  // Resolve an authenticated client. `--org` accepts an id OR a slug and is sent
+  // verbatim as the `X-Active-Org-Id` header — the org-scoped V1 API resolves
+  // either form server-side and normalizes to the canonical id (visibility-tool
+  // PR #51), so no client-side `/v1/orgs` probe is needed. (Earlier releases
+  // 0.2.1/0.2.2 resolved slugs here to work around the API validating the header
+  // by id only; that workaround — and its extra round-trip on every
+  // `--org <slug>` call — is now obsolete.) Kept async so long-lived hosts
+  // (workers) that `await getClient()` are unaffected.
   async function getClient(): Promise<ApiClient> {
     const session = baseSession();
     // --org flag wins; otherwise the session/env active org (if any) applies.
-    let org = program.opts<{ org?: string }>().org ?? session.activeOrgId;
-    if (org && !org.startsWith("org_")) {
-      const probe = new ApiClient({ ...session, activeOrgId: undefined });
-      let rows: { id: string; slug: string | null }[];
-      try {
-        ({ rows } = await probe.list<{ id: string; slug: string | null }>("orgs"));
-      } catch (err) {
-        console.error(`Could not resolve --org "${org}": ${(err as Error).message}`);
-        process.exit(1);
-      }
-      const match = rows.find((o) => o.slug === org || o.id === org);
-      if (!match) {
-        console.error(`Org not found: "${org}". Run \`radar orgs list\` to see your orgs.`);
-        process.exit(1);
-      }
-      org = match.id;
-    }
+    const org = program.opts<{ org?: string }>().org ?? session.activeOrgId;
     if (org) session.activeOrgId = org;
     return new ApiClient(session);
   }

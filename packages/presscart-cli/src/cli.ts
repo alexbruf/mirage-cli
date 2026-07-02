@@ -297,10 +297,17 @@ export function buildProgram(): Command {
 
   fmt(team.command("list"))
     .description(
-      "List teams the token can see (GET /teams). Use to map the team_id from " +
-        "`whoami` to the `slug` the publishing commands need.",
+      "List teams the token can see (GET /teams). If this endpoint is not enabled, " +
+        "use `whoami` then `teams get <team-id>` to resolve the publishing slug.",
     )
     .action(async (opts: FmtOpts) => teams.listTeams(opts));
+
+  fmt(team.command("get <team-id>"))
+    .description(
+      "Get team details (GET /teams/:team_id). Use `whoami` to retrieve the team_id, " +
+        "then read `slug` for publishing commands.",
+    )
+    .action(async (teamId: string, opts: FmtOpts) => teams.getTeam(teamId, opts));
 
   // ── Articles (team-scoped publishing) ────────────────────────────────────
   const art = program.command("articles").description("Articles — upload content & submit");

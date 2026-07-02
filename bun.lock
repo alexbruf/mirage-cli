@@ -469,7 +469,7 @@
     },
     "packages/presscart-cli": {
       "name": "@mirage-cli/presscart-cli",
-      "version": "0.1.11",
+      "version": "0.1.12",
       "bin": {
         "presscart": "./dist/bin.js",
       },

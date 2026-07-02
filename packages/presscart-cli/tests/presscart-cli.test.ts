@@ -107,6 +107,10 @@ describe("publishing commands (team-scoped)", () => {
     expect(names).toEqual(expect.arrayContaining(["teams", "articles", "files", "attachments"]));
   });
 
+  test("teams supports documented team-id lookup", () => {
+    expect(subnames("teams")).toEqual(expect.arrayContaining(["list", "get"]));
+  });
+
   test("articles subcommands + options", () => {
     expect(subnames("articles")).toEqual(
       expect.arrayContaining(["get", "upload-own-article", "submit"]),

@@ -88,7 +88,7 @@ export async function presscartResource(): Promise<Resource> {
     prompt:
       "Presscart CLI — drives api.presscart.com. Auth via PRESSCART_API_TOKEN env var " +
       "(`pc_...`) or `presscart login --token pc_...`. Use `presscart --help` for " +
-      "subcommands: campaigns, orders, outlets, profiles, products.",
+      "subcommands: teams, campaigns, orders, outlets, profiles, products, articles, files, attachments.",
     async open() {},
     async close() {},
     commands(): readonly RegisteredCommand[] {

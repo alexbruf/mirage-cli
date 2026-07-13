@@ -13,6 +13,8 @@ describe("@mirage-cli/seogets-cli", () => {
     expect(names).toContain("tools");
     expect(names).toContain("sites");
     expect(names).toContain("gsc");
+    expect(names).toContain("gsc-top");
+    expect(names).toContain("gsc-compare");
     expect(names).toContain("indexing");
     expect(names).toContain("call");
   });
@@ -31,6 +33,15 @@ describe("@mirage-cli/seogets-cli", () => {
     const children = indexing!.commands.map((c) => c.name());
     expect(children).toContain("overview");
     expect(children).toContain("status");
+  });
+
+  test("gsc-top defaults to rows-only impression sorting", () => {
+    const command = buildProgram().commands.find((candidate) => candidate.name() === "gsc-top");
+    expect(command).toBeDefined();
+    expect(command!.getOptionValueSource("rowsOnly")).toBe("default");
+    expect(command!.getOptionValue("rowsOnly")).toBe(true);
+    expect(command!.getOptionValue("dim")).toBe("query");
+    expect(command!.getOptionValue("by")).toBe("impressions");
   });
 
   test("buildProgram() is independent across calls (no shared state)", () => {

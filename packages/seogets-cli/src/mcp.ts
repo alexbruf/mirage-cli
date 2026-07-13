@@ -9,6 +9,8 @@
  *   SEOGETS_MCP_URL   — optional override (default https://app.seogets.com/mcp)
  */
 
+import { normalizeGscPage, type GscPage, type GscPageArgs } from "./gsc-top.ts";
+
 const DEFAULT_URL = "https://app.seogets.com/mcp";
 
 export interface McpClientOpts {
@@ -88,6 +90,12 @@ export class McpClient {
    */
   async callTool<T = unknown>(name: string, args: Record<string, unknown> = {}): Promise<T> {
     return this.rpc<T>("tools/call", { name, arguments: args });
+  }
+
+  /** Fetch and normalize one GSC page, including SEO Gets' TSV-in-JSON payload. */
+  async getGscPage(args: GscPageArgs): Promise<GscPage> {
+    const result = await this.callTool("get_gsc_performance", args);
+    return normalizeGscPage(unwrapToolResult(result));
   }
 
   private async readJsonRpc(res: Response): Promise<{ result?: unknown; error?: unknown }> {

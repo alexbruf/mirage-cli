@@ -11,7 +11,7 @@ const MAX_CELL = 60;
 
 export function writeOutput(rows: unknown[], opts: OutputOpts = {}): void {
   const format = (opts.format as Format) ?? "ascii";
-  const text = render(rows, format);
+  const text = renderOutput(rows, format);
   emit(text, opts.output);
 }
 
@@ -22,7 +22,7 @@ export function writeObject(obj: unknown, opts: OutputOpts = {}): void {
     return;
   }
   if (Array.isArray(obj)) {
-    emit(render(obj, format), opts.output);
+    emit(renderOutput(obj, format), opts.output);
     return;
   }
   if (obj && typeof obj === "object") {
@@ -30,7 +30,7 @@ export function writeObject(obj: unknown, opts: OutputOpts = {}): void {
       field,
       value: stringify(value),
     }));
-    emit(render(rows, format), opts.output);
+    emit(renderOutput(rows, format), opts.output);
     return;
   }
   emit(String(obj), opts.output);
@@ -45,7 +45,7 @@ function emit(text: string, output?: string): void {
   }
 }
 
-function render(rows: unknown[], format: Format): string {
+export function renderOutput(rows: unknown[], format: Format): string {
   switch (format) {
     case "json":
       return JSON.stringify(rows, null, 2);

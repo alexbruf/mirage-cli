@@ -1,7 +1,13 @@
 import { Command, Option } from "commander";
 import packageJson from "../package.json" with { type: "json" };
+import {
+  gscCompare,
+  gscTopBy,
+  type GscDimension,
+  type GscMetric,
+} from "./gsc-top.ts";
 import { McpClient, unwrapToolResult } from "./mcp.ts";
-import { writeObject, type OutputOpts } from "./output.ts";
+import { writeObject, writeOutput, type OutputOpts } from "./output.ts";
 
 function newClient(globals: { token?: string; url?: string }): McpClient {
   return new McpClient({ token: globals.token, url: globals.url });
@@ -19,6 +25,45 @@ interface IndexingStatusOpts extends OutputOpts {
   page?: number;
   crawledDaysAgo?: number;
   filters?: string;
+}
+
+interface GscTopOpts extends GscOpts {
+  dim: GscDimension;
+  by: GscMetric;
+  limit: number;
+  rowsOnly: boolean;
+  maxPages: number;
+}
+
+interface GscCompareOpts extends GscOpts {
+  query: string;
+  currentStart: string;
+  currentEnd: string;
+  compareStart: string;
+  compareEnd: string;
+  metric: GscMetric;
+  maxPages: number;
+}
+
+function coerceBoolean(value: string): boolean {
+  if (value === "true") return true;
+  if (value === "false") return false;
+  throw new Error("value must be 'true' or 'false'");
+}
+
+function parsePositiveInteger(value: string): number {
+  const parsed = Number.parseInt(value, 10);
+  if (!Number.isFinite(parsed) || parsed < 1) throw new Error("value must be a positive integer");
+  return parsed;
+}
+
+function parseFilters(value?: string): Record<string, unknown> | undefined {
+  if (!value) return undefined;
+  const parsed = JSON.parse(value) as unknown;
+  if (!parsed || typeof parsed !== "object" || Array.isArray(parsed)) {
+    throw new Error("--filters must be a JSON object");
+  }
+  return parsed as Record<string, unknown>;
 }
 
 function addFormatFlags<T extends Command>(cmd: T): T {
@@ -76,11 +121,7 @@ export function buildProgram(): Command {
       .option(
         "--branded-queries <bool>",
         "filter to branded (true) or non-branded (false) queries; omit for both",
-        (v: string) => {
-          if (v === "true") return true;
-          if (v === "false") return false;
-          throw new Error("--branded-queries must be 'true' or 'false'");
-        },
+        coerceBoolean,
       )
       .option(
         "--filters <json>",
@@ -110,6 +151,85 @@ export function buildProgram(): Command {
       writeObject(unwrapToolResult(result), opts);
     },
   );
+
+  // ── gsc-top ────────────────────────────────────────────────────────
+  addFormatFlags(
+    program
+      .command("gsc-top <site> <start_date> <end_date>")
+      .description("True top-N GSC rows after complete pagination")
+      .addOption(new Option("--dim <dimension>").choices(["query", "page"]).default("query"))
+      .addOption(
+        new Option("--by <metric>")
+          .choices(["impressions", "clicks", "position"])
+          .default("impressions"),
+      )
+      .option("-n, --limit <n>", "number of rows", parsePositiveInteger, 10)
+      .option("--page-size <n>", "rows per upstream page", parsePositiveInteger, 1000)
+      .option("--max-pages <n>", "safety cap on pages", parsePositiveInteger, 1000)
+      .option("--branded-queries <bool>", "server-side branded query filter", coerceBoolean)
+      .option("--filters <json>", "extra get_gsc_performance arguments as JSON")
+      .option("--rows-only", "emit only the dimension and selected metric", true)
+      .option("--no-rows-only", "emit complete upstream rows"),
+  ).action(async (site: string, start: string, end: string, opts: GscTopOpts, cmd: Command) => {
+    const result = await gscTopBy(newClient(cmd.optsWithGlobals()), {
+      site,
+      startDate: start,
+      endDate: end,
+      dimension: opts.dim,
+      metric: opts.by,
+      limit: opts.limit,
+      pageSize: opts.pageSize,
+      maxPages: opts.maxPages,
+      brandedQueries: opts.brandedQueries,
+      filters: parseFilters(opts.filters),
+    });
+    if (result.truncatedByCap) {
+      console.error(`# warning: stopped at --max-pages ${opts.maxPages}; results may be incomplete`);
+    }
+    const rows = opts.rowsOnly
+      ? result.rows.map((row) => ({ [opts.dim]: row[opts.dim], [opts.by]: row[opts.by] }))
+      : result.rows;
+    writeOutput(rows, opts);
+  });
+
+  // ── gsc-compare ────────────────────────────────────────────────────
+  addFormatFlags(
+    program
+      .command("gsc-compare <site>")
+      .description("Compare one exact GSC query across two fully paginated windows")
+      .requiredOption("--query <query>", "exact query label")
+      .requiredOption("--current-start <date>", "current window start")
+      .requiredOption("--current-end <date>", "current window end")
+      .requiredOption("--compare-start <date>", "comparison window start")
+      .requiredOption("--compare-end <date>", "comparison window end")
+      .addOption(
+        new Option("--metric <metric>")
+          .choices(["impressions", "clicks", "position"])
+          .default("impressions"),
+      )
+      .option("--page-size <n>", "rows per upstream page", parsePositiveInteger, 1000)
+      .option("--max-pages <n>", "safety cap on pages", parsePositiveInteger, 1000)
+      .option("--branded-queries <bool>", "server-side branded query filter", coerceBoolean)
+      .option("--filters <json>", "extra get_gsc_performance arguments as JSON"),
+  ).action(async (site: string, opts: GscCompareOpts, cmd: Command) => {
+    const result = await gscCompare(newClient(cmd.optsWithGlobals()), {
+      site,
+      query: opts.query,
+      currentStart: opts.currentStart,
+      currentEnd: opts.currentEnd,
+      compareStart: opts.compareStart,
+      compareEnd: opts.compareEnd,
+      metric: opts.metric,
+      pageSize: opts.pageSize,
+      maxPages: opts.maxPages,
+      brandedQueries: opts.brandedQueries,
+      filters: parseFilters(opts.filters),
+    });
+    if (result.truncated) {
+      console.error(`# warning: stopped at --max-pages ${opts.maxPages}; comparison may be incomplete`);
+    }
+    writeObject(result, opts);
+  });
 
   // ── indexing ───────────────────────────────────────────────────────
   const indexing = program.command("indexing").description("Indexing-related MCP tools");

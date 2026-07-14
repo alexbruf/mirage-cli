@@ -1,9 +1,20 @@
 import { Command } from "commander";
-import { ApiError, type ChatRequest, type ChatResponse, OpenRouterClient, type Query } from "./client.ts";
+import { Buffer } from "node:buffer";
+import {
+  ApiError,
+  type ChatRequest,
+  type ChatResponse,
+  type ImageGenerationRequest,
+  type ImageGenerationResponse,
+  type ImageReference,
+  type JsonRecord,
+  OpenRouterClient,
+  type Query,
+} from "./client.ts";
 import { resolveConfig } from "./config.ts";
 import { parseFormat, renderList, renderObject, type Format } from "./output.ts";
 
-const VERSION = "0.1.0";
+const VERSION = "0.2.0";
 
 interface GlobalOptions {
   apiKey?: string;
@@ -28,6 +39,39 @@ interface ChatOptions {
   user?: string;
   stream?: boolean;
 }
+
+interface ImageGenerateOptions {
+  model?: string;
+  prompt?: string;
+  request?: string;
+  output?: string;
+  size?: string;
+  resolution?: string;
+  aspectRatio?: string;
+  quality?: string;
+  outputFormat?: string;
+  background?: string;
+  outputCompression?: string;
+  seed?: string;
+  reference: string[];
+}
+
+interface MirageFileIoBridge {
+  canHandle(path: unknown): boolean;
+  readFileSync(path: unknown, options?: unknown): string | Uint8Array | null;
+  writeFileSync?(path: unknown, data: unknown, options?: unknown): boolean;
+}
+
+interface PreparedImage {
+  path: string;
+  media_type: string;
+  bytes: Uint8Array;
+}
+
+const MAX_GENERATED_IMAGE_BYTES = 32 * 1024 * 1024;
+const MAX_REFERENCE_IMAGE_BYTES = 16 * 1024 * 1024;
+const MAX_REFERENCE_TOTAL_BYTES = 32 * 1024 * 1024;
+const MAX_REFERENCE_IMAGES = 4;
 
 export function buildProgram(): Command {
   const program = new Command();
@@ -100,6 +144,43 @@ export function buildProgram(): Command {
       console.log(renderObject(await client().modelEndpoints(model), format())),
     );
 
+  const images = program.command("images").description("Discover and generate images with OpenRouter");
+  images
+    .command("models")
+    .description("List models available through the dedicated Images API")
+    .action(async () => {
+      const result = await client().imageModels();
+      console.log(renderList(result, Array.isArray(result.data) ? result.data : [], format()));
+    });
+  images
+    .command("endpoints <model>")
+    .description("List provider endpoints, capabilities, and pricing for an image model")
+    .action(async (model: string) =>
+      console.log(renderObject(await client().imageModelEndpoints(model), format())),
+    );
+  images
+    .command("generate")
+    .description("Generate one image, write it to a file, and print a compact receipt")
+    .option("--model <slug>", "Explicit image model slug (required)")
+    .option("--prompt <text>", "Image prompt. Required unless supplied by --request")
+    .option("--request <path>", "Full Images API JSON body from a file, or - for stdin")
+    .option("--output <path>", "Destination image file, such as /sessions/<id>/image.png (required)")
+    .option("--size <size>", "Resolution tier or explicit dimensions, such as 1024x1024")
+    .option("--resolution <tier>", "Resolution tier, such as 1K, 2K, or 4K")
+    .option("--aspect-ratio <ratio>", "Aspect ratio, such as 1:1 or 16:9")
+    .option("--quality <quality>", "Provider quality setting, such as low, medium, or high")
+    .option("--output-format <format>", "png, jpeg, webp, or another model-supported format")
+    .option("--background <mode>", "auto, transparent, or opaque")
+    .option("--output-compression <n>", "JPEG/WebP compression from 0 to 100")
+    .option("--seed <n>", "Deterministic seed when supported")
+    .option(
+      "--reference <url-or-path>",
+      "Reference image URL, data URL, or local/mounted path; repeatable",
+      collect,
+      [],
+    )
+    .action(async (opts: ImageGenerateOptions) => runImageGeneration(client(), opts, format()));
+
   const providers = program.command("providers").description("Inspect OpenRouter providers");
   providers
     .command("list")
@@ -141,15 +222,218 @@ export function buildProgram(): Command {
     `
 Examples:
   openrouter models list --supports tools --sort pricing-low-to-high -f table
+  openrouter images models -f table
+  openrouter images endpoints openai/gpt-image-1-mini
+  openrouter images generate --model openai/gpt-image-1-mini --prompt "A blue orchid" --output /sessions/<id>/orchid.png
   openrouter key
   openrouter chat --model anthropic/claude-sonnet-4.6 --prompt "Summarize this"
   openrouter chat --request /data/openrouter-request.json
   cat /data/openrouter-request.json | openrouter chat --request -
 
-Auth: OPENROUTER_API_KEY or --api-key. Chat is billable and should be write-gated in Mirage.
+Auth: OPENROUTER_API_KEY or --api-key. Chat and images generate are billable and should be write-gated in Mirage.
 `,
   );
   return program;
+}
+
+async function runImageGeneration(
+  client: OpenRouterClient,
+  opts: ImageGenerateOptions,
+  format: Format,
+): Promise<void> {
+  if (!opts.model) throw new Error("An explicit image model is required. Pass --model <author/slug>.");
+  if (!opts.output) throw new Error("An image output path is required. Pass --output <path>.");
+  const requestValue = opts.request ? await readJsonRequest(opts.request) : {};
+  if (opts.prompt && opts.request) throw new Error("Use either --prompt or --request, not both.");
+  const request = requestValue as Partial<ImageGenerationRequest> & JsonRecord;
+  request.model = opts.model;
+  if (opts.prompt) request.prompt = opts.prompt;
+  if (typeof request.prompt !== "string" || request.prompt.trim() === "") {
+    throw new Error("A prompt is required. Pass --prompt or include prompt in --request.");
+  }
+  if (request.n !== undefined && request.n !== 1) {
+    throw new Error("Image generation currently supports exactly one image per command; set n to 1.");
+  }
+  request.n = 1;
+  request.stream = false;
+  if (opts.size) request.size = opts.size;
+  if (opts.resolution) request.resolution = opts.resolution;
+  if (opts.aspectRatio) request.aspect_ratio = opts.aspectRatio;
+  if (opts.quality) request.quality = opts.quality;
+  if (opts.outputFormat) request.output_format = opts.outputFormat;
+  if (opts.background) request.background = opts.background;
+  if (opts.outputCompression !== undefined) {
+    const compression = requiredInteger(opts.outputCompression, "output-compression");
+    if (compression < 0 || compression > 100) {
+      throw new Error("output-compression must be between 0 and 100.");
+    }
+    request.output_compression = compression;
+  }
+  if (opts.seed !== undefined) request.seed = requiredInteger(opts.seed, "seed");
+  if (request.input_references !== undefined || opts.reference.length > 0) {
+    request.input_references = await normalizeImageReferences(
+      request.input_references,
+      opts.reference,
+    );
+  }
+
+  const response = await client.generateImages(request as ImageGenerationRequest);
+  const prepared = prepareGeneratedImages(response, opts.output, request.output_format);
+  for (const image of prepared) await writeFile(image.path, image.bytes);
+
+  const receipt = {
+    model: request.model,
+    created: response.created,
+    files: prepared.map((image) => ({
+      path: image.path,
+      media_type: image.media_type,
+      bytes: image.bytes.byteLength,
+    })),
+    ...(response.usage === undefined ? {} : { usage: response.usage }),
+  };
+  if (format === "text") {
+    console.log(prepared.map((image) => image.path).join("\n"));
+    return;
+  }
+  console.log(renderObject(receipt, format));
+}
+
+function prepareGeneratedImages(
+  response: ImageGenerationResponse,
+  output: string,
+  requestedFormat: unknown,
+): PreparedImage[] {
+  if (!Number.isFinite(response.created)) {
+    throw new Error("OpenRouter image response is missing a valid created timestamp.");
+  }
+  if (!Array.isArray(response.data) || response.data.length !== 1) {
+    throw new Error("OpenRouter image response must contain exactly one data image.");
+  }
+
+  return response.data.map((image) => {
+    if (!isRecord(image) || typeof image.b64_json !== "string" || image.b64_json === "") {
+      throw new Error("OpenRouter image response contains an invalid b64_json image payload.");
+    }
+    const mediaType = normalizedImageMediaType(image.media_type, requestedFormat);
+    return {
+      path: output,
+      media_type: mediaType,
+      bytes: decodeGeneratedImage(image.b64_json),
+    };
+  });
+}
+
+function decodeGeneratedImage(value: string): Uint8Array {
+  return decodeBase64(value, MAX_GENERATED_IMAGE_BYTES, "Generated image");
+}
+
+function normalizedImageMediaType(mediaType: unknown, requestedFormat: unknown): string {
+  const value = typeof mediaType === "string" && mediaType !== ""
+    ? mediaType.toLowerCase()
+    : mediaTypeForFormat(requestedFormat) ?? "image/png";
+  if (!/^image\/[a-z0-9.+-]+$/.test(value)) {
+    throw new Error(`OpenRouter returned an invalid image media type: ${String(mediaType)}`);
+  }
+  return value;
+}
+
+function mediaTypeForFormat(format: unknown): string | undefined {
+  if (typeof format !== "string") return undefined;
+  const normalized = format.toLowerCase();
+  if (normalized === "jpg" || normalized === "jpeg") return "image/jpeg";
+  if (normalized === "svg") return "image/svg+xml";
+  if (normalized === "png" || normalized === "webp") return `image/${normalized}`;
+  return undefined;
+}
+
+async function toImageReference(value: string): Promise<ImageReference> {
+  if (/^https?:\/\//i.test(value) || /^data:image\/[a-z0-9.+-]+;base64,/i.test(value)) {
+    return { type: "image_url", image_url: { url: value } };
+  }
+  const mediaType = mediaTypeForPath(value);
+  if (!mediaType) {
+    throw new Error(`Cannot infer image type for reference ${value}; use png, jpg, webp, gif, or svg.`);
+  }
+  const bytes = await readFileBytes(value);
+  if (bytes.byteLength === 0 || bytes.byteLength > MAX_REFERENCE_IMAGE_BYTES) {
+    throw new Error(`Reference image ${value} is empty or exceeds ${MAX_REFERENCE_IMAGE_BYTES} bytes.`);
+  }
+  return {
+    type: "image_url",
+    image_url: { url: `data:${mediaType};base64,${Buffer.from(bytes).toString("base64")}` },
+  };
+}
+
+async function normalizeImageReferences(
+  requestReferences: unknown,
+  cliReferences: string[],
+): Promise<ImageReference[]> {
+  const references: ImageReference[] = [];
+  if (requestReferences !== undefined) {
+    if (!Array.isArray(requestReferences)) {
+      throw new Error("input_references in --request must be an array.");
+    }
+    for (const entry of requestReferences) {
+      if (
+        !isRecord(entry) ||
+        entry.type !== "image_url" ||
+        !isRecord(entry.image_url) ||
+        typeof entry.image_url.url !== "string"
+      ) {
+        throw new Error("Each input_references entry must be an image_url with a string url.");
+      }
+      references.push({ type: "image_url", image_url: { url: entry.image_url.url } });
+    }
+  }
+  for (const value of cliReferences) references.push(await toImageReference(value));
+  if (references.length > MAX_REFERENCE_IMAGES) {
+    throw new Error(`At most ${MAX_REFERENCE_IMAGES} reference images are allowed per command.`);
+  }
+
+  let totalBytes = 0;
+  for (const reference of references) {
+    const url = reference.image_url.url;
+    const data = /^data:(image\/[a-z0-9.+-]+);base64,(.+)$/i.exec(url);
+    if (data) {
+      totalBytes += decodeBase64(
+        data[2] ?? "",
+        MAX_REFERENCE_IMAGE_BYTES,
+        "Reference image",
+      ).byteLength;
+      continue;
+    }
+    if (!/^https?:\/\//i.test(url)) {
+      throw new Error("Reference image URLs must use http(s) or a base64 image data URL.");
+    }
+  }
+  if (totalBytes > MAX_REFERENCE_TOTAL_BYTES) {
+    throw new Error(`Reference images exceed the ${MAX_REFERENCE_TOTAL_BYTES} byte aggregate limit.`);
+  }
+  return references;
+}
+
+function decodeBase64(value: string, maxBytes: number, label: string): Uint8Array {
+  if (value.length > Math.ceil(maxBytes / 3) * 4 + 4) {
+    throw new Error(`${label} exceeds the ${maxBytes} byte safety limit.`);
+  }
+  if (value.length % 4 !== 0 || !/^[A-Za-z0-9+/]*={0,2}$/.test(value)) {
+    throw new Error(`${label} contains malformed base64 data.`);
+  }
+  const bytes = Buffer.from(value, "base64");
+  if (bytes.byteLength === 0 || bytes.byteLength > maxBytes) {
+    throw new Error(`${label} is empty or exceeds the ${maxBytes} byte safety limit.`);
+  }
+  return bytes;
+}
+
+function mediaTypeForPath(path: string): string | undefined {
+  const clean = path.split(/[?#]/, 1)[0]?.toLowerCase() ?? "";
+  if (clean.endsWith(".png")) return "image/png";
+  if (clean.endsWith(".jpg") || clean.endsWith(".jpeg")) return "image/jpeg";
+  if (clean.endsWith(".webp")) return "image/webp";
+  if (clean.endsWith(".gif")) return "image/gif";
+  if (clean.endsWith(".svg")) return "image/svg+xml";
+  return undefined;
 }
 
 async function runChat(client: OpenRouterClient, opts: ChatOptions, format: Format): Promise<void> {
@@ -230,21 +514,24 @@ function responseText(response: ChatResponse): string {
 }
 
 async function readRequest(path: string): Promise<ChatRequest> {
+  return await readJsonRequest(path) as ChatRequest;
+}
+
+async function readJsonRequest(path: string): Promise<JsonRecord> {
   const raw = path === "-" ? await readStdin() : await readFile(path);
   const value = JSON.parse(raw) as unknown;
   if (!isRecord(value)) throw new Error("OpenRouter request JSON must be an object.");
-  return value as ChatRequest;
+  return value;
+}
+
+function fileIoBridge(): MirageFileIoBridge | undefined {
+  return (
+    globalThis as typeof globalThis & { __MIRAGE_CLI_FILE_IO__?: MirageFileIoBridge }
+  ).__MIRAGE_CLI_FILE_IO__;
 }
 
 async function readFile(path: string): Promise<string> {
-  const bridge = (
-    globalThis as typeof globalThis & {
-      __MIRAGE_CLI_FILE_IO__?: {
-        canHandle(path: unknown): boolean;
-        readFileSync(path: unknown, options?: unknown): string | Uint8Array | null;
-      };
-    }
-  ).__MIRAGE_CLI_FILE_IO__;
+  const bridge = fileIoBridge();
   if (bridge?.canHandle(path)) {
     const value = bridge.readFileSync(path, "utf8");
     if (typeof value === "string") return value;
@@ -253,6 +540,32 @@ async function readFile(path: string): Promise<string> {
   }
   const { readFileSync } = await import("node:fs");
   return readFileSync(path, "utf8");
+}
+
+async function readFileBytes(path: string): Promise<Uint8Array> {
+  const bridge = fileIoBridge();
+  if (bridge?.canHandle(path)) {
+    const value = bridge.readFileSync(path);
+    if (value instanceof Uint8Array) return value;
+    if (typeof value === "string") return new TextEncoder().encode(value);
+    throw new Error(`Mirage VFS file not found: ${path}`);
+  }
+  const { readFileSync } = await import("node:fs");
+  return readFileSync(path);
+}
+
+async function writeFile(path: string, bytes: Uint8Array): Promise<void> {
+  const bridge = fileIoBridge();
+  if (bridge?.canHandle(path)) {
+    if (bridge.writeFileSync?.(path, bytes)) return;
+    throw new Error(`Mirage VFS refused to write generated image: ${path}`);
+  }
+  const [{ dirname }, { mkdirSync, writeFileSync }] = await Promise.all([
+    import("node:path"),
+    import("node:fs"),
+  ]);
+  mkdirSync(dirname(path), { recursive: true });
+  writeFileSync(path, bytes);
 }
 
 async function readStdin(): Promise<string> {
@@ -288,6 +601,12 @@ function numberOpt(value: unknown): number | undefined {
 function requiredNumber(value: unknown, name: string): number {
   const number = numberOpt(value);
   if (number === undefined) throw new Error(`${name} must be a finite number.`);
+  return number;
+}
+
+function requiredInteger(value: unknown, name: string): number {
+  const number = requiredNumber(value, name);
+  if (!Number.isInteger(number)) throw new Error(`${name} must be an integer.`);
   return number;
 }
 

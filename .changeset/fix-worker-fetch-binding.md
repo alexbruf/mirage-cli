@@ -1,5 +1,4 @@
 ---
-"@mirage-cli/openrouter-cli": patch
 "@mirage-cli/rapidurlindexer-cli": patch
 ---
 

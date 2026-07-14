@@ -1,7 +1,8 @@
 /**
  * OpenRouter CLI wrapped as an importable Commander program and Mirage command.
- * Every remote operation is fetch-only. Chat creates billable model inference,
- * so hosts should write-gate the `chat` subcommand on read-only mounts.
+ * Every remote operation is fetch-only. Chat and image generation create
+ * billable model inference, so hosts should write-gate `chat` and
+ * `images generate` on read-only mounts.
  */
 import type { Command } from "commander";
 import { buildProgram as buildOpenRouterProgram } from "@mirage-cli/openrouter-cli";
@@ -40,7 +41,7 @@ export async function openrouterResource(): Promise<Resource> {
       resource: null,
       spec: new mirage.CommandSpec({
         rest: new mirage.Operand({ kind: mirage.OperandKind.TEXT }),
-        description: "OpenRouter model catalog, quota, generation metadata, and chat CLI",
+        description: "OpenRouter model and image catalog, quota, generation metadata, chat, and image CLI",
       }),
       fn: fn as unknown as Parameters<typeof mirage.command>[0]["fn"],
     }),
@@ -49,9 +50,10 @@ export async function openrouterResource(): Promise<Resource> {
     kind: "openrouter",
     isRemote: true,
     prompt:
-      "OpenRouter CLI. Auth via OPENROUTER_API_KEY. Read commands: `models`, `providers list`, " +
-      "`key`, and `generation <id>`. `chat` creates billable inference and should require a " +
-      "write-mode mount. Use `openrouter --help` for request-file, routing, streaming, and output options.",
+      "OpenRouter CLI. Auth via OPENROUTER_API_KEY. Read commands: `models`, `images models`, " +
+      "`images endpoints`, `providers list`, `key`, and `generation <id>`. `chat` and " +
+      "`images generate` create billable inference and should require a write-mode mount. " +
+      "Write generated images directly to a mounted output such as `/sessions/<id>/image.png`.",
     async open() {},
     async close() {},
     commands(): readonly RegisteredCommand[] {

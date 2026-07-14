@@ -1,7 +1,7 @@
 {
   "name": "@mirage-cli/openrouter-cli",
-  "version": "0.1.0",
-  "description": "OpenRouter CLI for model discovery, quota inspection, generation metadata, and chat completions through a fetch-only, Mirage-compatible command surface.",
+  "version": "0.2.0",
+  "description": "OpenRouter CLI for model and image discovery, quota inspection, chat completions, and image generation through a fetch-only, Mirage-compatible command surface.",
   "license": "MIT",
   "repository": {
     "type": "git",
@@ -40,6 +40,7 @@
   "files": [
     "dist",
     "README.md",
+    "CHANGELOG.md",
     "LICENSE"
   ],
   "scripts": {

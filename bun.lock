@@ -423,7 +423,7 @@
     },
     "packages/openrouter": {
       "name": "@mirage-cli/openrouter",
-      "version": "0.1.0",
+      "version": "0.2.0",
       "dependencies": {
         "@mirage-cli/core": "workspace:^",
       },
@@ -443,7 +443,7 @@
     },
     "packages/openrouter-cli": {
       "name": "@mirage-cli/openrouter-cli",
-      "version": "0.1.0",
+      "version": "0.2.0",
       "bin": {
         "openrouter": "./dist/bin.js",
       },

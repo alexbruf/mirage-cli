@@ -9,6 +9,22 @@ function json(value: unknown, init: ResponseInit = {}): Response {
 }
 
 describe("OpenRouterClient", () => {
+  test("calls the runtime fetch with the global receiver", async () => {
+    const originalFetch = globalThis.fetch;
+    let receiver: unknown;
+    globalThis.fetch = function (this: typeof globalThis) {
+      receiver = this;
+      return Promise.resolve(json({ data: { limit_remaining: 10 } }));
+    } as unknown as typeof fetch;
+    try {
+      const result = await new OpenRouterClient({ apiKey: "key" }).key();
+      expect(result.data).toEqual({ limit_remaining: 10 });
+      expect(receiver).toBe(globalThis);
+    } finally {
+      globalThis.fetch = originalFetch;
+    }
+  });
+
   test("adds bearer and attribution headers and model filters", async () => {
     let request: Request | undefined;
     const fetchFn = (async (input: RequestInfo | URL, init?: RequestInit) => {

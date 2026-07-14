@@ -111,7 +111,8 @@ export class RapidUrlIndexerClient {
     if (!apiKey) throw new Error("Rapid URL Indexer API key cannot be empty.");
     this.apiKey = apiKey;
     this.baseUrl = (options.baseUrl ?? DEFAULT_BASE_URL).replace(/\/+$/, "");
-    this.fetchImpl = options.fetch ?? globalThis.fetch;
+    this.fetchImpl = options.fetch
+      ?? ((input, init) => globalThis.fetch(input, init)) as typeof globalThis.fetch;
   }
 
   getCreditBalance(): Promise<CreditBalance> {

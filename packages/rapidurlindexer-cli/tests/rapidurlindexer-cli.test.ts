@@ -77,6 +77,22 @@ describe("URL ingestion", () => {
 });
 
 describe("typed fetch client", () => {
+  test("calls the runtime fetch with the global receiver", async () => {
+    const originalFetch = globalThis.fetch;
+    let receiver: unknown;
+    globalThis.fetch = function (this: typeof globalThis) {
+      receiver = this;
+      return Promise.resolve(Response.json({ credits: 42 }));
+    } as unknown as typeof fetch;
+    try {
+      const result = await new RapidUrlIndexerClient({ apiKey: "secret" }).getCreditBalance();
+      expect(result).toEqual({ credits: 42 });
+      expect(receiver).toBe(globalThis);
+    } finally {
+      globalThis.fetch = originalFetch;
+    }
+  });
+
   test("uses X-API-Key and sends the documented create payload", async () => {
     let seen: { path: string; method: string; apiKey: string | null; body: unknown } | undefined;
     const server = Bun.serve({

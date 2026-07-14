@@ -86,7 +86,8 @@ export class OpenRouterClient {
   constructor(opts: ClientOptions) {
     this.apiKey = opts.apiKey;
     this.baseUrl = (opts.baseUrl ?? "https://openrouter.ai/api/v1").replace(/\/$/, "");
-    this.fetchFn = opts.fetch ?? fetch;
+    this.fetchFn = opts.fetch
+      ?? ((input, init) => globalThis.fetch(input, init)) as typeof fetch;
     this.attribution = {};
     if (opts.httpReferer) this.attribution["HTTP-Referer"] = opts.httpReferer;
     if (opts.appTitle) this.attribution["X-OpenRouter-Title"] = opts.appTitle;

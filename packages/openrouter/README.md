@@ -14,13 +14,15 @@ import { buildProgram, openrouterCommand, openrouterResource } from "@mirage-cli
 Set `OPENROUTER_API_KEY` before executing commands. Optional attribution and
 base URL environment variables are documented in the CLI package.
 
-All remote calls use global `fetch`; the data path has no filesystem,
-subprocess, interactive-login, or SDK dependency. Request files are loaded only
-when the operator explicitly uses `openrouter chat --request <path>`.
+All remote calls use global `fetch`; the data path has no subprocess,
+interactive-login, or SDK dependency. Request files and image references are
+loaded only when explicitly requested. Generated image bytes can be written to
+a local path or a Mirage-mounted path such as `/sessions/<id>/image.png`.
 
 ## Access boundary
 
-`models`, `providers list`, `key`, and `generation` are reads. `chat` creates
-billable model inference. A read-only Mirage deployment should block `chat`,
-while a write-mode mount may enable it. The wrapper does not expose API-key
-creation, deletion, or arbitrary raw HTTP calls.
+`models`, `images models`, `images endpoints`, `providers list`, `key`, and
+`generation` are reads. `chat` and `images generate` create billable model
+inference. A read-only Mirage deployment should block those two billable
+commands, while a write-mode mount may enable them. The wrapper does not expose
+API-key creation, deletion, or arbitrary raw HTTP calls.

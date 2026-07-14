@@ -64,6 +64,121 @@ describe("OpenRouterClient", () => {
     expect(result.data).toEqual({ limit_remaining: 10 });
   });
 
+  test("discovers dedicated image models and model endpoints", async () => {
+    const requests: Request[] = [];
+    const fetchFn = (async (input: RequestInfo | URL, init?: RequestInit) => {
+      const request = new Request(input, init);
+      requests.push(request);
+      if (new URL(request.url).pathname.endsWith("/endpoints")) {
+        return json({
+          id: "bytedance-seed/seedream-4.5",
+          endpoints: [{
+            provider_slug: "seed",
+            supports_streaming: false,
+            pricing: [{ billable: "output_image", unit: "image", cost_usd: 0.04 }],
+          }],
+        });
+      }
+      return json({
+        data: [{
+          id: "bytedance-seed/seedream-4.5",
+          name: "Seedream 4.5",
+          supported_parameters: {
+            resolution: { type: "enum", values: ["1K", "2K", "4K"] },
+          },
+          supports_streaming: false,
+          endpoints: "/api/v1/images/models/bytedance-seed/seedream-4.5/endpoints",
+        }],
+      });
+    }) as unknown as typeof fetch;
+    const client = new OpenRouterClient({ apiKey: "key", fetch: fetchFn });
+
+    const models = await client.imageModels();
+    const endpoints = await client.imageModelEndpoints("bytedance-seed/seedream-4.5");
+
+    expect(models.data?.[0]?.id).toBe("bytedance-seed/seedream-4.5");
+    expect(models.data?.[0]?.supported_parameters?.resolution).toEqual({
+      type: "enum",
+      values: ["1K", "2K", "4K"],
+    });
+    expect(endpoints.endpoints?.[0]?.pricing?.[0]?.cost_usd).toBe(0.04);
+    expect(new URL(requests[0]!.url).pathname).toBe("/api/v1/images/models");
+    expect(new URL(requests[1]!.url).pathname).toBe(
+      "/api/v1/images/models/bytedance-seed/seedream-4.5/endpoints",
+    );
+  });
+
+  test("generates images once, forces buffered mode, and preserves the response", async () => {
+    let calls = 0;
+    let request: Request | undefined;
+    const fetchFn = (async (input: RequestInfo | URL, init?: RequestInit) => {
+      calls++;
+      request = new Request(input, init);
+      return json({
+        created: 1748372400,
+        data: [{ b64_json: "aGVsbG8=", media_type: "image/png" }],
+        usage: {
+          prompt_tokens: 0,
+          completion_tokens: 10,
+          total_tokens: 10,
+          cost: 0.04,
+        },
+      });
+    }) as unknown as typeof fetch;
+    const client = new OpenRouterClient({ apiKey: "key", fetch: fetchFn });
+
+    const result = await client.generateImages({
+      model: "bytedance-seed/seedream-4.5",
+      prompt: "a small blue square",
+      n: 1,
+      resolution: "1K",
+      aspect_ratio: "1:1",
+      provider: { only: ["seed"], allow_fallbacks: false },
+    });
+
+    expect(calls).toBe(1);
+    expect(new URL(request!.url).pathname).toBe("/api/v1/images");
+    expect(await request!.json()).toEqual({
+      model: "bytedance-seed/seedream-4.5",
+      prompt: "a small blue square",
+      n: 1,
+      resolution: "1K",
+      aspect_ratio: "1:1",
+      provider: { only: ["seed"], allow_fallbacks: false },
+      stream: false,
+    });
+    expect(result.data[0]).toEqual({ b64_json: "aGVsbG8=", media_type: "image/png" });
+    expect(result.usage?.cost).toBe(0.04);
+  });
+
+  test("does not retry billable image generation and preserves typed errors", async () => {
+    let calls = 0;
+    const fetchFn = (async () => {
+      calls++;
+      return json(
+        {
+          error: {
+            code: 502,
+            message: "Provider failed",
+            metadata: { error_type: "provider_unavailable", provider_code: "upstream_error" },
+          },
+        },
+        { status: 502, headers: { "Retry-After": "0" } },
+      );
+    }) as unknown as typeof fetch;
+    const client = new OpenRouterClient({ apiKey: "key", fetch: fetchFn });
+    try {
+      await client.generateImages({ model: "openai/gpt-image-1-mini", prompt: "test" });
+      throw new Error("expected image generation to fail");
+    } catch (error) {
+      expect(error).toBeInstanceOf(ApiError);
+      expect((error as ApiError).status).toBe(502);
+      expect((error as ApiError).errorType).toBe("provider_unavailable");
+      expect((error as ApiError).metadata?.provider_code).toBe("upstream_error");
+    }
+    expect(calls).toBe(1);
+  });
+
   test("does not retry billable chat and preserves typed errors", async () => {
     let calls = 0;
     const fetchFn = (async () => {

@@ -45,6 +45,100 @@ export interface ChatResponse extends JsonRecord {
   error?: ErrorPayload["error"];
 }
 
+export type ImageCapabilityDescriptor =
+  | { type: "enum"; values: string[] }
+  | { type: "range"; min: number; max: number }
+  | { type: "boolean" };
+
+export interface ImageModel extends JsonRecord {
+  id: string;
+  name?: string;
+  description?: string;
+  created?: number;
+  architecture?: {
+    input_modalities?: string[];
+    output_modalities?: string[];
+  };
+  supported_parameters?: Record<string, ImageCapabilityDescriptor>;
+  supports_streaming?: boolean;
+  endpoints?: string;
+}
+
+export interface ImageModelsResponse extends JsonRecord {
+  data?: ImageModel[];
+}
+
+export interface ImageEndpointPricing extends JsonRecord {
+  billable?: string;
+  unit?: string;
+  cost_usd?: number;
+  variant?: string;
+}
+
+export interface ImageModelEndpoint extends JsonRecord {
+  provider_name?: string;
+  provider_slug?: string;
+  provider_tag?: string | null;
+  supported_parameters?: Record<string, ImageCapabilityDescriptor>;
+  allowed_passthrough_parameters?: string[];
+  supports_streaming?: boolean;
+  pricing?: ImageEndpointPricing[];
+}
+
+export interface ImageModelEndpointsResponse extends JsonRecord {
+  id?: string;
+  endpoints?: ImageModelEndpoint[];
+}
+
+export interface ImageReference extends JsonRecord {
+  type: "image_url";
+  image_url: { url: string };
+}
+
+export interface ImageProviderPreferences extends JsonRecord {
+  only?: string[];
+  order?: string[];
+  ignore?: string[];
+  sort?: string | JsonRecord;
+  allow_fallbacks?: boolean;
+  options?: Record<string, JsonRecord>;
+}
+
+export interface ImageGenerationRequest extends JsonRecord {
+  model: string;
+  prompt: string;
+  n?: number;
+  resolution?: string;
+  aspect_ratio?: string;
+  size?: string;
+  quality?: string;
+  output_format?: string;
+  background?: string;
+  output_compression?: number;
+  seed?: number;
+  stream?: false;
+  input_references?: ImageReference[];
+  provider?: ImageProviderPreferences;
+}
+
+export interface GeneratedImage extends JsonRecord {
+  b64_json: string;
+  media_type?: string;
+}
+
+export interface ImageGenerationUsage extends JsonRecord {
+  prompt_tokens: number;
+  completion_tokens: number;
+  total_tokens: number;
+  cost?: number | null;
+}
+
+export interface ImageGenerationResponse extends JsonRecord {
+  created: number;
+  data: GeneratedImage[];
+  usage?: ImageGenerationUsage;
+}
+
 export interface ClientOptions {
   apiKey: string;
   baseUrl?: string;
@@ -112,6 +206,17 @@ export class OpenRouterClient {
     return this.get(`/models/${encodeURIComponent(author)}/${encodeURIComponent(slug)}/endpoints`);
   }
 
+  imageModels(): Promise<ImageModelsResponse> {
+    return this.get("/images/models");
+  }
+
+  imageModelEndpoints(model: string): Promise<ImageModelEndpointsResponse> {
+    const [author, ...slugParts] = model.split("/");
+    const slug = slugParts.join("/");
+    if (!author || !slug) throw new ApiError(400, `Bad model slug "${model}"; expected author/slug`);
+    return this.get(`/images/models/${encodeURIComponent(author)}/${encodeURIComponent(slug)}/endpoints`);
+  }
+
   providers(): Promise<{ data?: unknown[] } & JsonRecord> {
     return this.get("/providers");
   }
@@ -126,6 +231,13 @@ export class OpenRouterClient {
 
   chat(request: ChatRequest): Promise<ChatResponse> {
     return this.requestJson("POST", "/chat/completions", undefined, {
+      ...request,
+      stream: false,
+    });
+  }
+
+  generateImages(request: ImageGenerationRequest): Promise<ImageGenerationResponse> {
+    return this.requestJson("POST", "/images", undefined, {
       ...request,
       stream: false,
     });

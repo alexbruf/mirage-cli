@@ -1,7 +1,7 @@
 {
   "name": "@mirage-cli/openrouter",
-  "version": "0.1.0",
-  "description": "OpenRouter CLI as an importable Mirage and Cloudflare Worker command via @mirage-cli/core.",
+  "version": "0.2.0",
+  "description": "OpenRouter chat and image CLI as an importable Mirage and Cloudflare Worker command via @mirage-cli/core.",
   "type": "module",
   "main": "./dist/index.js",
   "module": "./dist/index.js",
@@ -16,7 +16,8 @@
   },
   "files": [
     "dist/",
-    "README.md"
+    "README.md",
+    "CHANGELOG.md"
   ],
   "scripts": {
     "build": "tsup src/index.ts --format esm --target node18 --dts --external @mirage-cli/core --external @mirage-cli/openrouter-cli --external commander --external @struktoai/mirage-core --clean --silent",

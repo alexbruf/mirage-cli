@@ -23,10 +23,14 @@
         "@mirage-cli/ics": "workspace:*",
         "@mirage-cli/localfalcon": "workspace:*",
         "@mirage-cli/localfalcon-cli": "workspace:*",
+        "@mirage-cli/openrouter": "workspace:*",
+        "@mirage-cli/openrouter-cli": "workspace:*",
         "@mirage-cli/oura": "workspace:*",
         "@mirage-cli/presscart": "workspace:*",
         "@mirage-cli/pulse": "workspace:*",
         "@mirage-cli/radar": "workspace:*",
+        "@mirage-cli/rapidurlindexer": "workspace:*",
+        "@mirage-cli/rapidurlindexer-cli": "workspace:*",
         "@mirage-cli/reddit": "workspace:*",
         "@mirage-cli/seogets": "workspace:*",
         "@mirage-cli/sms": "workspace:*",
@@ -417,6 +421,36 @@
         "commander": "^14.0.3",
       },
     },
+    "packages/openrouter": {
+      "name": "@mirage-cli/openrouter",
+      "version": "0.1.0",
+      "dependencies": {
+        "@mirage-cli/core": "workspace:^",
+      },
+      "devDependencies": {
+        "@mirage-cli/openrouter-cli": "workspace:^",
+        "@struktoai/mirage-core": "^0.0.1",
+        "commander": "^14.0.3",
+        "tsup": "^8.5.1",
+      },
+      "peerDependencies": {
+        "@mirage-cli/openrouter-cli": "workspace:^",
+        "@struktoai/mirage-core": ">=0.0.1",
+      },
+      "optionalPeers": [
+        "@struktoai/mirage-core",
+      ],
+    },
+    "packages/openrouter-cli": {
+      "name": "@mirage-cli/openrouter-cli",
+      "version": "0.1.0",
+      "bin": {
+        "openrouter": "./dist/bin.js",
+      },
+      "dependencies": {
+        "commander": "^14.0.3",
+      },
+    },
     "packages/oura": {
       "name": "@mirage-cli/oura",
       "version": "0.1.9",
@@ -529,12 +563,45 @@
     },
     "packages/radar-cli": {
       "name": "@mirage-cli/radar-cli",
-      "version": "0.2.2",
+      "version": "0.2.3",
       "bin": {
         "radar": "./dist/bin.js",
       },
       "dependencies": {
         "commander": "^14.0.3",
+      },
+    },
+    "packages/rapidurlindexer": {
+      "name": "@mirage-cli/rapidurlindexer",
+      "version": "0.1.0",
+      "dependencies": {
+        "@mirage-cli/core": "workspace:^",
+      },
+      "devDependencies": {
+        "@mirage-cli/rapidurlindexer-cli": "workspace:^",
+        "@struktoai/mirage-core": "^0.0.1",
+        "commander": "^14.0.3",
+        "tsup": "^8.5.1",
+      },
+      "peerDependencies": {
+        "@mirage-cli/rapidurlindexer-cli": "workspace:^",
+        "@struktoai/mirage-core": ">=0.0.1",
+      },
+      "optionalPeers": [
+        "@struktoai/mirage-core",
+      ],
+    },
+    "packages/rapidurlindexer-cli": {
+      "name": "@mirage-cli/rapidurlindexer-cli",
+      "version": "0.1.0",
+      "bin": {
+        "rapidurlindexer": "./dist/bin.js",
+      },
+      "dependencies": {
+        "commander": "^14.0.3",
+      },
+      "devDependencies": {
+        "@mirage-cli/core": "workspace:^",
       },
     },
     "packages/reddit": {
@@ -569,7 +636,7 @@
     },
     "packages/seogets": {
       "name": "@mirage-cli/seogets",
-      "version": "0.1.9",
+      "version": "1.0.0",
       "dependencies": {
         "@mirage-cli/core": "workspace:^",
       },
@@ -589,7 +656,7 @@
     },
     "packages/seogets-cli": {
       "name": "@mirage-cli/seogets-cli",
-      "version": "0.1.10",
+      "version": "0.2.0",
       "bin": {
         "seogets": "./dist/bin.js",
       },
@@ -1013,6 +1080,10 @@
 
     "@mirage-cli/localfalcon-cli": ["@mirage-cli/localfalcon-cli@workspace:packages/localfalcon-cli"],
 
+    "@mirage-cli/openrouter": ["@mirage-cli/openrouter@workspace:packages/openrouter"],
+
+    "@mirage-cli/openrouter-cli": ["@mirage-cli/openrouter-cli@workspace:packages/openrouter-cli"],
+
     "@mirage-cli/oura": ["@mirage-cli/oura@workspace:packages/oura"],
 
     "@mirage-cli/oura-cli": ["@mirage-cli/oura-cli@workspace:packages/oura-cli"],
@@ -1028,6 +1099,10 @@
     "@mirage-cli/radar": ["@mirage-cli/radar@workspace:packages/radar"],
 
     "@mirage-cli/radar-cli": ["@mirage-cli/radar-cli@workspace:packages/radar-cli"],
+
+    "@mirage-cli/rapidurlindexer": ["@mirage-cli/rapidurlindexer@workspace:packages/rapidurlindexer"],
+
+    "@mirage-cli/rapidurlindexer-cli": ["@mirage-cli/rapidurlindexer-cli@workspace:packages/rapidurlindexer-cli"],
 
     "@mirage-cli/reddit": ["@mirage-cli/reddit@workspace:packages/reddit"],
 

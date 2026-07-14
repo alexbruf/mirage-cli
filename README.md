@@ -17,7 +17,11 @@ Wrap any Commander.js TS CLI as an importable `@mirage-cli/<vendor>` package for
 | `@mirage-cli/callrail-cli` | CallRail v3 CLI source — read-only call tracking (calls, summaries, trackers, SMS, forms) with multi-account profiles. |
 | `@mirage-cli/callrail`     | Thin wrapper around `@mirage-cli/callrail-cli`'s `buildProgram` — `buildProgram` + `callrailCommand`.              |
 | `@mirage-cli/ve-fanout-cli` | VE Fanout CLI source — AI query fan-out (ChatGPT/Gemini/Perplexity sub-queries) over the VE Fanout v1 API. Exports `buildProgram()`. |
-| `@mirage-cli/ve-fanout`    | Thin wrapper around `@mirage-cli/ve-fanout-cli`'s `buildProgram` — `buildProgram` + `veFanoutCommand`.            |
+| `@mirage-cli/ve-fanout`    | Thin wrapper around `@mirage-cli/ve-fanout-cli`'s `buildProgram` - `buildProgram` + `veFanoutCommand`.            |
+| `@mirage-cli/openrouter-cli` | OpenRouter CLI source: model/provider discovery, key usage, generation audit, and billable chat completions. |
+| `@mirage-cli/openrouter` | Thin Mirage wrapper around `@mirage-cli/openrouter-cli`, exposing the global `openrouter` command. |
+| `@mirage-cli/rapidurlindexer-cli` | Rapid URL Indexer CLI source: credit balance, paid project submission, status, and delayed reports. |
+| `@mirage-cli/rapidurlindexer` | Thin Mirage wrapper around `@mirage-cli/rapidurlindexer-cli`, exposing the global `rapidurlindexer` command. |
 
 **Source packages vs wrapper packages.** A `*-cli` package is the CLI itself (the binary + its programmatic API). A `@mirage-cli/<vendor>` package is the thin adapter that surfaces it as `buildProgram` + `<vendor>Command` for mirage / worker consumption.
 

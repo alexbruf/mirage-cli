@@ -5,6 +5,7 @@
 export { buildProgram } from "./cli.ts";
 export {
   BoundedMinHeap,
+  SERVER_ROW_CAP,
   gscCompare,
   gscTopBy,
   metricOf,

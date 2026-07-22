@@ -1,6 +1,7 @@
 import { describe, expect, test } from "bun:test";
 import {
   BoundedMinHeap,
+  SERVER_ROW_CAP,
   gscCompare,
   gscTopBy,
   normalizeGscPage,
@@ -12,18 +13,14 @@ import {
 } from "../src/gsc-top.ts";
 import { renderOutput } from "../src/output.ts";
 
-function pagerFromPages(pages: Record<string, GscRow[][]>): GscPager & { calls: GscPageArgs[] } {
+function pagerFromWindows(windows: Record<string, GscRow[]>): GscPager & { calls: GscPageArgs[] } {
   const calls: GscPageArgs[] = [];
   return {
     calls,
     async getGscPage(args) {
       calls.push(args);
       const key = `${args.start_date}:${args.end_date}`;
-      const rows = pages[key]?.[args.page - 1] ?? [];
-      return {
-        rows,
-        envelope: { pagination: { page: args.page, total_pages: pages[key]?.length ?? 0 } },
-      };
+      return { rows: windows[key] ?? [], envelope: {} };
     },
   };
 }
@@ -75,15 +72,13 @@ describe("BoundedMinHeap", () => {
 });
 
 describe("gscTopBy", () => {
-  test("paginates every page and includes a high-impression zero-click row from page 3", async () => {
-    const pager = pagerFromPages({
+  test("makes one un-paginated request and ranks the full window by the metric", async () => {
+    const pager = pagerFromWindows({
       "2026-06-28:2026-07-12": [
-        [
-          { query: "click winner", clicks: 20, impressions: 100 },
-          { query: "second", clicks: 10, impressions: 90 },
-        ],
-        [{ query: "third", clicks: 5, impressions: 80 }],
-        [{ query: "flat roof repair", clicks: 0, impressions: 214 }],
+        { query: "click winner", clicks: 20, impressions: 100 },
+        { query: "second", clicks: 10, impressions: 90 },
+        { query: "third", clicks: 5, impressions: 80 },
+        { query: "flat roof repair", clicks: 0, impressions: 214 },
       ],
     });
 
@@ -94,7 +89,6 @@ describe("gscTopBy", () => {
       dimension: "query",
       metric: "impressions",
       limit: 3,
-      pageSize: 2,
       brandedQueries: false,
     });
 
@@ -103,23 +97,25 @@ describe("gscTopBy", () => {
       "click winner",
       "second",
     ]);
-    expect(result).toMatchObject({ pagesFetched: 3, rowsScanned: 4, truncatedByCap: false });
-    expect(pager.calls).toHaveLength(3);
-    expect(pager.calls[0]).toMatchObject({
+    expect(result).toMatchObject({ pagesFetched: 1, rowsScanned: 4, truncatedByCap: false });
+    expect(pager.calls).toHaveLength(1);
+    expect(pager.calls[0]).toEqual({
+      site: "example.com",
+      start_date: "2026-06-28",
+      end_date: "2026-07-12",
       dimensions: ["query"],
       branded_queries: false,
-      page: 1,
     });
+    expect(pager.calls[0]).not.toHaveProperty("page");
+    expect(pager.calls[0]).not.toHaveProperty("page_size");
   });
 
   test("sorts position ascending and resolves metric ties by label", async () => {
-    const pager = pagerFromPages({
+    const pager = pagerFromWindows({
       "a:b": [
-        [
-          { page: "/z", position: 2 },
-          { page: "/b", position: 1 },
-          { page: "/a", position: 1 },
-        ],
+        { page: "/z", position: 2 },
+        { page: "/b", position: 1 },
+        { page: "/a", position: 1 },
       ],
     });
 
@@ -134,10 +130,14 @@ describe("gscTopBy", () => {
     expect(result.rows.map((row) => row.page)).toEqual(["/a", "/b", "/z"]);
   });
 
-  test("reports truncation when an explicit safety cap prevents complete pagination", async () => {
+  test("reports truncation when the response hits the server row cap", async () => {
+    const rows: GscRow[] = Array.from({ length: SERVER_ROW_CAP }, (_, index) => ({
+      query: `q${index}`,
+      impressions: 1,
+    }));
     const pager: GscPager = {
       async getGscPage() {
-        return { rows: [{ query: "a", impressions: 1 }], envelope: { has_more: true } };
+        return { rows, envelope: {} };
       },
     };
     const result = await gscTopBy(pager, {
@@ -147,22 +147,25 @@ describe("gscTopBy", () => {
       dimension: "query",
       metric: "impressions",
       limit: 5,
-      maxPages: 2,
     });
-    expect(result).toMatchObject({ pagesFetched: 2, truncatedByCap: true });
+    expect(result).toMatchObject({
+      pagesFetched: 1,
+      rowsScanned: SERVER_ROW_CAP,
+      truncatedByCap: true,
+    });
   });
 });
 
 describe("gscCompare", () => {
-  test("finds an exact query after page 1 in both windows and calculates deltas", async () => {
-    const pager = pagerFromPages({
+  test("finds an exact query in both windows and calculates deltas", async () => {
+    const pager = pagerFromWindows({
       "current:start": [
-        [{ query: "other", impressions: 100 }],
-        [{ query: "target", impressions: 60 }],
+        { query: "other", impressions: 100 },
+        { query: "target", impressions: 60 },
       ],
       "prior:start": [
-        [{ query: "other", impressions: 90 }],
-        [{ query: "target", impressions: 40 }],
+        { query: "other", impressions: 90 },
+        { query: "target", impressions: 40 },
       ],
     });
 
@@ -174,7 +177,6 @@ describe("gscCompare", () => {
       compareStart: "prior",
       compareEnd: "start",
       metric: "impressions",
-      pageSize: 1,
     });
 
     expect(result).toEqual({
@@ -191,9 +193,9 @@ describe("gscCompare", () => {
   });
 
   test("returns a null percentage when the prior value is zero", async () => {
-    const pager = pagerFromPages({
-      "current:start": [[{ query: "target", clicks: 2 }]],
-      "prior:start": [[{ query: "target", clicks: 0 }]],
+    const pager = pagerFromWindows({
+      "current:start": [{ query: "target", clicks: 2 }],
+      "prior:start": [{ query: "target", clicks: 0 }],
     });
     const result = await gscCompare(pager, {
       site: "example.com",

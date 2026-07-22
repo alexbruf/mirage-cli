@@ -13,7 +13,7 @@ seogets gsc-top example.com 2026-04-01 2026-04-29 --dim query --by impressions -
 seogets gsc-compare example.com --query "roof repair" --current-start 2026-04-16 --current-end 2026-04-29 --compare-start 2026-04-02 --compare-end 2026-04-15
 seogets indexing overview example.com
 seogets indexing status example.com --status "Crawled - currently not indexed"
-seogets call get_gsc_performance '{"site":"example.com","start_date":"2026-04-01","end_date":"2026-04-29","page":1}'
+seogets call get_gsc_performance '{"site":"example.com","start_date":"2026-04-01","end_date":"2026-04-29","dimensions":["query"]}'
 ```
 
 ## Auth
@@ -32,13 +32,16 @@ JSON-RPC 2.0 over Streamable HTTP. The endpoint returns SSE-encoded responses (`
 
 Every command supports `-f, --format <fmt>` (`ascii` | `json` | `csv` | `markdown` | `ndjson`) and `-o, --output <file>`.
 
-`gsc-top` fully paginates the SEO Gets response before selecting rows, so sorting by
-impressions does not omit zero-click queries beyond the first clicks-sorted page. Its
-default rows-only output contains only the requested dimension and metric, with no MCP
-metadata wrapper. Use `--no-rows-only` to retain every upstream column.
+`get_gsc_performance` returns the whole window in a single response (no pagination —
+the server rejects `page`/`page_size` and caps output at ~50,000 rows). `gsc-top`
+ranks that full response before selecting rows, so sorting by impressions does not
+omit zero-click queries. Its default rows-only output contains only the requested
+dimension and metric, with no MCP metadata wrapper. Use `--no-rows-only` to retain
+every upstream column. A `# warning` is printed to stderr when a response hits the
+server row cap.
 
-`gsc-compare` finds one exact query across two fully paginated windows and returns its
-current value, prior value, absolute and percentage deltas, and explicit found flags.
+`gsc-compare` finds one exact query across two windows and returns its current value,
+prior value, absolute and percentage deltas, and explicit found flags.
 
 ## Programmatic use
 

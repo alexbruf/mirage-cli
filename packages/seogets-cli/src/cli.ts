@@ -32,7 +32,7 @@ interface GscTopOpts extends GscOpts {
   by: GscMetric;
   limit: number;
   rowsOnly: boolean;
-  maxPages: number;
+  maxPages?: number;
 }
 
 interface GscCompareOpts extends GscOpts {
@@ -42,7 +42,7 @@ interface GscCompareOpts extends GscOpts {
   compareStart: string;
   compareEnd: string;
   metric: GscMetric;
-  maxPages: number;
+  maxPages?: number;
 }
 
 function coerceBoolean(value: string): boolean {
@@ -116,8 +116,16 @@ export function buildProgram(): Command {
         "GSC search analytics (MCP: get_gsc_performance). " +
           "<dimensions> is a comma-separated subset of query,page,date,country,device,contentGroup,topicCluster.",
       )
-      .option("--page <n>", "page number (1-based)", (v: string) => parseInt(v, 10), 1)
-      .option("--page-size <n>", "rows per page", (v: string) => parseInt(v, 10), 1000)
+      .addOption(
+        new Option("--page <n>", "deprecated: the server no longer paginates; ignored")
+          .argParser((v: string) => parseInt(v, 10))
+          .hideHelp(),
+      )
+      .addOption(
+        new Option("--page-size <n>", "deprecated: the server no longer paginates; ignored")
+          .argParser((v: string) => parseInt(v, 10))
+          .hideHelp(),
+      )
       .option(
         "--branded-queries <bool>",
         "filter to branded (true) or non-branded (false) queries; omit for both",
@@ -125,7 +133,8 @@ export function buildProgram(): Command {
       )
       .option(
         "--filters <json>",
-        "extra filter JSON to merge into arguments (e.g. '{\"countries\":[\"US\"]}')",
+        "extra JSON to merge into arguments; the server rejects unknown keys, " +
+          "so only schema fields work (e.g. '{\"filters\":[...]}')",
       ),
   ).action(
     async (
@@ -137,12 +146,16 @@ export function buildProgram(): Command {
       cmd: Command,
     ) => {
       const globals = cmd.optsWithGlobals();
+      if (opts.page !== undefined || opts.pageSize !== undefined) {
+        console.error(
+          "# warning: --page/--page-size are deprecated and ignored; " +
+            "get_gsc_performance returns the whole window in one response",
+        );
+      }
       const args: Record<string, unknown> = {
         site,
         start_date: start,
         end_date: end,
-        page: opts.page ?? 1,
-        page_size: opts.pageSize ?? 1000,
       };
       if (dims) args.dimensions = dims.split(",").map((d) => d.trim()).filter(Boolean);
       if (opts.brandedQueries !== undefined) args.branded_queries = opts.brandedQueries;
@@ -156,7 +169,7 @@ export function buildProgram(): Command {
   addFormatFlags(
     program
       .command("gsc-top <site> <start_date> <end_date>")
-      .description("True top-N GSC rows after complete pagination")
+      .description("True top-N GSC rows from the full single-response window")
       .addOption(new Option("--dim <dimension>").choices(["query", "page"]).default("query"))
       .addOption(
         new Option("--by <metric>")
@@ -164,8 +177,16 @@ export function buildProgram(): Command {
           .default("impressions"),
       )
       .option("-n, --limit <n>", "number of rows", parsePositiveInteger, 10)
-      .option("--page-size <n>", "rows per upstream page", parsePositiveInteger, 1000)
-      .option("--max-pages <n>", "safety cap on pages", parsePositiveInteger, 1000)
+      .addOption(
+        new Option("--page-size <n>", "deprecated: the server no longer paginates; ignored")
+          .argParser(parsePositiveInteger)
+          .hideHelp(),
+      )
+      .addOption(
+        new Option("--max-pages <n>", "deprecated: the server no longer paginates; ignored")
+          .argParser(parsePositiveInteger)
+          .hideHelp(),
+      )
       .option("--branded-queries <bool>", "server-side branded query filter", coerceBoolean)
       .option("--filters <json>", "extra get_gsc_performance arguments as JSON")
       .option("--rows-only", "emit only the dimension and selected metric", true)
@@ -178,13 +199,13 @@ export function buildProgram(): Command {
       dimension: opts.dim,
       metric: opts.by,
       limit: opts.limit,
-      pageSize: opts.pageSize,
-      maxPages: opts.maxPages,
       brandedQueries: opts.brandedQueries,
       filters: parseFilters(opts.filters),
     });
     if (result.truncatedByCap) {
-      console.error(`# warning: stopped at --max-pages ${opts.maxPages}; results may be incomplete`);
+      console.error(
+        "# warning: the server returned its row cap; results may be incomplete",
+      );
     }
     const rows = opts.rowsOnly
       ? result.rows.map((row) => ({ [opts.dim]: row[opts.dim], [opts.by]: row[opts.by] }))
@@ -196,7 +217,7 @@ export function buildProgram(): Command {
   addFormatFlags(
     program
       .command("gsc-compare <site>")
-      .description("Compare one exact GSC query across two fully paginated windows")
+      .description("Compare one exact GSC query across two windows")
       .requiredOption("--query <query>", "exact query label")
       .requiredOption("--current-start <date>", "current window start")
       .requiredOption("--current-end <date>", "current window end")
@@ -207,8 +228,16 @@ export function buildProgram(): Command {
           .choices(["impressions", "clicks", "position"])
           .default("impressions"),
       )
-      .option("--page-size <n>", "rows per upstream page", parsePositiveInteger, 1000)
-      .option("--max-pages <n>", "safety cap on pages", parsePositiveInteger, 1000)
+      .addOption(
+        new Option("--page-size <n>", "deprecated: the server no longer paginates; ignored")
+          .argParser(parsePositiveInteger)
+          .hideHelp(),
+      )
+      .addOption(
+        new Option("--max-pages <n>", "deprecated: the server no longer paginates; ignored")
+          .argParser(parsePositiveInteger)
+          .hideHelp(),
+      )
       .option("--branded-queries <bool>", "server-side branded query filter", coerceBoolean)
       .option("--filters <json>", "extra get_gsc_performance arguments as JSON"),
   ).action(async (site: string, opts: GscCompareOpts, cmd: Command) => {
@@ -220,13 +249,13 @@ export function buildProgram(): Command {
       compareStart: opts.compareStart,
       compareEnd: opts.compareEnd,
       metric: opts.metric,
-      pageSize: opts.pageSize,
-      maxPages: opts.maxPages,
       brandedQueries: opts.brandedQueries,
       filters: parseFilters(opts.filters),
     });
     if (result.truncated) {
-      console.error(`# warning: stopped at --max-pages ${opts.maxPages}; comparison may be incomplete`);
+      console.error(
+        "# warning: the server returned its row cap; comparison may be incomplete",
+      );
     }
     writeObject(result, opts);
   });

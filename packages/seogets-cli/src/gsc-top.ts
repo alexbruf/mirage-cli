@@ -21,8 +21,10 @@ export interface GscPageArgs {
   start_date: string;
   end_date: string;
   dimensions: string[];
-  page: number;
-  page_size: number;
+  /** @deprecated get_gsc_performance rejects pagination params; never sent. */
+  page?: number;
+  /** @deprecated get_gsc_performance rejects pagination params; never sent. */
+  page_size?: number;
   branded_queries?: boolean;
   [key: string]: unknown;
 }
@@ -43,7 +45,9 @@ export interface GscTopParams {
   dimension: GscDimension;
   metric: GscMetric;
   limit: number;
+  /** @deprecated the server no longer paginates; ignored. */
   pageSize?: number;
+  /** @deprecated the server no longer paginates; ignored. */
   maxPages?: number;
   brandedQueries?: boolean;
   filters?: Record<string, unknown>;
@@ -64,7 +68,9 @@ export interface GscCompareParams {
   compareStart: string;
   compareEnd: string;
   metric: GscMetric;
+  /** @deprecated the server no longer paginates; ignored. */
   pageSize?: number;
+  /** @deprecated the server no longer paginates; ignored. */
   maxPages?: number;
   brandedQueries?: boolean;
   filters?: Record<string, unknown>;
@@ -82,8 +88,12 @@ export interface GscCompareResult {
   truncated: boolean;
 }
 
-const DEFAULT_PAGE_SIZE = 1000;
-const DEFAULT_MAX_PAGES = 1000;
+/**
+ * get_gsc_performance returns the whole window in one response, capped at
+ * this many rows (observed server behavior). A response exactly at the cap
+ * is almost certainly truncated, and there is no way to fetch the rest.
+ */
+export const SERVER_ROW_CAP = 50_000;
 
 function asRecord(value: unknown): Record<string, unknown> | null {
   return value !== null && typeof value === "object" && !Array.isArray(value)
@@ -199,6 +209,7 @@ function numberField(records: Record<string, unknown>[], keys: string[]): number
   return undefined;
 }
 
+/** @deprecated get_gsc_performance no longer paginates; kept for callers that inspect legacy envelopes. */
 export function pageHasMore(
   envelope: Record<string, unknown>,
   rowCount: number,
@@ -317,16 +328,12 @@ function positiveInteger(value: number | undefined, fallback: number): number {
 
 function requestArgs(
   params: Pick<GscTopParams, "site" | "startDate" | "endDate" | "dimension" | "brandedQueries" | "filters">,
-  page: number,
-  pageSize: number,
 ): GscPageArgs {
   return {
     site: params.site,
     start_date: params.startDate,
     end_date: params.endDate,
     dimensions: [params.dimension],
-    page,
-    page_size: pageSize,
     ...(params.brandedQueries !== undefined ? { branded_queries: params.brandedQueries } : {}),
     ...(params.filters ?? {}),
   };
@@ -334,29 +341,20 @@ function requestArgs(
 
 export async function gscTopBy(client: GscPager, params: GscTopParams): Promise<GscTopResult> {
   const limit = positiveInteger(params.limit, 1);
-  const pageSize = positiveInteger(params.pageSize, DEFAULT_PAGE_SIZE);
-  const maxPages = positiveInteger(params.maxPages, DEFAULT_MAX_PAGES);
   const top = new BoundedMinHeap<GscRow>(limit, (left, right) =>
     compareRows(left, right, params.dimension, params.metric),
   );
-  let pagesFetched = 0;
-  let rowsScanned = 0;
-  let truncatedByCap = false;
-
-  for (let page = 1; page <= maxPages; page += 1) {
-    const result = await client.getGscPage(requestArgs(params, page, pageSize));
-    pagesFetched += 1;
-    rowsScanned += result.rows.length;
-    for (const row of result.rows) {
-      if (labelOf(row, params.dimension) === null || metricOf(row, params.metric) === null) continue;
-      top.offer(row);
-    }
-    const hasMore = pageHasMore(result.envelope, result.rows.length, pageSize, page);
-    if (!hasMore) break;
-    if (page === maxPages) truncatedByCap = true;
+  const result = await client.getGscPage(requestArgs(params));
+  for (const row of result.rows) {
+    if (labelOf(row, params.dimension) === null || metricOf(row, params.metric) === null) continue;
+    top.offer(row);
   }
-
-  return { rows: top.drainSorted(), pagesFetched, rowsScanned, truncatedByCap };
+  return {
+    rows: top.drainSorted(),
+    pagesFetched: 1,
+    rowsScanned: result.rows.length,
+    truncatedByCap: result.rows.length >= SERVER_ROW_CAP,
+  };
 }
 
 async function findQueryMetric(
@@ -364,18 +362,11 @@ async function findQueryMetric(
   params: Omit<GscTopParams, "limit">,
   query: string,
 ): Promise<{ value: number; found: boolean; truncated: boolean }> {
-  const pageSize = positiveInteger(params.pageSize, DEFAULT_PAGE_SIZE);
-  const maxPages = positiveInteger(params.maxPages, DEFAULT_MAX_PAGES);
-  for (let page = 1; page <= maxPages; page += 1) {
-    const result = await client.getGscPage(requestArgs(params, page, pageSize));
-    const match = result.rows.find((row) => row.query === query);
-    const metric = match ? metricOf(match, params.metric) : null;
-    if (metric !== null) return { value: metric, found: true, truncated: false };
-    const hasMore = pageHasMore(result.envelope, result.rows.length, pageSize, page);
-    if (!hasMore) return { value: 0, found: false, truncated: false };
-    if (page === maxPages) return { value: 0, found: false, truncated: true };
-  }
-  return { value: 0, found: false, truncated: false };
+  const result = await client.getGscPage(requestArgs(params));
+  const match = result.rows.find((row) => row.query === query);
+  const metric = match ? metricOf(match, params.metric) : null;
+  if (metric !== null) return { value: metric, found: true, truncated: false };
+  return { value: 0, found: false, truncated: result.rows.length >= SERVER_ROW_CAP };
 }
 
 export async function gscCompare(
@@ -386,8 +377,6 @@ export async function gscCompare(
     site: params.site,
     dimension: "query" as const,
     metric: params.metric,
-    pageSize: params.pageSize,
-    maxPages: params.maxPages,
     brandedQueries: params.brandedQueries,
     filters: params.filters,
   };

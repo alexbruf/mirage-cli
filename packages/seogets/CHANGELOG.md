@@ -1,5 +1,12 @@
 # @mirage-cli/seogets
 
+## 1.0.1
+
+### Patch Changes
+
+- Updated dependencies [7822a9d]
+  - @mirage-cli/seogets-cli@0.3.0
+
 ## 1.0.0
 
 ### Minor Changes

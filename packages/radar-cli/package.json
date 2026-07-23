@@ -1,6 +1,6 @@
 {
   "name": "@mirage-cli/radar-cli",
-  "version": "0.2.3",
+  "version": "0.3.0",
   "description": "ViewEngine Radar CLI — org-scoped AI visibility (projects, queries, game-plans, results, jobs, credits). Mirage-compatible command shape.",
   "license": "MIT",
   "repository": {

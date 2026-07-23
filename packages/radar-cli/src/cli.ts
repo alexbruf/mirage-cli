@@ -1,6 +1,7 @@
 import { Command } from "commander";
 import * as auth from "./auth.ts";
 import { ApiClient } from "./client.ts";
+import { registerMetricsCommands } from "./commands/metrics.ts";
 import { registerOrgsCommands } from "./commands/orgs.ts";
 import { getDefaultBaseUrl, requireSession, type Session } from "./config.ts";
 
@@ -21,7 +22,7 @@ export function buildProgram(): Command {
   program
     .name("radar")
     .description("ViewEngine Radar — AI visibility CLI")
-    .version("0.2.3")
+    .version("0.3.0")
     .option("--api-key <key>", "Clerk API key (or set RADAR_API_KEY env)")
     .option("--url <url>", "API base URL (or set RADAR_API_BASE_URL env)")
     .option("--org <id-or-slug>", "Override the active org for this command only");
@@ -306,6 +307,7 @@ export function buildProgram(): Command {
 
   // ── Orgs (multi-tenant switch) ──
   registerOrgsCommands(program, getClient);
+  registerMetricsCommands(program, getClient);
 
   return program;
 }

@@ -1,5 +1,28 @@
 # @mirage-cli/radar-cli
 
+## 0.3.0
+
+### Minor Changes
+
+- New `metrics` command group — server-side aggregates from the visibility
+  tool's `/api/v1/metrics/*` mounts (the dashboard's own metrics routers, so
+  every number is identical to the app's Overview):
+  `metrics overview` (headline SoV/rank/score, `--compare` for
+  period-over-period deltas), `metrics project` (per-query scores + model and
+  category breakdowns), `metrics brands` (competitor mention SoV with WoW rank
+  movement), `metrics sources` (top cited domains), `metrics trends`
+  (time-bucketed series, `--granularity`), `metrics heatmap` (category × model
+  grid, `--until` snapshots). All accept `--days` / `--from` / `--until` /
+  `--platforms` windowing and `--format table|csv|json` (table default; json
+  prints the full payload).
+- New `export-results` — full-history NDJSON streamed from `/api/v1/export-full`
+  to stdout or `-o <file>`, with `--since <iso>` resume (rows created STRICTLY
+  after the timestamp). Replaces client-side page-looping for bulk pulls.
+- New `src/format.ts` (table/CSV rendering, RFC 4180) shared verbatim with the
+  prod `ve-radar` CLI — keep the two copies in lockstep.
+- Requires visibility-tool PR #101 server-side (deployed to prod 2026-07-23).
+  Pre-existing entity commands and their raw-JSON output are unchanged.
+
 ## 0.2.3
 
 ### Patch Changes

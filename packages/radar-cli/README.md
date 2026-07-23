@@ -31,6 +31,12 @@ radar export game-plans > game-plans.json
 - `jobs {list}` (execution-jobs)
 - `credits {list}`
 - `export <entity>` — page through every row of an entity
+- `metrics {overview, project, brands, sources, trends, heatmap}` — server-side
+  aggregates (dashboard-identical numbers); `--days/--from/--until/--platforms`
+  windowing, `--format table|csv|json`, `overview --compare` for
+  period-over-period deltas
+- `export-results` — full-history NDJSON streamed server-side (`--since` resume,
+  `-o <file>`)
 - `orgs {list, use, current, clear}` — multi-tenant switching
 - `login / whoami / logout`
 

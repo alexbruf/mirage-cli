@@ -1,5 +1,13 @@
 # @mirage-cli/radar
 
+## 0.2.1
+
+### Patch Changes
+
+- Republish so the `@mirage-cli/radar-cli` peer range (expanded from
+  `workspace:^` at publish time) includes 0.3.0 — the release that adds the
+  `metrics` command group and streamed `export-results`. No code changes.
+
 ## 0.2.0
 
 ### Minor Changes

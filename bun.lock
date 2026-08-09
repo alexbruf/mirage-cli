@@ -202,7 +202,7 @@
     },
     "packages/core": {
       "name": "@mirage-cli/core",
-      "version": "0.1.10",
+      "version": "0.1.11",
       "devDependencies": {
         "commander": "^12.1.0",
         "firecrawl-cli": "^1.18.0",
@@ -235,13 +235,13 @@
     },
     "packages/dataforseo-cli": {
       "name": "@mirage-cli/dataforseo-cli",
-      "version": "0.1.10",
+      "version": "0.1.11",
       "bin": {
         "dfs": "./dist/bin.js",
         "dataforseo": "./dist/bin.js",
       },
       "dependencies": {
-        "@mirage-cli/core": "^0.1.10",
+        "@mirage-cli/core": "^0.1.11",
         "commander": "^12.1.0",
       },
       "devDependencies": {

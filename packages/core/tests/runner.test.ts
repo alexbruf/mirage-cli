@@ -436,3 +436,31 @@ describe("reportCost", () => {
     ]);
   });
 });
+
+describe("cross-copy context sharing", () => {
+  // A wrapper CLI that bundles core into its own dist gets a private copy of
+  // this module. If the ALS were a plain module-level instance, its
+  // reportCost() would push into a store the host's runCommander never opened
+  // and every report would vanish silently. The instance is parked on
+  // globalThis under a well-known symbol so duplicate copies converge.
+  test("the run context ALS is a globalThis singleton", () => {
+    const held = (globalThis as Record<symbol, unknown>)[
+      Symbol.for("@mirage-cli/core.runCtxAls")
+    ];
+    expect(held).toBeDefined();
+    expect(typeof (held as { getStore?: unknown }).getStore).toBe("function");
+    expect(typeof (held as { run?: unknown }).run).toBe("function");
+  });
+
+  test("a second copy of the module reuses the same instance", async () => {
+    const held = (globalThis as Record<symbol, unknown>)[
+      Symbol.for("@mirage-cli/core.runCtxAls")
+    ];
+    const again = await import("../src/runner.ts");
+    // Re-importing must not have replaced the singleton.
+    expect(
+      (globalThis as Record<symbol, unknown>)[Symbol.for("@mirage-cli/core.runCtxAls")],
+    ).toBe(held);
+    expect(typeof again.reportCost).toBe("function");
+  });
+});

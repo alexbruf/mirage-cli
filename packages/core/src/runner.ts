@@ -245,7 +245,26 @@ interface RunCtx {
   costs: CostReport[];
 }
 
-const als = new AsyncLocalStorage<RunCtx>();
+/**
+ * One AsyncLocalStorage instance per *process*, not per copy of this module.
+ *
+ * A wrapper CLI that bundles `@mirage-cli/core` into its own dist (the default
+ * for `bun build` / tsup unless core is explicitly externalised) ends up with a
+ * private `als`. Its `reportCost` would then push into a context that the
+ * host's `runCommander` never created, `getStore()` would return undefined,
+ * and every cost report would be silently dropped — no error, no log, just
+ * missing data, which is the one failure mode this telemetry cannot afford.
+ *
+ * Keying off a well-known symbol on `globalThis` makes duplicate copies of
+ * this module share one store. Externalising core in the consumer's bundler
+ * config is still the right thing to do; this makes forgetting it survivable
+ * rather than silently wrong.
+ */
+const ALS_KEY = Symbol.for("@mirage-cli/core.runCtxAls");
+type AlsHolder = { [ALS_KEY]?: AsyncLocalStorage<RunCtx> };
+const alsHolder = globalThis as unknown as AlsHolder;
+const als: AsyncLocalStorage<RunCtx> =
+  alsHolder[ALS_KEY] ?? (alsHolder[ALS_KEY] = new AsyncLocalStorage<RunCtx>());
 
 /**
  * Record what a paid upstream call consumed. Call this from inside a command

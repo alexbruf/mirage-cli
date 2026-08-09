@@ -52,10 +52,40 @@ export type ByteSource =
   | AsyncIterable<Uint8Array>
   | ReadableStream<Uint8Array>;
 
+/**
+ * What one paid upstream call consumed, as the vendor reported it.
+ *
+ * Deliberately raw: a CLI states what its API told it and nothing more. It
+ * does NOT convert credits to dollars, because the exchange rate depends on
+ * the plan the account is on, which the API does not know and the CLI has no
+ * business guessing. Whoever consumes these reports prices them.
+ *
+ * Set only the fields the vendor actually returned. Every field is optional
+ * except `provider`, so a call that is known to be billable but whose cost is
+ * unreported still produces a report — "we spent something here, amount
+ * unknown" is useful, and is very different from silence.
+ */
+export interface CostReport {
+  /** Provider identifier, e.g. "dataforseo", "ahrefs", "openrouter". */
+  provider: string;
+  /** Dollars, when the API states a price directly (DataForSEO, Apify). */
+  usd?: number | null;
+  /** Vendor credits, when the API bills in credits (Firecrawl, LocalFalcon). */
+  credits?: number | null;
+  /** Vendor units. Ahrefs bills in "units" and reports them per response. */
+  units?: number | null;
+  /** Model identifier, for token-priced providers. */
+  model?: string | null;
+  promptTokens?: number | null;
+  completionTokens?: number | null;
+  /** Upstream HTTP status, when the caller knows it. */
+  statusCode?: number | null;
+}
+
 export interface StreamResult {
   stdout: ReadableStream<Uint8Array>;
   stderr: ReadableStream<Uint8Array>;
-  done: Promise<{ exitCode: number; error: unknown }>;
+  done: Promise<{ exitCode: number; error: unknown; costs: CostReport[] }>;
 }
 
 export interface RunResult {
@@ -63,6 +93,8 @@ export interface RunResult {
   stderr: Uint8Array;
   exitCode: number;
   error: unknown;
+  /** Cost reports emitted by the wrapped program during this call. */
+  costs: CostReport[];
 }
 
 export interface StreamOptions {
@@ -210,9 +242,31 @@ interface RunCtx {
   outWriter: WritableStreamDefaultWriter<Uint8Array>;
   errWriter: WritableStreamDefaultWriter<Uint8Array>;
   stdin: unknown;
+  costs: CostReport[];
 }
 
 const als = new AsyncLocalStorage<RunCtx>();
+
+/**
+ * Record what a paid upstream call consumed. Call this from inside a command
+ * action, at the point where the API response has already been parsed — the
+ * numbers are sitting in an object there, so this costs nothing.
+ *
+ * Reports ride the same per-call AsyncLocalStorage context as stdout/stderr,
+ * so they are attributed to the right invocation under concurrency and are
+ * returned as structured data on `RunResult.costs`. They never touch the
+ * user-visible streams: a cost report is telemetry, not program output, and
+ * anything written to stderr would end up in the caller's error text.
+ *
+ * Outside a `streamCommander`/`runCommander` call this is a silent no-op, so
+ * a CLI that calls it still runs normally as a standalone binary.
+ */
+export function reportCost(report: CostReport): void {
+  const ctx = als.getStore();
+  if (!ctx) return;
+  if (!report || typeof report.provider !== "string" || !report.provider) return;
+  ctx.costs.push(report);
+}
 let patched = false;
 
 function ensurePatched(): void {
@@ -352,6 +406,7 @@ export function streamCommander(
     outWriter,
     errWriter,
     stdin: opts.stdin != null ? makeStdin(opts.stdin) : null,
+    costs: [],
   };
 
   // Apply exitOverride() to the entire command tree, not just the root.
@@ -368,7 +423,7 @@ export function streamCommander(
   // to an exitCode.
   applyExitOverrideRecursively(program);
 
-  const done = als.run(ctx, async (): Promise<{ exitCode: number; error: unknown }> => {
+  const done = als.run(ctx, async (): Promise<{ exitCode: number; error: unknown; costs: CostReport[] }> => {
     let exitCode = 0;
     let error: unknown = null;
     try {
@@ -385,7 +440,7 @@ export function streamCommander(
       await outWriter.close().catch(() => {});
       await errWriter.close().catch(() => {});
     }
-    return { exitCode, error };
+    return { exitCode, error, costs: ctx.costs };
   });
 
   return { stdout: outStream.readable, stderr: errStream.readable, done };
@@ -402,7 +457,13 @@ export async function runCommander(
     drain(s.stderr),
     s.done,
   ]);
-  return { stdout, stderr, exitCode: final.exitCode, error: final.error };
+  return {
+    stdout,
+    stderr,
+    exitCode: final.exitCode,
+    error: final.error,
+    costs: final.costs,
+  };
 }
 
 async function drain(stream: ReadableStream<Uint8Array>): Promise<Uint8Array> {

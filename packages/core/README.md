@@ -12,8 +12,36 @@ Wrap any [Commander.js](https://github.com/tj/commander.js) CLI so it can be inv
 | `captureStdio`        | `(fn) => Promise<{ value, capture, error }>`            | Lower-level. Capture stdio from any async fn (not just commander). *Not ALS.*|
 | `checkCompatSource`   | `(source: string) => CompatReport`                      | Static scan a CLI's source for CF Worker red flags. Pre-flight, approximate. |
 | `formatReport`        | `(r: CompatReport) => string`                           | Pretty-print a `CompatReport` for a CLI summary.                             |
+| `reportCost`          | `(report: CostReport) => void`                          | Record what a paid upstream call consumed. Surfaces on `RunResult.costs`.    |
 
-All five are exported from the package root.
+All six are exported from the package root.
+
+## Cost reporting
+
+A wrapped CLI that calls a paid API can state what that call consumed:
+
+```ts
+import { reportCost } from "@mirage-cli/core";
+
+const res = await fetch(url, init);
+const body = await res.json();
+reportCost({ provider: "dataforseo", usd: body.cost, statusCode: res.status });
+```
+
+and the host reads it back as structured data:
+
+```ts
+const { stdout, costs } = await runCommander(program, argv);
+// costs -> [{ provider: "dataforseo", usd: 0.0075, statusCode: 200 }]
+```
+
+Three properties worth knowing:
+
+- **Raw, not priced.** A CLI reports `usd`, `credits`, `units` or token counts — whatever its vendor actually returned. It never converts credits to dollars, because the rate depends on the account's plan, which the API does not expose and the CLI must not guess. Pricing belongs to whoever aggregates the reports.
+- **Not program output.** Reports ride the same per-call `AsyncLocalStorage` context as stdout/stderr but never touch those streams, so they cannot end up in a user's results or error text. Concurrent `runCommander` calls do not cross-attribute.
+- **A no-op outside a run.** Calling `reportCost` from a standalone binary does nothing and throws nothing, so instrumenting a CLI does not change how it behaves on its own.
+
+Report even when the amount is zero or unknown. A billable call whose cost came back unreported is still a fact worth recording, and it is very different from silence — which is indistinguishable from the call never happening.
 
 ## API
 

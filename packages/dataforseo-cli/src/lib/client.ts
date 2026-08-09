@@ -1,6 +1,34 @@
+import { reportCost } from "@mirage-cli/core";
 import { basicAuthHeader, loadCredentials } from "./auth.ts";
 
 const API_BASE = "https://api.dataforseo.com";
+
+/**
+ * DataForSEO prices every call server-side and returns the figure on the
+ * response, so we never estimate: `cost` is the account's actual charge in
+ * USD. Report it from here, the one place every request passes through.
+ *
+ * Reported even when zero. A free endpoint returning `cost: 0` and a call that
+ * never happened are different facts, and only the first produces a row.
+ *
+ * `reportCost` is a no-op outside a mirage run, so the standalone `dfs` binary
+ * is unaffected.
+ */
+function reportDfsCost(parsed: DfsResponse, statusCode: number): void {
+  const top = typeof parsed.cost === "number" ? parsed.cost : null;
+  // Older/batched shapes omit the top-level total and price per task.
+  const perTask = Array.isArray(parsed.tasks)
+    ? parsed.tasks.reduce<number | null>((sum, t) => {
+        const c = (t as { cost?: unknown }).cost;
+        return typeof c === "number" ? (sum ?? 0) + c : sum;
+      }, null)
+    : null;
+  reportCost({
+    provider: "dataforseo",
+    usd: top ?? perTask,
+    statusCode,
+  });
+}
 
 export type DfsResponse = {
   status_code?: number;
@@ -65,6 +93,10 @@ export async function call(
     throw new Error(`HTTP ${res.status}: non-JSON response: ${text.slice(0, 500)}`);
   }
 
+  // Before the error check: a rejected call can still be billed, and a failure
+  // whose spend is invisible is exactly the gap this reporting exists to close.
+  reportDfsCost(parsed, res.status);
+
   if (!res.ok) {
     const msg = parsed.status_message ?? `HTTP ${res.status}`;
     throw new Error(`DataForSEO error: ${msg}`);
@@ -97,6 +129,7 @@ export async function get(path: string, opts: CallOptions = {}): Promise<DfsResp
 
   const text = await res.text();
   const parsed = text ? (JSON.parse(text) as DfsResponse) : {};
+  reportDfsCost(parsed, res.status);
   if (!res.ok) {
     throw new Error(`DataForSEO error: ${parsed.status_message ?? `HTTP ${res.status}`}`);
   }

@@ -1,6 +1,6 @@
 import { describe, expect, test } from "bun:test";
 import { Command } from "commander";
-import { runCommander, streamCommander, toMirageCommandFn } from "../src/runner.ts";
+import { reportCost, runCommander, streamCommander, toMirageCommandFn } from "../src/runner.ts";
 import { checkCompatSource } from "../src/compat.ts";
 
 function buildSampleProgram(): Command {
@@ -350,5 +350,89 @@ describe("checkCompatSource", () => {
   test("warns on __dirname", () => {
     const r = checkCompatSource(`const p = __dirname + "/data";`);
     expect(r.warnings).toBeGreaterThanOrEqual(1);
+  });
+});
+
+describe("reportCost", () => {
+  function costProgram(): Command {
+    const program = new Command();
+    program.name("paid");
+    program
+      .command("charge")
+      .argument("<usd>")
+      .action(async (usd: string) => {
+        // Await first, so the report is emitted across an async boundary —
+        // the case that would break if the ALS context did not propagate.
+        await Promise.resolve();
+        reportCost({ provider: "dataforseo", usd: Number(usd), statusCode: 200 });
+        console.log("done");
+      });
+    program
+      .command("charge-then-fail")
+      .action(() => {
+        reportCost({ provider: "dataforseo", usd: 0.5, statusCode: 402 });
+        process.exit(1);
+      });
+    program
+      .command("bad-report")
+      .action(() => {
+        // @ts-expect-error deliberately malformed at runtime
+        reportCost({ usd: 1 });
+        reportCost({ provider: "", usd: 1 });
+        console.log("ok");
+      });
+    program.command("quiet").action(() => { console.log("nothing"); });
+    return program;
+  }
+
+  test("a report inside a run surfaces on RunResult.costs", async () => {
+    const r = await runCommander(costProgram(), ["charge", "0.0075"]);
+    expect(r.exitCode).toBe(0);
+    expect(r.costs).toEqual([
+      { provider: "dataforseo", usd: 0.0075, statusCode: 200 },
+    ]);
+  });
+
+  test("a run that reports nothing yields an empty array, not undefined", async () => {
+    const r = await runCommander(costProgram(), ["quiet"]);
+    expect(r.costs).toEqual([]);
+  });
+
+  test("costs survive a non-zero exit", async () => {
+    const r = await runCommander(costProgram(), ["charge-then-fail"]);
+    expect(r.exitCode).toBe(1);
+    expect(r.costs).toHaveLength(1);
+    expect(r.costs[0]!.statusCode).toBe(402);
+  });
+
+  test("reports without a provider are dropped rather than thrown", async () => {
+    const r = await runCommander(costProgram(), ["bad-report"]);
+    expect(r.exitCode).toBe(0);
+    expect(r.costs).toEqual([]);
+  });
+
+  test("reporting outside any run is a silent no-op", () => {
+    expect(() => reportCost({ provider: "dataforseo", usd: 1 })).not.toThrow();
+  });
+
+  test("concurrent runs do not cross-attribute costs", async () => {
+    const [a, b] = await Promise.all([
+      runCommander(costProgram(), ["charge", "1.5"]),
+      runCommander(costProgram(), ["charge", "9.25"]),
+    ]);
+    expect(a.costs.map((c) => c.usd)).toEqual([1.5]);
+    expect(b.costs.map((c) => c.usd)).toEqual([9.25]);
+  });
+
+  test("streamCommander exposes costs on done", async () => {
+    const s = streamCommander(costProgram(), ["charge", "2"]);
+    await Promise.all([
+      new Response(s.stdout).text(),
+      new Response(s.stderr).text(),
+    ]);
+    const final = await s.done;
+    expect(final.costs).toEqual([
+      { provider: "dataforseo", usd: 2, statusCode: 200 },
+    ]);
   });
 });

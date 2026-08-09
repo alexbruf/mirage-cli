@@ -202,7 +202,7 @@
     },
     "packages/core": {
       "name": "@mirage-cli/core",
-      "version": "0.1.9",
+      "version": "0.1.10",
       "devDependencies": {
         "commander": "^12.1.0",
         "firecrawl-cli": "^1.18.0",
@@ -235,12 +235,13 @@
     },
     "packages/dataforseo-cli": {
       "name": "@mirage-cli/dataforseo-cli",
-      "version": "0.1.9",
+      "version": "0.1.10",
       "bin": {
         "dfs": "./dist/bin.js",
         "dataforseo": "./dist/bin.js",
       },
       "dependencies": {
+        "@mirage-cli/core": "^0.1.10",
         "commander": "^12.1.0",
       },
       "devDependencies": {
@@ -543,7 +544,7 @@
     },
     "packages/radar": {
       "name": "@mirage-cli/radar",
-      "version": "0.2.0",
+      "version": "0.2.1",
       "dependencies": {
         "@mirage-cli/core": "workspace:^",
       },
@@ -563,7 +564,7 @@
     },
     "packages/radar-cli": {
       "name": "@mirage-cli/radar-cli",
-      "version": "0.2.3",
+      "version": "0.3.0",
       "bin": {
         "radar": "./dist/bin.js",
       },
@@ -636,7 +637,7 @@
     },
     "packages/seogets": {
       "name": "@mirage-cli/seogets",
-      "version": "1.0.0",
+      "version": "1.0.1",
       "dependencies": {
         "@mirage-cli/core": "workspace:^",
       },
@@ -656,7 +657,7 @@
     },
     "packages/seogets-cli": {
       "name": "@mirage-cli/seogets-cli",
-      "version": "0.2.0",
+      "version": "0.3.0",
       "bin": {
         "seogets": "./dist/bin.js",
       },

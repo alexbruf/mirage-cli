@@ -6,18 +6,21 @@
  *
  * Primary: `streamCommander` (streaming) and `runCommander` (buffered).
  * Mirage integration: `toMirageCommandFn`.
+ * Cost telemetry: `reportCost` (see `CostReport`).
  * Pre-flight scan: `checkCompatSource`.
  * Lower-level (not concurrency-safe): `captureStdio`.
  */
 
 export { captureStdio, type CaptureResult } from "./capture.ts";
 export {
+  reportCost,
   runCommander,
   streamCommander,
   toMirageCommandFn,
   type ByteSource,
   type Command,
   type CommanderProgram,
+  type CostReport,
   type IOResultCtor,
   type MirageCommandFn,
   type MirageIOResult,

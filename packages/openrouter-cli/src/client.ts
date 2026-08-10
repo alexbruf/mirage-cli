@@ -1,5 +1,7 @@
 /** Fetch-only OpenRouter API client. No SDK, persistence, or Node transport. */
 
+import { reportCost } from "@mirage-cli/core";
+
 export type QueryValue = string | number | boolean | undefined;
 export type Query = Record<string, QueryValue>;
 export type JsonRecord = Record<string, unknown>;
@@ -271,6 +273,14 @@ export class OpenRouterClient {
       chunks.push(chunk);
       onChunk?.(chunk);
     }
+    // Streaming carries usage on a trailing chunk, so this can only be
+    // reported once the stream has drained — not at the fetch, which is why a
+    // response-level interceptor cannot price this call.
+    reportOpenRouterUsage(
+      usage,
+      chunks.find((c) => (c as { model?: unknown }).model)?.model ?? requestedModel(request),
+      response.status,
+    );
     return {
       chunks,
       usage,
@@ -298,8 +308,19 @@ export class OpenRouterClient {
     body: JsonRecord,
   ): Promise<T> {
     const response = await this.fetchResponse(method, path, query, body);
-    if (!response.ok) throw await errorFromResponse(response);
+    if (!response.ok) {
+      // A rejected call is normally not billed, but record that it happened
+      // with no amount rather than nothing: "attempted, cost unknown" and
+      // "never called" must not look identical.
+      reportOpenRouterUsage(undefined, requestedModel(body), response.status);
+      throw await errorFromResponse(response);
+    }
     const json = (await response.json()) as T & ErrorPayload;
+    reportOpenRouterUsage(
+      (json as { usage?: Record<string, unknown> }).usage,
+      (json as { model?: unknown }).model ?? requestedModel(body),
+      response.status,
+    );
     if (json.error) throw errorFromPayload(json, response.status);
     return json;
   }
@@ -325,6 +346,41 @@ export class OpenRouterClient {
       ...(body ? { body: JSON.stringify(body) } : {}),
     });
   }
+}
+
+/** The model the caller asked for, used when the response does not echo one. */
+function requestedModel(body: JsonRecord | undefined): unknown {
+  return body && typeof body === "object" ? (body as { model?: unknown }).model : undefined;
+}
+
+const finiteNumber = (v: unknown): number | null =>
+  typeof v === "number" && Number.isFinite(v) ? v : null;
+
+/**
+ * Report what an OpenRouter call consumed.
+ *
+ * OpenRouter returns `usage.cost` in USD when the account has usage accounting
+ * on, and always returns token counts. We pass through whatever is present and
+ * never infer one from the other: pricing per model is ve-track's job, and it
+ * already syncs a catalog for exactly this.
+ *
+ * Note the request is NOT modified to opt into usage accounting. Turning that
+ * on silently would change what we send to a paid API as a side effect of
+ * observability, which is a bad trade even when the field is useful.
+ */
+function reportOpenRouterUsage(
+  usage: Record<string, unknown> | undefined,
+  model: unknown,
+  statusCode: number,
+): void {
+  reportCost({
+    provider: "openrouter",
+    usd: finiteNumber(usage?.cost),
+    model: typeof model === "string" ? model : null,
+    promptTokens: finiteNumber(usage?.prompt_tokens),
+    completionTokens: finiteNumber(usage?.completion_tokens),
+    statusCode,
+  });
 }
 
 async function errorFromResponse(response: Response): Promise<ApiError> {

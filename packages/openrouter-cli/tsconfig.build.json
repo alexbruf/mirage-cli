@@ -6,7 +6,14 @@
     "noEmit": false,
     "emitDeclarationOnly": true,
     "allowImportingTsExtensions": false,
-    "rewriteRelativeImportExtensions": true
+    "rewriteRelativeImportExtensions": true,
+    "paths": {
+      "@mirage-cli/core": [
+        "../core/dist/index.d.ts"
+      ]
+    }
   },
-  "include": ["src/**/*"]
+  "include": [
+    "src/**/*"
+  ]
 }

@@ -2,6 +2,7 @@ import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { homedir } from "node:os";
 import { join } from "node:path";
 import { createHash } from "node:crypto";
+import { reportCost } from "@mirage-cli/core";
 
 const BASE_URL = "https://api.ahrefs.com/v3";
 const CACHE_DIR = join(homedir(), ".cache", "ahrefs-cli");
@@ -93,6 +94,28 @@ export async function request<T = unknown>(
       ...(opts.body !== undefined ? { "Content-Type": "application/json" } : {}),
     },
     body: opts.body !== undefined ? JSON.stringify(opts.body) : undefined,
+  });
+
+  // Ahrefs bills in "units" and reports the real figure on response headers:
+  // `x-api-units-cost-total-actual` is what the request actually consumed,
+  // as opposed to `-total` which is the pre-flight estimate. Cache hits
+  // (`x-api-cache`) consume nothing and report 0, which is still worth
+  // recording — a free call and a call that never happened are different.
+  //
+  // Note this is unrelated to the `unitsCost` in spec.ts: that one is parsed
+  // out of Ahrefs' own column *documentation* ("(N units)" prefixes) to warn
+  // about expensive fields before a request. It is a price list, not usage.
+  //
+  // Units are not converted to dollars here. The rate depends on the plan the
+  // account is on, which this API does not expose.
+  const unitsHeader =
+    res.headers.get("x-api-units-cost-total-actual") ??
+    res.headers.get("x-api-units-cost-total");
+  const units = unitsHeader !== null ? Number(unitsHeader) : null;
+  reportCost({
+    provider: "ahrefs",
+    units: units !== null && Number.isFinite(units) ? units : null,
+    statusCode: res.status,
   });
 
   const text = await res.text();

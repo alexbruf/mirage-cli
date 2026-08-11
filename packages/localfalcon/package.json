@@ -1,6 +1,6 @@
 {
   "name": "@mirage-cli/localfalcon",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "Local Falcon CLI as an importable mirage / Cloudflare-Worker command via @mirage-cli/core.",
   "type": "module",
   "main": "./dist/index.js",

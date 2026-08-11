@@ -1,6 +1,6 @@
 {
   "name": "@mirage-cli/rapidurlindexer",
-  "version": "0.1.0",
+  "version": "0.1.2",
   "description": "Rapid URL Indexer CLI as an importable Mirage and Cloudflare Worker command.",
   "type": "module",
   "main": "./dist/index.js",

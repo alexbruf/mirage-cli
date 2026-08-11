@@ -17,6 +17,7 @@ import type {
   Row,
   RunScanInput,
 } from "./types.ts";
+import { reportCost } from "@mirage-cli/core";
 
 const BASE = "https://api.localfalcon.com";
 
@@ -72,6 +73,13 @@ export class LocalFalconSource implements DataSource {
       measurement: input.measurement ?? "mi",
       platform: input.platform,
     });
+    // Local Falcon does not return per-call usage. One scan consumes one
+    // credit per grid pin, so the requested N x N grid is the factual amount.
+    // Never substitute an API default when the request omitted the dimension.
+    reportCost({
+      provider: "localfalcon",
+      credits: gridCredits(input.gridSize),
+    });
     return unwrap(json) as Row;
   }
 
@@ -115,6 +123,14 @@ export class LocalFalconSource implements DataSource {
     }
     return json;
   }
+}
+
+function gridCredits(gridSize: string | undefined): number | null {
+  if (gridSize === undefined || !/^\d+$/.test(gridSize.trim())) return null;
+  const dimension = Number(gridSize);
+  return Number.isSafeInteger(dimension) && dimension > 0
+    ? dimension * dimension
+    : null;
 }
 
 /** Unwrap the `{ status, code, data }` envelope to the payload. */

@@ -8,9 +8,17 @@ import { buildProgram } from "../src/cli.ts";
 import { mergeUrls, parseUrlText, readUrlsFile } from "../src/urls.ts";
 
 const decoder = new TextDecoder();
+const originalFetch = globalThis.fetch;
+
+function stubFetch(
+  impl: (input: RequestInfo | URL, init?: RequestInit) => Promise<Response>,
+): typeof fetch {
+  return impl as unknown as typeof fetch;
+}
 
 afterEach(() => {
   delete (globalThis as { __MIRAGE_CLI_FILE_IO__?: unknown }).__MIRAGE_CLI_FILE_IO__;
+  globalThis.fetch = originalFetch;
 });
 
 describe("program shape", () => {
@@ -95,9 +103,11 @@ describe("typed fetch client", () => {
 
   test("uses X-API-Key and sends the documented create payload", async () => {
     let seen: { path: string; method: string; apiKey: string | null; body: unknown } | undefined;
-    const server = Bun.serve({
-      port: 0,
-      async fetch(request) {
+    const client = new RapidUrlIndexerClient({
+      apiKey: "secret",
+      baseUrl: "https://rapidurlindexer.test/wp-json",
+      fetch: stubFetch(async (input, init) => {
+        const request = new Request(input, init);
         seen = {
           path: new URL(request.url).pathname,
           method: request.method,
@@ -105,57 +115,43 @@ describe("typed fetch client", () => {
           body: await request.json(),
         };
         return Response.json({ message: "Project created successfully", project_id: 123 }, { status: 201 });
-      },
+      }),
     });
-    try {
-      const client = new RapidUrlIndexerClient({
-        apiKey: "secret",
-        baseUrl: `http://127.0.0.1:${server.port}/wp-json`,
-      });
-      await client.createProject({
+    await client.createProject({
+      project_name: "release",
+      urls: ["https://example.com/page"],
+      notify_on_status_change: false,
+      apex_mode_enabled: true,
+    });
+    expect(seen).toEqual({
+      path: "/wp-json/api/v1/projects",
+      method: "POST",
+      apiKey: "secret",
+      body: {
         project_name: "release",
         urls: ["https://example.com/page"],
         notify_on_status_change: false,
         apex_mode_enabled: true,
-      });
-      expect(seen).toEqual({
-        path: "/wp-json/api/v1/projects",
-        method: "POST",
-        apiKey: "secret",
-        body: {
-          project_name: "release",
-          urls: ["https://example.com/page"],
-          notify_on_status_change: false,
-          apex_mode_enabled: true,
-        },
-      });
-    } finally {
-      server.stop();
-    }
+      },
+    });
   });
 
   test("negotiates JSON and CSV reports", async () => {
     const accepts: string[] = [];
-    const server = Bun.serve({
-      port: 0,
-      fetch(request) {
+    const client = new RapidUrlIndexerClient({
+      apiKey: "secret",
+      baseUrl: "https://rapidurlindexer.test",
+      fetch: stubFetch(async (input, init) => {
+        const request = new Request(input, init);
         const accept = request.headers.get("accept") ?? "";
         accepts.push(accept);
         if (accept === "text/csv") return new Response("URL,Status\nhttps://example.com,Indexed\n");
         return Response.json({ project_id: 9, project_name: "p", total_urls: 0, urls: [] });
-      },
+      }),
     });
-    try {
-      const client = new RapidUrlIndexerClient({
-        apiKey: "secret",
-        baseUrl: `http://127.0.0.1:${server.port}`,
-      });
-      expect((await client.getProjectReport(9)).project_id).toBe(9);
-      expect(await client.getProjectReport(9, "csv")).toContain("URL,Status");
-      expect(accepts).toEqual(["application/json", "text/csv"]);
-    } finally {
-      server.stop();
-    }
+    expect((await client.getProjectReport(9)).project_id).toBe(9);
+    expect(await client.getProjectReport(9, "csv")).toContain("URL,Status");
+    expect(accepts).toEqual(["application/json", "text/csv"]);
   });
 
   test.each([
@@ -165,29 +161,22 @@ describe("typed fetch client", () => {
     [425, { message: "Report not yet available" }, "not_ready"],
     [429, { message: "Too many requests" }, "rate_limited"],
   ] as const)("classifies API status %s (%s)", async (status, body, kind) => {
-    const server = Bun.serve({
-      port: 0,
-      fetch: () => Response.json(body, {
+    const client = new RapidUrlIndexerClient({
+      apiKey: "secret",
+      baseUrl: "https://rapidurlindexer.test",
+      fetch: stubFetch(async () => Response.json(body, {
         status,
         headers: status === 429 ? { "Retry-After": "12" } : undefined,
-      }),
+      })),
     });
     try {
-      const client = new RapidUrlIndexerClient({
-        apiKey: "secret",
-        baseUrl: `http://127.0.0.1:${server.port}`,
-      });
-      try {
-        await client.getCreditBalance();
-        expect.unreachable();
-      } catch (error) {
-        expect(error).toBeInstanceOf(RapidUrlIndexerApiError);
-        expect((error as RapidUrlIndexerApiError).status).toBe(status);
-        expect((error as RapidUrlIndexerApiError).kind).toBe(kind);
-        if (status === 429) expect((error as RapidUrlIndexerApiError).retryAfterSeconds).toBe(12);
-      }
-    } finally {
-      server.stop();
+      await client.getCreditBalance();
+      expect.unreachable();
+    } catch (error) {
+      expect(error).toBeInstanceOf(RapidUrlIndexerApiError);
+      expect((error as RapidUrlIndexerApiError).status).toBe(status);
+      expect((error as RapidUrlIndexerApiError).kind).toBe(kind);
+      if (status === 429) expect((error as RapidUrlIndexerApiError).retryAfterSeconds).toBe(12);
     }
   });
 });
@@ -195,52 +184,87 @@ describe("typed fetch client", () => {
 describe("Commander behavior", () => {
   test("creates a project from repeated URLs and prints machine-readable JSON", async () => {
     let body: unknown;
-    const server = Bun.serve({
-      port: 0,
-      async fetch(request) {
-        body = await request.json();
-        return Response.json({ message: "Project created successfully", project_id: 77 }, { status: 201 });
-      },
+    globalThis.fetch = stubFetch(async (input, init) => {
+      const request = new Request(input, init);
+      body = await request.json();
+      return Response.json(
+        { message: "Project created successfully", project_id: 77 },
+        { status: 201 },
+      );
     });
-    try {
-      const result = await runCommander(buildProgram(), [
-        "--api-key", "secret",
-        "--base-url", `http://127.0.0.1:${server.port}`,
-        "projects", "create",
-        "--name", "release",
-        "--url", "https://example.com/a",
-        "--url", "https://example.com/b",
-      ]);
-      expect(result.exitCode).toBe(0);
-      expect(body).toMatchObject({ project_name: "release", urls: ["https://example.com/a", "https://example.com/b"] });
-      expect(JSON.parse(decoder.decode(result.stdout))).toEqual({
-        message: "Project created successfully",
-        project_id: 77,
-        submitted_urls: 2,
-      });
-    } finally {
-      server.stop();
-    }
+    const result = await runCommander(buildProgram(), [
+      "--api-key", "secret",
+      "--base-url", "https://rapidurlindexer.test",
+      "projects", "create",
+      "--name", "release",
+      "--url", "https://example.com/a",
+      "--url", "https://example.com/b",
+    ]);
+    expect(result.exitCode).toBe(0);
+    expect(result.costs).toEqual([{ provider: "rapidurlindexer", credits: 2 }]);
+    expect(body).toMatchObject({ project_name: "release", urls: ["https://example.com/a", "https://example.com/b"] });
+    expect(JSON.parse(decoder.decode(result.stdout))).toEqual({
+      message: "Project created successfully",
+      project_id: 77,
+      submitted_urls: 2,
+    });
+  });
+
+  test("a project status read reports no cost", async () => {
+    globalThis.fetch = stubFetch(async () =>
+      Response.json({
+        project_id: 12,
+        project_name: "release",
+        status: "submitted",
+        urls: ["https://example.com/a"],
+        submitted_links: 1,
+        indexed_links: 0,
+        created_at: "2026-08-10T00:00:00Z",
+        updated_at: "2026-08-10T00:00:00Z",
+      }));
+    const result = await runCommander(buildProgram(), [
+      "--api-key", "secret",
+      "--base-url", "https://rapidurlindexer.test",
+      "projects", "get", "12",
+    ]);
+    expect(result.exitCode).toBe(0);
+    expect(result.costs).toEqual([]);
+  });
+
+  test("prefers the API's submitted URL count when creation reports one", async () => {
+    globalThis.fetch = stubFetch(async () =>
+      Response.json(
+        {
+          message: "Project created successfully",
+          project_id: 78,
+          submitted_urls: 1,
+        },
+        { status: 201 },
+      ));
+    const result = await runCommander(buildProgram(), [
+      "--api-key", "secret",
+      "--base-url", "https://rapidurlindexer.test",
+      "projects", "create",
+      "--name", "release",
+      "--url", "https://example.com/a",
+      "--url", "https://example.com/b",
+    ]);
+    expect(result.exitCode).toBe(0);
+    expect(result.costs).toEqual([{ provider: "rapidurlindexer", credits: 1 }]);
   });
 
   test("renders a structured 425 error on stderr", async () => {
-    const server = Bun.serve({
-      port: 0,
-      fetch: () => Response.json({ message: "Report not yet available" }, { status: 425 }),
+    globalThis.fetch = stubFetch(async () =>
+      Response.json({ message: "Report not yet available" }, { status: 425 }));
+    const result = await runCommander(buildProgram(), [
+      "--api-key", "secret",
+      "--base-url", "https://rapidurlindexer.test",
+      "projects", "report", "12",
+    ]);
+    expect(result.exitCode).toBe(1);
+    expect(JSON.parse(decoder.decode(result.stderr))).toMatchObject({
+      status: 425,
+      kind: "not_ready",
     });
-    try {
-      const result = await runCommander(buildProgram(), [
-        "--api-key", "secret",
-        "--base-url", `http://127.0.0.1:${server.port}`,
-        "projects", "report", "12",
-      ]);
-      expect(result.exitCode).toBe(1);
-      expect(JSON.parse(decoder.decode(result.stderr))).toMatchObject({
-        status: 425,
-        kind: "not_ready",
-      });
-    } finally {
-      server.stop();
-    }
   });
 });

@@ -420,6 +420,7 @@
         "localfalcon": "./dist/bin.js",
       },
       "dependencies": {
+        "@mirage-cli/core": "workspace:^",
         "commander": "^14.0.3",
       },
     },
@@ -601,10 +602,8 @@
         "rapidurlindexer": "./dist/bin.js",
       },
       "dependencies": {
-        "commander": "^14.0.3",
-      },
-      "devDependencies": {
         "@mirage-cli/core": "workspace:^",
+        "commander": "^14.0.3",
       },
     },
     "packages/reddit": {

@@ -110,7 +110,10 @@ Examples:
           apex_mode_enabled: options.apex,
         };
         const response = await client().createProject(input);
-        json({ ...response, submitted_urls: urls.length });
+        json({
+          ...response,
+          submitted_urls: response.submitted_urls ?? response.total_urls ?? urls.length,
+        });
       }),
     );
 

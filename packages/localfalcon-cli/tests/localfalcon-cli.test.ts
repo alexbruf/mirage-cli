@@ -1,6 +1,20 @@
-import { describe, expect, test } from "bun:test";
+import { afterEach, describe, expect, test } from "bun:test";
+import { runCommander } from "@mirage-cli/core";
 import { buildProgram } from "../src/cli.ts";
 import { render } from "../src/format.ts";
+
+const originalFetch = globalThis.fetch;
+const originalApiKey = process.env.LOCALFALCON_API_KEY;
+
+function stubFetch(impl: () => Promise<Response>): typeof fetch {
+  return impl as unknown as typeof fetch;
+}
+
+afterEach(() => {
+  globalThis.fetch = originalFetch;
+  if (originalApiKey === undefined) delete process.env.LOCALFALCON_API_KEY;
+  else process.env.LOCALFALCON_API_KEY = originalApiKey;
+});
 
 describe("localfalcon buildProgram", () => {
   test("registers the expected commands with no import side effects", () => {
@@ -31,6 +45,59 @@ describe("localfalcon buildProgram", () => {
       if (prev === undefined) delete process.env.LOCALFALCON_API_KEY;
       else process.env.LOCALFALCON_API_KEY = prev;
     }
+  });
+});
+
+describe("cost reporting", () => {
+  test("a 5x5 scan reports 25 Local Falcon credits", async () => {
+    process.env.LOCALFALCON_API_KEY = "test-key";
+    globalThis.fetch = stubFetch(async () =>
+      Response.json({ success: true, data: { report_key: "scan-1" } }));
+
+    const result = await runCommander(buildProgram(), [
+      "scan",
+      "--keyword",
+      "roof repair",
+      "--place-id",
+      "place-1",
+      "--grid-size",
+      "5",
+      "--format",
+      "json",
+    ]);
+
+    expect(result.exitCode).toBe(0);
+    expect(result.costs).toEqual([{ provider: "localfalcon", credits: 25 }]);
+  });
+
+  test("a read-only locations call reports no cost", async () => {
+    process.env.LOCALFALCON_API_KEY = "test-key";
+    globalThis.fetch = stubFetch(async () =>
+      Response.json({ success: true, data: { locations: [] } }));
+
+    const result = await runCommander(buildProgram(), ["locations", "--format", "json"]);
+
+    expect(result.exitCode).toBe(0);
+    expect(result.costs).toEqual([]);
+  });
+
+  test("a scan with no parseable grid size still reports an unknown amount", async () => {
+    process.env.LOCALFALCON_API_KEY = "test-key";
+    globalThis.fetch = stubFetch(async () =>
+      Response.json({ success: true, data: { report_key: "scan-2" } }));
+
+    const result = await runCommander(buildProgram(), [
+      "scan",
+      "--keyword",
+      "roof repair",
+      "--place-id",
+      "place-1",
+      "--format",
+      "json",
+    ]);
+
+    expect(result.exitCode).toBe(0);
+    expect(result.costs).toEqual([{ provider: "localfalcon", credits: null }]);
   });
 });
 

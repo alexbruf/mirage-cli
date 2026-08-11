@@ -4,6 +4,8 @@
  * Official API reference: https://rapidurlindexer.com/indexing-api/
  */
 
+import { reportCost } from "@mirage-cli/core";
+
 export const DEFAULT_BASE_URL = "https://rapidurlindexer.com/wp-json";
 export const MAX_PROJECT_URLS = 9_999;
 
@@ -38,6 +40,8 @@ export interface CreateProjectInput {
 export interface CreateProjectResponse {
   message: string;
   project_id: number;
+  submitted_urls?: number;
+  total_urls?: number;
 }
 
 export interface ProjectDetails {
@@ -123,13 +127,21 @@ export class RapidUrlIndexerClient {
     return this.request<ListProjectsResponse>("/api/v1/projects/list");
   }
 
-  createProject(input: CreateProjectInput): Promise<CreateProjectResponse> {
+  async createProject(input: CreateProjectInput): Promise<CreateProjectResponse> {
     validateCreateProjectInput(input);
-    return this.request<CreateProjectResponse>("/api/v1/projects", {
+    const response = await this.request<CreateProjectResponse>("/api/v1/projects", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(input),
     });
+    // Prefer an accepted/submitted count echoed by the API. The documented
+    // create response normally omits it, so otherwise use the validated URL
+    // array that was actually sent rather than querying a later status read.
+    reportCost({
+      provider: "rapidurlindexer",
+      credits: responseSubmittedUrlCount(response) ?? input.urls.length,
+    });
+    return response;
   }
 
   getProject(projectId: number): Promise<ProjectDetails> {
@@ -180,6 +192,13 @@ export class RapidUrlIndexerClient {
       );
     }
   }
+}
+
+function responseSubmittedUrlCount(response: CreateProjectResponse): number | null {
+  for (const value of [response.submitted_urls, response.total_urls]) {
+    if (typeof value === "number" && Number.isSafeInteger(value) && value >= 0) return value;
+  }
+  return null;
 }
 
 function validateProjectId(projectId: number): number {

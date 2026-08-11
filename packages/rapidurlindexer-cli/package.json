@@ -1,6 +1,6 @@
 {
   "name": "@mirage-cli/rapidurlindexer-cli",
-  "version": "0.1.0",
+  "version": "0.1.2",
   "description": "Typed Rapid URL Indexer API client and CLI for projects, reports, and credit balance.",
   "license": "MIT",
   "repository": {

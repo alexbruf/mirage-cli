@@ -16,7 +16,7 @@ const origKey = process.env.AHREFS_API_KEY;
 
 function stub(headers: Record<string, string>, status = 200, body = "{}") {
   globalThis.fetch = (async () =>
-    new Response(body, { status, headers })) as typeof fetch;
+    new Response(body, { status, headers })) as unknown as typeof fetch;
 }
 
 /** Drive `request()` through a commander program so a cost scope is active. */

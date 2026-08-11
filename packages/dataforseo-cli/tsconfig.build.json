@@ -6,7 +6,14 @@
     "noEmit": false,
     "emitDeclarationOnly": true,
     "allowImportingTsExtensions": false,
-    "verbatimModuleSyntax": false
+    "verbatimModuleSyntax": false,
+    "paths": {
+      "@mirage-cli/core": [
+        "../core/dist/index.d.ts"
+      ]
+    }
   },
-  "include": ["src/**/*.ts"]
+  "include": [
+    "src/**/*.ts"
+  ]
 }

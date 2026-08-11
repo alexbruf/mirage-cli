@@ -395,7 +395,7 @@
     },
     "packages/localfalcon": {
       "name": "@mirage-cli/localfalcon",
-      "version": "0.1.0",
+      "version": "0.1.1",
       "dependencies": {
         "@mirage-cli/core": "workspace:^",
       },
@@ -415,7 +415,7 @@
     },
     "packages/localfalcon-cli": {
       "name": "@mirage-cli/localfalcon-cli",
-      "version": "0.1.1",
+      "version": "0.1.2",
       "bin": {
         "localfalcon": "./dist/bin.js",
       },
@@ -577,7 +577,7 @@
     },
     "packages/rapidurlindexer": {
       "name": "@mirage-cli/rapidurlindexer",
-      "version": "0.1.0",
+      "version": "0.1.2",
       "dependencies": {
         "@mirage-cli/core": "workspace:^",
       },
@@ -597,7 +597,7 @@
     },
     "packages/rapidurlindexer-cli": {
       "name": "@mirage-cli/rapidurlindexer-cli",
-      "version": "0.1.0",
+      "version": "0.1.2",
       "bin": {
         "rapidurlindexer": "./dist/bin.js",
       },

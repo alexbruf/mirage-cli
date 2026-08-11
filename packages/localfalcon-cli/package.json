@@ -1,6 +1,6 @@
 {
   "name": "@mirage-cli/localfalcon-cli",
-  "version": "0.1.1",
+  "version": "0.1.2",
   "description": "Local Falcon CLI — geo-grid rank tracking: locations, scan reports (ARP/ATRP/SoLV + map images), keyword rollups, and new scans. Mirage / Cloudflare-Worker compatible.",
   "license": "MIT",
   "repository": {

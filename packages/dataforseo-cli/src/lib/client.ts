@@ -43,6 +43,91 @@ export type DfsResponse = {
   [k: string]: unknown;
 };
 
+/**
+ * DataForSEO reports failure INSIDE an HTTP 200. The transport succeeded, so
+ * `res.ok` is true and the envelope says `status_code: 20000, "Ok."`; the real
+ * outcome sits one level down, per task:
+ *
+ *   { status_code: 20000, status_message: "Ok.", tasks_error: 1,
+ *     tasks: [ { status_code: 40501,
+ *                status_message: "Invalid Field: 'location_code'.",
+ *                result: null } ] }
+ *
+ * Nothing used to look at that. `extractItems` skips any task whose `result`
+ * is not an array — which is exactly what a failed task looks like — so the
+ * caller got `[]` and exit 0. A rejected credential, an exhausted balance, a
+ * rate limit, a bad parameter and a query that legitimately had no results
+ * were indistinguishable. That cost a real outage six hours of diagnosis and
+ * put the word "unauthorized" into a client deliverable, because the only
+ * honest thing an agent can conclude from `[]` is a guess.
+ *
+ * Throwing is the whole fix: `bin.ts` already prints `{"error": …}` to stderr
+ * and exits 1, and only HTTP-level failures ever reached it.
+ */
+const SUCCESS_MIN = 20_000;
+const SUCCESS_MAX = 30_000;
+
+function isSuccess(code: number | undefined): boolean {
+  return typeof code === "number" && code >= SUCCESS_MIN && code < SUCCESS_MAX;
+}
+
+/**
+ * Two failures are worth naming because the reader can act on them; every
+ * other code passes the vendor's own wording through untouched.
+ *
+ * Deliberately exact rather than by numeric family. Per DataForSEO's error
+ * appendix only 40100 is "rejected credentials" and only 40200/40210 are
+ * balance; their neighbours cover rate limits, account holds, subscriptions
+ * and IP policy, so `code >= 40100 && code < 40200` would mislabel them.
+ * https://docs.dataforseo.com/v3/appendix/errors/
+ */
+function hint(code: number): string {
+  if (code === 40_100) return " (the API rejected these credentials)";
+  if (code === 40_200 || code === 40_210) return " (the account balance is exhausted)";
+  return "";
+}
+
+function describe(code: number | undefined, message: unknown): string {
+  const text = typeof message === "string" && message ? message : "no message";
+  if (typeof code !== "number") return `DataForSEO error: ${text}`;
+  return `DataForSEO error ${code}: ${text}${hint(code)}`;
+}
+
+/**
+ * Fail on a 200 that reports an error. Called by both `call` and `get` right
+ * after their existing HTTP check, so every command inherits it — including
+ * `--full` and `raw` — with no per-command changes and no new flags. A caller
+ * should never have to know a flag exists to be told why something failed.
+ *
+ * Partial batches keep their good rows. Requests here normally carry one task
+ * (`preparePayload` wraps a single body as `[body]`), but the API accepts
+ * arrays, and those rows are already paid for — discarding them to report a
+ * sibling's failure would trade one silent loss for another. The failure still
+ * goes to stderr, so it is surfaced either way; what changes is whether the
+ * successful half survives.
+ */
+export function assertResponseOk(parsed: DfsResponse): void {
+  if (parsed.status_code !== undefined && !isSuccess(parsed.status_code)) {
+    // A bad envelope status invalidates the whole response, tasks included.
+    throw new Error(describe(parsed.status_code, parsed.status_message));
+  }
+
+  const tasks = parsed.tasks;
+  if (!Array.isArray(tasks) || tasks.length === 0) return;
+
+  const failed = tasks.filter((t) => !isSuccess(t.status_code));
+  const first = failed[0];
+  if (!first) return;
+
+  if (failed.length === tasks.length) {
+    throw new Error(describe(first.status_code, first.status_message));
+  }
+
+  for (const t of failed) {
+    console.error(`warning: ${describe(t.status_code, t.status_message)}`);
+  }
+}
+
 export type CallOptions = {
   /** Wrap a single task object as `[task]` for endpoints that take an array body. Default: true. */
   wrapAsTaskArray?: boolean;
@@ -102,6 +187,8 @@ export async function call(
     throw new Error(`DataForSEO error: ${msg}`);
   }
 
+  assertResponseOk(parsed);
+
   return parsed;
 }
 
@@ -133,6 +220,7 @@ export async function get(path: string, opts: CallOptions = {}): Promise<DfsResp
   if (!res.ok) {
     throw new Error(`DataForSEO error: ${parsed.status_message ?? `HTTP ${res.status}`}`);
   }
+  assertResponseOk(parsed);
   return parsed;
 }
 

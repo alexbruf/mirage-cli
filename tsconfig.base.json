@@ -59,6 +59,8 @@
       "@mirage-cli/call-cli/*": ["./packages/call-cli/src/*"],
       "@mirage-cli/callrail-cli": ["./packages/callrail-cli/src/index.ts"],
       "@mirage-cli/callrail-cli/*": ["./packages/callrail-cli/src/*"],
+      "@mirage-cli/contentdynamite-cli": ["./packages/contentdynamite-cli/src/index.ts"],
+      "@mirage-cli/contentdynamite-cli/*": ["./packages/contentdynamite-cli/src/*"],
       "@mirage-cli/gbp-cli": ["./packages/gbp-cli/src/index.ts"],
       "@mirage-cli/gbp-cli/*": ["./packages/gbp-cli/src/*"],
       "@mirage-cli/localfalcon-cli": ["./packages/localfalcon-cli/src/index.ts"],

@@ -1,0 +1,63 @@
+{
+  "name": "@mirage-cli/contentdynamite-cli",
+  "version": "0.1.0",
+  "description": "Typed Content Dynamite API client and CLI for SEO articles, BOFU landing pages, company profiles, ICP, and featured images.",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/alexbruf/mirage-cli.git",
+    "directory": "packages/contentdynamite-cli"
+  },
+  "bugs": {
+    "url": "https://github.com/alexbruf/mirage-cli/issues"
+  },
+  "homepage": "https://github.com/alexbruf/mirage-cli/tree/main/packages/contentdynamite-cli#readme",
+  "keywords": [
+    "content-dynamite",
+    "ve-dynamite",
+    "seo",
+    "landing-pages",
+    "cli",
+    "mirage"
+  ],
+  "type": "module",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "bun": "./src/index.ts",
+      "import": "./dist/index.js"
+    },
+    "./cli": {
+      "types": "./dist/cli.d.ts",
+      "bun": "./src/cli.ts",
+      "import": "./dist/cli.js"
+    }
+  },
+  "bin": {
+    "ve-dynamite": "./dist/bin.js"
+  },
+  "files": [
+    "dist",
+    "README.md"
+  ],
+  "scripts": {
+    "dev": "bun run src/bin.ts",
+    "build": "bun build src/bin.ts src/cli.ts src/index.ts --target=node --outdir=dist --external commander --external @mirage-cli/core && bun run scripts/postbuild.ts && bun run build:types",
+    "build:types": "tsc -p tsconfig.build.json",
+    "test": "bun test --reporter=dots",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@mirage-cli/core": "workspace:^",
+    "commander": "^14.0.3"
+  },
+  "publishConfig": {
+    "access": "public"
+  },
+  "engines": {
+    "bun": ">=1.1.0",
+    "node": ">=18.0.0"
+  }
+}

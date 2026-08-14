@@ -1,0 +1,12 @@
+{
+  "extends": "../../tsconfig.base.json",
+  "compilerOptions": {
+    "noEmit": true,
+    "baseUrl": "../..",
+    "paths": {
+      "@mirage-cli/core": ["./packages/core/src/index.ts"],
+      "@mirage-cli/contentdynamite-cli": ["./packages/contentdynamite-cli/src/index.ts"]
+    }
+  },
+  "include": ["src/**/*.ts", "tests/**/*.ts"]
+}

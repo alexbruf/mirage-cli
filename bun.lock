@@ -236,7 +236,7 @@
     },
     "packages/dataforseo-cli": {
       "name": "@mirage-cli/dataforseo-cli",
-      "version": "0.1.11",
+      "version": "0.1.12",
       "bin": {
         "dfs": "./dist/bin.js",
         "dataforseo": "./dist/bin.js",
@@ -658,7 +658,7 @@
     },
     "packages/seogets-cli": {
       "name": "@mirage-cli/seogets-cli",
-      "version": "0.3.0",
+      "version": "0.3.1",
       "bin": {
         "seogets": "./dist/bin.js",
       },

@@ -100,12 +100,14 @@ describe("gscTopBy", () => {
     expect(result).toMatchObject({ pagesFetched: 1, rowsScanned: 4, truncatedByCap: false });
     expect(pager.calls).toHaveLength(1);
     expect(pager.calls[0]).toEqual({
-      site: "example.com",
+      property: "example.com",
       start_date: "2026-06-28",
       end_date: "2026-07-12",
       dimensions: ["query"],
       branded_queries: false,
     });
+    expect(Object.prototype.hasOwnProperty.call(pager.calls[0], "property")).toBe(true);
+    expect(Object.prototype.hasOwnProperty.call(pager.calls[0], "site")).toBe(false);
     expect(pager.calls[0]).not.toHaveProperty("page");
     expect(pager.calls[0]).not.toHaveProperty("page_size");
   });

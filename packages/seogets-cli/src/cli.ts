@@ -153,7 +153,7 @@ export function buildProgram(): Command {
         );
       }
       const args: Record<string, unknown> = {
-        site,
+        property: site,
         start_date: start,
         end_date: end,
       };
@@ -269,7 +269,7 @@ export function buildProgram(): Command {
       .description("Indexing overview: total pages, by coverage state, at-risk pages (MCP: get_indexing_overview)"),
   ).action(async (site: string, opts: OutputOpts, cmd: Command) => {
     const globals = cmd.optsWithGlobals();
-    const result = await newClient(globals).callTool("get_indexing_overview", { site });
+    const result = await newClient(globals).callTool("get_indexing_overview", { property: site });
     writeObject(unwrapToolResult(result), opts);
   });
 
@@ -292,7 +292,7 @@ export function buildProgram(): Command {
   ).action(async (site: string, opts: IndexingStatusOpts, cmd: Command) => {
     const globals = cmd.optsWithGlobals();
     const args: Record<string, unknown> = {
-      site,
+      property: site,
       filters: opts.filters ? JSON.parse(opts.filters) : [],
       status_filter: opts.status ?? [],
       crawled_days_ago: opts.crawledDaysAgo ?? 0,

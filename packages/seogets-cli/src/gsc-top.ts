@@ -17,7 +17,7 @@ export interface GscRow {
 }
 
 export interface GscPageArgs {
-  site: string;
+  property: string;
   start_date: string;
   end_date: string;
   dimensions: string[];
@@ -330,7 +330,7 @@ function requestArgs(
   params: Pick<GscTopParams, "site" | "startDate" | "endDate" | "dimension" | "brandedQueries" | "filters">,
 ): GscPageArgs {
   return {
-    site: params.site,
+    property: params.site,
     start_date: params.startDate,
     end_date: params.endDate,
     dimensions: [params.dimension],

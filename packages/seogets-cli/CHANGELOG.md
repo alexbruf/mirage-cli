@@ -1,5 +1,11 @@
 # @mirage-cli/seogets-cli
 
+## 0.3.1
+
+### Patch Changes
+
+- Send the schema-correct `property` key in SEO Gets MCP payloads.
+
 ## 0.3.0
 
 ### Minor Changes

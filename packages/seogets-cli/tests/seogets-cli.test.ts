@@ -1,7 +1,24 @@
-import { describe, expect, test } from "bun:test";
+import { describe, expect, spyOn, test } from "bun:test";
 import packageJson from "../package.json" with { type: "json" };
 import { buildProgram } from "../src/cli.ts";
-import { unwrapToolResult } from "../src/mcp.ts";
+import { McpClient, unwrapToolResult } from "../src/mcp.ts";
+
+async function captureToolCall(args: string[]): Promise<[string, Record<string, unknown>]> {
+  const callTool = spyOn(McpClient.prototype, "callTool").mockResolvedValue({});
+  try {
+    await buildProgram().parseAsync(["--token", "test-token", ...args], { from: "user" });
+    expect(callTool).toHaveBeenCalledTimes(1);
+    return callTool.mock.calls[0] as [string, Record<string, unknown>];
+  } finally {
+    callTool.mockRestore();
+  }
+}
+
+function expectPropertyWireKey(args: Record<string, unknown>, site: string): void {
+  expect(Object.prototype.hasOwnProperty.call(args, "property")).toBe(true);
+  expect(args.property).toBe(site);
+  expect(Object.prototype.hasOwnProperty.call(args, "site")).toBe(false);
+}
 
 describe("@mirage-cli/seogets-cli", () => {
   test("buildProgram() returns a configured Commander program", () => {
@@ -42,6 +59,37 @@ describe("@mirage-cli/seogets-cli", () => {
     expect(command!.getOptionValue("rowsOnly")).toBe(true);
     expect(command!.getOptionValue("dim")).toBe("query");
     expect(command!.getOptionValue("by")).toBe("impressions");
+  });
+
+  test("gsc sends the site as the property wire key", async () => {
+    const [tool, args] = await captureToolCall([
+      "gsc",
+      "sc-domain:example.com",
+      "2026-08-01",
+      "2026-08-25",
+    ]);
+    expect(tool).toBe("get_gsc_performance");
+    expectPropertyWireKey(args, "sc-domain:example.com");
+  });
+
+  test("indexing overview sends the site as the property wire key", async () => {
+    const [tool, args] = await captureToolCall([
+      "indexing",
+      "overview",
+      "sc-domain:example.com",
+    ]);
+    expect(tool).toBe("get_indexing_overview");
+    expectPropertyWireKey(args, "sc-domain:example.com");
+  });
+
+  test("indexing status sends the site as the property wire key", async () => {
+    const [tool, args] = await captureToolCall([
+      "indexing",
+      "status",
+      "sc-domain:example.com",
+    ]);
+    expect(tool).toBe("get_indexing_status");
+    expectPropertyWireKey(args, "sc-domain:example.com");
   });
 
   test("buildProgram() is independent across calls (no shared state)", () => {

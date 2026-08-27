@@ -1,4 +1,4 @@
-import { describe, expect, spyOn, test } from "bun:test";
+import { afterEach, describe, expect, spyOn, test } from "bun:test";
 import packageJson from "../package.json" with { type: "json" };
 import { buildProgram } from "../src/cli.ts";
 import { McpClient, unwrapToolResult } from "../src/mcp.ts";
@@ -19,6 +19,20 @@ function expectPropertyWireKey(args: Record<string, unknown>, site: string): voi
   expect(args.property).toBe(site);
   expect(Object.prototype.hasOwnProperty.call(args, "site")).toBe(false);
 }
+
+const realFetch = globalThis.fetch;
+
+function stubToolResponse(result: unknown): void {
+  globalThis.fetch = (async () =>
+    new Response(JSON.stringify({ jsonrpc: "2.0", id: 1, result }), {
+      status: 200,
+      headers: { "content-type": "application/json" },
+    })) as unknown as typeof fetch;
+}
+
+afterEach(() => {
+  globalThis.fetch = realFetch;
+});
 
 describe("@mirage-cli/seogets-cli", () => {
   test("buildProgram() returns a configured Commander program", () => {
@@ -104,5 +118,62 @@ describe("@mirage-cli/seogets-cli", () => {
     expect(unwrapToolResult({ content: [{ type: "text", text: "hello" }] })).toBe("hello");
     expect(unwrapToolResult({ structuredContent: { ok: true } })).toEqual({ ok: true });
     expect(unwrapToolResult({ foo: 42 })).toEqual({ foo: 42 });
+  });
+});
+
+describe("SEO Gets application-level failures", () => {
+  const property = "sc-domain:example.com";
+  const failureNote = `No accessible property matched Property="${property}".`;
+
+  test("a note without an echoed property throws the provider note", async () => {
+    stubToolResponse({ note: failureNote });
+
+    await expect(
+      new McpClient({ token: "test-token" }).callTool("get_indexing_overview", { property }),
+    ).rejects.toThrow(failureNote);
+  });
+
+  test("indexing status data:null without an echoed property is a failure", async () => {
+    stubToolResponse({ data: null, note: failureNote });
+
+    await expect(
+      new McpClient({ token: "test-token" }).callTool("get_indexing_status", { property }),
+    ).rejects.toThrow(failureNote);
+  });
+
+  test("indexing status data:null with an echoed property remains a successful empty result", async () => {
+    const result = { data: null, note: "Returned 0 rows.", property };
+    stubToolResponse(result);
+
+    await expect(
+      new McpClient({ token: "test-token" }).callTool("get_indexing_status", { property }),
+    ).resolves.toEqual(result);
+  });
+
+  test("GSC performance with a benign note and echoed property remains successful", async () => {
+    const result = {
+      data: [],
+      start_date: "2026-08-01",
+      end_date: "2026-08-25",
+      note: "Use only the data included in the response.",
+      property,
+    };
+    stubToolResponse(result);
+
+    await expect(
+      new McpClient({ token: "test-token" }).callTool("get_gsc_performance", { property }),
+    ).resolves.toEqual(result);
+  });
+
+  test("list_sites with a note remains successful when the request has no property", async () => {
+    const result = {
+      note: "Use one of these sites when using other SEO Gets Tools",
+      sites: [property],
+    };
+    stubToolResponse(result);
+
+    await expect(
+      new McpClient({ token: "test-token" }).callTool("list_sites", { filter: "all" }),
+    ).resolves.toEqual(result);
   });
 });

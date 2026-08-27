@@ -1,5 +1,11 @@
 # @mirage-cli/seogets-cli
 
+## 0.3.2
+
+### Patch Changes
+
+- Exit non-zero when a property-scoped SEO Gets response reports an application-level failure without echoing the requested property.
+
 ## 0.3.1
 
 ### Patch Changes

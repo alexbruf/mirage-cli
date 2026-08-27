@@ -89,7 +89,9 @@ export class McpClient {
    * handles both cases.
    */
   async callTool<T = unknown>(name: string, args: Record<string, unknown> = {}): Promise<T> {
-    return this.rpc<T>("tools/call", { name, arguments: args });
+    const result = await this.rpc<T>("tools/call", { name, arguments: args });
+    assertToolResponseOk(args, result);
+    return result;
   }
 
   /** Fetch and normalize one GSC page, including SEO Gets' TSV-in-JSON payload. */
@@ -147,4 +149,24 @@ export function unwrapToolResult(result: unknown): unknown {
     }
   }
   return result;
+}
+
+/**
+ * SEO Gets reports some application failures as successful tool results. A
+ * property-scoped success echoes the requested property, including legitimate
+ * empty results; failures instead return a note without that property.
+ */
+function assertToolResponseOk(args: Record<string, unknown>, result: unknown): void {
+  if (!Object.prototype.hasOwnProperty.call(args, "property")) return;
+
+  const unwrapped = unwrapToolResult(result);
+  if (!unwrapped || typeof unwrapped !== "object" || Array.isArray(unwrapped)) return;
+
+  const response = unwrapped as Record<string, unknown>;
+  if (
+    Object.prototype.hasOwnProperty.call(response, "note") &&
+    !Object.prototype.hasOwnProperty.call(response, "property")
+  ) {
+    throw new Error(String(response.note));
+  }
 }

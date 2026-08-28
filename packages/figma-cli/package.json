@@ -1,0 +1,63 @@
+{
+  "name": "@mirage-cli/figma-cli",
+  "version": "0.1.0",
+  "description": "Figma CLI — files, node trees, rendered exports, comments, variables, dev resources, and library assets over the Figma REST API. Dual credential support (personal access token or OAuth). Mirage-compatible command shape.",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/alexbruf/mirage-cli.git",
+    "directory": "packages/figma-cli"
+  },
+  "bugs": {
+    "url": "https://github.com/alexbruf/mirage-cli/issues"
+  },
+  "homepage": "https://github.com/alexbruf/mirage-cli/tree/main/packages/figma-cli#readme",
+  "keywords": [
+    "figma",
+    "cli",
+    "mirage",
+    "design",
+    "design-tokens"
+  ],
+  "type": "module",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "bun": "./src/index.ts",
+      "import": "./dist/index.js"
+    },
+    "./cli": {
+      "types": "./dist/cli.d.ts",
+      "bun": "./src/cli.ts",
+      "import": "./dist/cli.js"
+    }
+  },
+  "bin": {
+    "figma": "./dist/bin.js"
+  },
+  "files": [
+    "dist",
+    "skills",
+    "README.md",
+    "LICENSE"
+  ],
+  "scripts": {
+    "dev": "bun run src/cli.ts",
+    "build": "bun build src/bin.ts src/cli.ts src/index.ts --target=node --outdir=dist --external commander && bun run scripts/postbuild.ts && bun run build:types",
+    "build:types": "tsc -p tsconfig.build.json",
+    "test": "bun test --reporter=dots",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "commander": "^14.0.3"
+  },
+  "publishConfig": {
+    "access": "public"
+  },
+  "engines": {
+    "bun": ">=1.1.0",
+    "node": ">=18.0.0"
+  }
+}

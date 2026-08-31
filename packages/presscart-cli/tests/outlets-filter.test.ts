@@ -150,6 +150,25 @@ describe("outlet list client-side filters", () => {
     expect(byTag.rows.map((row) => row.id)).toEqual(["vancouver", "unpriced"]);
   });
 
+  // Silently answering page 1 for --page 2 is the same class of bug this change
+  // exists to fix, so both the honoured and the refused case are locked in.
+  test("pages over matches rather than ignoring --page", async () => {
+    const page1 = await runList({ country: "canada", limit: 1 });
+    const page2 = await runList({ country: "canada", limit: 1, page: 2 });
+    const page3 = await runList({ country: "canada", limit: 1, page: 3 });
+
+    expect(page1.rows.map((row) => row.id)).toEqual(["toronto"]);
+    expect(page2.rows.map((row) => row.id)).toEqual(["vancouver"]);
+    expect(page3.rows).toEqual([]);
+    expect(page2.stderr).toContain("1 outlet listings shown (page 2) of 2");
+  });
+
+  test("refuses --page without --limit when filtering, instead of assuming page 1", async () => {
+    await expect(runList({ country: "canada", page: 2 })).rejects.toThrow(
+      "--page needs --limit when a filter is active",
+    );
+  });
+
   test("keeps listings whose nested price is within the budget", async () => {
     const result = await runList({ minPrice: 200, maxPrice: 300 });
 

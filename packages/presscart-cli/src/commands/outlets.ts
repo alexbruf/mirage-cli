@@ -161,6 +161,13 @@ export async function listOutlets(
     }
   }
 
+  if (hasClientFilter && opts.page !== undefined && opts.limit === undefined) {
+    throw new Error(
+      "--page needs --limit when a filter is active: filtered results are paged over matches, " +
+        "not over catalog pages. Re-run with --limit <page size>, or drop --page to get every match.",
+    );
+  }
+
   const textMatches = records.filter((record) => matchesTextFilters(record, opts));
   let unpriced = 0;
   const matches = !hasBudget
@@ -176,13 +183,19 @@ export async function listOutlets(
         return true;
       });
 
-  // A filtering command scans the catalog first, so --limit caps matches rather
-  // than restricting what the client can inspect. --all continues to emit all
-  // rows when no filter is active.
-  const limitedMatches =
-    hasClientFilter && opts.limit !== undefined
-      ? matches.slice(0, Math.max(0, opts.limit))
-      : matches;
+  // A filtering command scans the catalog first, so --limit stops being a
+  // server page size and becomes the page size over MATCHES, with --page
+  // selecting the slice. --all continues to emit all rows when no filter is
+  // active. Silently discarding --page here is the same class of bug this
+  // change exists to fix, so an unpageable combination is refused out loud
+  // rather than answered with page 1.
+  let limitedMatches = matches;
+  if (hasClientFilter && opts.limit !== undefined) {
+    const pageSize = Math.max(0, opts.limit);
+    const page = Math.max(1, opts.page ?? 1);
+    const start = (page - 1) * pageSize;
+    limitedMatches = matches.slice(start, start + pageSize);
+  }
   const rows = limitedMatches.map((record) => {
     const usd = outletPriceUsd(record);
     return usd === undefined
@@ -193,9 +206,13 @@ export async function listOutlets(
   // Total-count summary to stderr so stdout stays clean for json/csv piping.
   const totalNote = totalRecords !== undefined ? ` of ${totalRecords} total` : "";
   const matchNote = hasClientFilter ? ` matching ${filterLabel(opts)}` : "";
+  const pageNote =
+    hasClientFilter && opts.limit !== undefined && (opts.page ?? 1) > 1
+      ? ` (page ${String(opts.page)})`
+      : "";
   const countNote =
     rows.length < matches.length
-      ? `${rows.length} outlet listings shown of ${matches.length}`
+      ? `${rows.length} outlet listings shown${pageNote} of ${matches.length}`
       : `${matches.length} outlet listings`;
   const unpricedNote = hasBudget && unpriced > 0 ? ` (${unpriced} excluded: no price)` : "";
   process.stderr.write(`# ${countNote}${matchNote}${totalNote}${unpricedNote}\n`);

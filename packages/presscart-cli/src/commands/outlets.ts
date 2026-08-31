@@ -1,6 +1,12 @@
 import { ApiClient } from "../client.ts";
 import { requireSession } from "../config.ts";
-import { type OutputOpts, unwrapList, writeObject, writeOutput } from "../output.ts";
+import {
+  type OutputOpts,
+  rowPriceUsd,
+  unwrapList,
+  writeObject,
+  writeOutput,
+} from "../output.ts";
 
 function client(): ApiClient {
   return new ApiClient(requireSession());
@@ -22,11 +28,12 @@ export interface ListOutletsOpts extends OutputOpts {
 }
 
 const PAGE_CAP = 100;
+const CATALOG_PAGE_SIZE = 1000;
 
 /**
- * Outlet listing price in whole USD. Presscart lists carry the placement price
- * in `unit_amount` as whole dollars (BLU-641); we fall back to a few common
- * field names. Returns undefined when no numeric price is present.
+ * Outlet listing price in whole USD. Preserve the legacy flat-field lookup for
+ * callers that provide normalized records, then fall back to Presscart's real
+ * API shape: the lowest whole-dollar `unit_amount` in `prices[]`.
  */
 export function outletPriceUsd(rec: Record<string, unknown>): number | undefined {
   for (const k of ["unit_amount", "price", "amount", "cost", "unit_price"]) {
@@ -34,7 +41,7 @@ export function outletPriceUsd(rec: Record<string, unknown>): number | undefined
     const n = typeof v === "number" ? v : typeof v === "string" ? Number(v) : Number.NaN;
     if (Number.isFinite(n)) return n;
   }
-  return undefined;
+  return rowPriceUsd(rec);
 }
 
 function numberOr(v: unknown, fallback: number | undefined): number | undefined {
@@ -49,16 +56,74 @@ function budgetLabel(min?: number, max?: number): string {
   return "";
 }
 
-export async function listOutlets(opts: ListOutletsOpts): Promise<void> {
-  const api = client();
-  const baseQuery = {
-    limit: opts.limit,
-    search: opts.search,
-    country: opts.country,
-    state: opts.state,
-    city: opts.city,
-    tag: opts.tag,
-  };
+function text(value: unknown): string | undefined {
+  return typeof value === "string" ? value.toLocaleLowerCase() : undefined;
+}
+
+function matchesTextFilters(record: Record<string, unknown>, opts: ListOutletsOpts): boolean {
+  const search = text(opts.search);
+  if (
+    search !== undefined &&
+    ![record.name, record.outlet_name, record.website_url].some((value) =>
+      text(value)?.includes(search),
+    )
+  ) {
+    return false;
+  }
+
+  for (const field of ["country", "state", "city"] as const) {
+    const wanted = text(opts[field]);
+    if (wanted !== undefined && text(record[field]) !== wanted) return false;
+  }
+
+  const wantedTag = text(opts.tag);
+  if (wantedTag !== undefined) {
+    const tags = record.tags;
+    if (
+      !Array.isArray(tags) ||
+      !tags.some(
+        (tag) =>
+          tag &&
+          typeof tag === "object" &&
+          text((tag as Record<string, unknown>).name) === wantedTag,
+      )
+    ) {
+      return false;
+    }
+  }
+
+  return true;
+}
+
+function filterLabel(opts: ListOutletsOpts): string {
+  const labels: string[] = [];
+  if (opts.search !== undefined) labels.push(`"${opts.search}"`);
+  if (opts.country !== undefined) labels.push(`country "${opts.country}"`);
+  if (opts.state !== undefined) labels.push(`state "${opts.state}"`);
+  if (opts.city !== undefined) labels.push(`city "${opts.city}"`);
+  if (opts.tag !== undefined) labels.push(`tag "${opts.tag}"`);
+  if (opts.minPrice !== undefined || opts.maxPrice !== undefined) {
+    labels.push(budgetLabel(opts.minPrice, opts.maxPrice));
+  }
+  return labels.join(", ");
+}
+
+type OutletListClient = Pick<ApiClient, "request">;
+
+export async function listOutlets(
+  opts: ListOutletsOpts,
+  api: OutletListClient = client(),
+): Promise<void> {
+  const hasBudget = opts.minPrice !== undefined || opts.maxPrice !== undefined;
+  const hasClientFilter =
+    hasBudget ||
+    opts.search !== undefined ||
+    opts.country !== undefined ||
+    opts.state !== undefined ||
+    opts.city !== undefined ||
+    opts.tag !== undefined;
+  const pageCatalog = opts.all === true || hasClientFilter;
+  const baseQuery = { limit: pageCatalog ? CATALOG_PAGE_SIZE : opts.limit };
 
   let totalRecords: number | undefined;
   let totalPages = 1;
@@ -73,30 +138,35 @@ export async function listOutlets(opts: ListOutletsOpts): Promise<void> {
     return unwrapList(res, ["outlets"]) as Record<string, unknown>[];
   };
 
-  let records = await fetchPage(opts.page ?? 1);
-  if (opts.all) {
+  const records: Record<string, unknown>[] = [];
+  const seenIds = new Set<string | number>();
+  const appendPage = (pageRecords: Record<string, unknown>[]): void => {
+    for (const record of pageRecords) {
+      const id = record.id;
+      if (typeof id === "string" || typeof id === "number") {
+        if (seenIds.has(id)) continue;
+        seenIds.add(id);
+      }
+      records.push(record);
+    }
+  };
+
+  appendPage(await fetchPage(pageCatalog ? 1 : (opts.page ?? 1)));
+  if (pageCatalog) {
     for (let p = 2; p <= totalPages && p <= PAGE_CAP; p++) {
-      records = records.concat(await fetchPage(p));
+      appendPage(await fetchPage(p));
     }
     if (totalPages > PAGE_CAP) {
       process.stderr.write(`# warning: stopped at ${PAGE_CAP} pages (total_pages=${totalPages})\n`);
     }
   }
 
-  // $ formatting: add a human price column from the detected price field.
-  const formatted = records.map((r) => {
-    const usd = outletPriceUsd(r);
-    return usd === undefined ? r : { ...r, price_usd: `$${usd.toLocaleString("en-US")}` };
-  });
-
-  // Budget filter. Rows with no detectable price are excluded from a budget
-  // query (can't prove they fit) and that exclusion is reported.
-  const hasBudget = opts.minPrice !== undefined || opts.maxPrice !== undefined;
+  const textMatches = records.filter((record) => matchesTextFilters(record, opts));
   let unpriced = 0;
-  const rows = !hasBudget
-    ? formatted
-    : formatted.filter((r) => {
-        const usd = outletPriceUsd(r);
+  const matches = !hasBudget
+    ? textMatches
+    : textMatches.filter((record) => {
+        const usd = outletPriceUsd(record);
         if (usd === undefined) {
           unpriced++;
           return false;
@@ -106,11 +176,29 @@ export async function listOutlets(opts: ListOutletsOpts): Promise<void> {
         return true;
       });
 
+  // A filtering command scans the catalog first, so --limit caps matches rather
+  // than restricting what the client can inspect. --all continues to emit all
+  // rows when no filter is active.
+  const limitedMatches =
+    hasClientFilter && opts.limit !== undefined
+      ? matches.slice(0, Math.max(0, opts.limit))
+      : matches;
+  const rows = limitedMatches.map((record) => {
+    const usd = outletPriceUsd(record);
+    return usd === undefined
+      ? record
+      : { ...record, price_usd: `$${usd.toLocaleString("en-US")}` };
+  });
+
   // Total-count summary to stderr so stdout stays clean for json/csv piping.
   const totalNote = totalRecords !== undefined ? ` of ${totalRecords} total` : "";
-  const budgetNote = hasBudget ? ` matching ${budgetLabel(opts.minPrice, opts.maxPrice)}` : "";
+  const matchNote = hasClientFilter ? ` matching ${filterLabel(opts)}` : "";
+  const countNote =
+    rows.length < matches.length
+      ? `${rows.length} outlet listings shown of ${matches.length}`
+      : `${matches.length} outlet listings`;
   const unpricedNote = hasBudget && unpriced > 0 ? ` (${unpriced} excluded: no price)` : "";
-  process.stderr.write(`# ${rows.length} outlet listings${budgetNote}${totalNote}${unpricedNote}\n`);
+  process.stderr.write(`# ${countNote}${matchNote}${totalNote}${unpricedNote}\n`);
 
   writeOutput(rows, opts);
 }

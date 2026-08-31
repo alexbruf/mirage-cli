@@ -10,7 +10,17 @@ export {
   type ListResponse,
   type DetailResponse,
   type ListParams,
+  type SseRequestOptions,
+  DEFAULT_SSE_TIMEOUT_MS,
+  parseSseStream,
 } from "./client.ts";
+export {
+  ONBOARDING_SECTIONS,
+  parseJsonOption,
+  parseOnboardingSection,
+  registerOnboardingCommands,
+  type OnboardingSection,
+} from "./commands/onboarding.ts";
 export {
   loadSession,
   loadFileSession,

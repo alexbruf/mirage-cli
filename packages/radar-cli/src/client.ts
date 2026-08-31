@@ -10,7 +10,7 @@ export interface RequestOptions {
 }
 
 export interface SseRequestOptions {
-  /** Request timeout in milliseconds. Defaults to three minutes. */
+  /** Request timeout in milliseconds. Defaults to DEFAULT_SSE_TIMEOUT_MS. */
   timeoutMs?: number;
   /** Status messages are appended here and never printed while streaming. */
   statusMessages?: string[];
@@ -22,7 +22,15 @@ interface SseEvent {
   message?: string;
 }
 
-export const DEFAULT_SSE_TIMEOUT_MS = 180_000;
+/**
+ * Ten minutes, matching the only timeout the Radar dashboard itself sets on
+ * these actions: both `generate-queries` call sites (the onboarding page and
+ * the preference game) pass `timeoutMs: 600_000`, and `analyze` passes none at
+ * all. A shorter default would abort a slow but valid run after the upstream
+ * OpenRouter and Firecrawl work had already been billed. Narrow it per call
+ * with `--timeout` when a caller wants to fail faster.
+ */
+export const DEFAULT_SSE_TIMEOUT_MS = 600_000;
 
 /** Shape returned by the org-scoped V1 list endpoints. */
 export interface ListResponse<T = Record<string, unknown>> {

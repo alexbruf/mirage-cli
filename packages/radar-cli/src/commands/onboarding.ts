@@ -112,7 +112,10 @@ async function runSse<T>(
     });
   } finally {
     if (opts.verbose) {
-      for (const message of statusMessages) process.stderr.write(`${message}\n`);
+      // console.error, not process.stderr.write: it is what the rest of this
+      // package uses for stderr, and `process.stderr` is not guaranteed to
+      // exist under workerd, where these commands run mounted.
+      for (const message of statusMessages) console.error(message);
     }
   }
 }

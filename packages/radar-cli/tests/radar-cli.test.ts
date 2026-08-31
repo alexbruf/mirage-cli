@@ -1,6 +1,6 @@
 import { afterEach, describe, expect, test } from "bun:test";
 import { fileURLToPath } from "node:url";
-import { ApiError, parseSseStream } from "../src/client.ts";
+import { ApiError, DEFAULT_SSE_TIMEOUT_MS, parseSseStream } from "../src/client.ts";
 import { buildProgram } from "../src/cli.ts";
 import {
   parseJsonOption,
@@ -187,5 +187,22 @@ describe("Radar SSE parsing", () => {
     await expect(
       parseSseStream(byteStream(['data: {"type":"result","data":{"ok":true}}\n\n'])),
     ).rejects.toThrow("without a done event");
+  });
+});
+
+describe("SSE timeout default", () => {
+  test("matches the 600s the Radar dashboard uses for generate-queries", () => {
+    expect(DEFAULT_SSE_TIMEOUT_MS).toBe(600_000);
+  });
+
+  test("generate-queries and analyze both inherit that default", () => {
+    const program = buildProgram();
+    const onboarding = program.commands.find(
+      (c: { name: () => string }) => c.name() === "onboarding",
+    ) as { commands: readonly { name: () => string; opts: () => Record<string, unknown> }[] };
+    for (const name of ["analyze", "generate-queries"]) {
+      const cmd = onboarding.commands.find((c) => c.name() === name);
+      expect(cmd?.opts().timeout).toBe(600_000);
+    }
   });
 });

@@ -206,3 +206,53 @@ describe("SSE timeout default", () => {
     }
   });
 });
+
+describe("JSON options accept a bare absolute path", () => {
+  afterEach(() => {
+    (globalThis as { __MIRAGE_CLI_FILE_IO__?: unknown }).__MIRAGE_CLI_FILE_IO__ = undefined;
+  });
+
+  test("a bare /data path reads through the Mirage bridge, like @path does", async () => {
+    const seen: string[] = [];
+    (globalThis as { __MIRAGE_CLI_FILE_IO__?: unknown }).__MIRAGE_CLI_FILE_IO__ = {
+      canHandle: (path: string) => {
+        seen.push(path);
+        return path.startsWith("/data/");
+      },
+      readFileSync: () => JSON.stringify({ ok: true }),
+    };
+    // No leading @: the ve-brain mount pre-loads VFS files by scanning argv for
+    // path-shaped tokens, and an @ prefix hides the path from that scan.
+    expect(await parseJsonOption<{ ok: boolean }>("/data/x.json", "--data")).toEqual({ ok: true });
+    expect(seen).toContain("/data/x.json");
+  });
+
+  test("inline JSON is still not treated as a path", async () => {
+    let consulted = false;
+    (globalThis as { __MIRAGE_CLI_FILE_IO__?: unknown }).__MIRAGE_CLI_FILE_IO__ = {
+      canHandle: () => {
+        consulted = true;
+        return true;
+      },
+      readFileSync: () => "{}",
+    };
+    expect(await parseJsonOption<{ inline: number }>('{"inline":1}', "--data")).toEqual({ inline: 1 });
+    expect(consulted).toBe(false);
+  });
+
+  test("read failures are plain Errors, so the mount surfaces the message", async () => {
+    // Commander only prints an InvalidArgumentError it raised itself; one thrown
+    // from an async action handler is swallowed and shows as a bare [exit 1].
+    (globalThis as { __MIRAGE_CLI_FILE_IO__?: unknown }).__MIRAGE_CLI_FILE_IO__ = {
+      canHandle: () => true,
+      readFileSync: () => null,
+    };
+    const err = (await parseJsonOption("/data/missing.json", "--profile").catch(
+      (e) => e,
+    )) as Error;
+    expect(err).toBeInstanceOf(Error);
+    expect(err.constructor.name).toBe("Error");
+    expect(err.message).toContain("--profile");
+    expect(err.message).toContain("/data/missing.json");
+  });
+});

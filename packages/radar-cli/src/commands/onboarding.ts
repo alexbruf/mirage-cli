@@ -52,23 +52,40 @@ async function readJsonFile(path: string): Promise<string> {
   return readFileSync(path, "utf8");
 }
 
+/**
+ * Resolve a JSON option to its source text.
+ *
+ * Accepts inline JSON, `@path`, or a bare absolute path. The bare form exists
+ * because the ve-brain mount pre-loads virtual-filesystem files by scanning
+ * argv for tokens that look like paths, and an `@` prefix hides the path from
+ * that scan, so `@/data/x.json` silently resolves to nothing there.
+ *
+ * Errors here are plain Errors, never Commander's InvalidArgumentError.
+ * Commander only prints an InvalidArgumentError when it raises one itself
+ * while parsing options; one thrown from inside an async action handler is
+ * classified as a Commander error by the mount's buffered runner, which drops
+ * the message and leaves the caller with a bare `[exit 1]`.
+ */
+function jsonOptionSourcePath(value: string): string | undefined {
+  if (value.startsWith("@")) return value.slice(1);
+  if (value.startsWith("/")) return value;
+  return undefined;
+}
+
 export async function parseJsonOption<T = unknown>(
   value: string,
   optionName: string,
 ): Promise<T> {
   let source = value;
-  let filePath: string | undefined;
+  const filePath = jsonOptionSourcePath(value);
 
-  if (value.startsWith("@")) {
-    filePath = value.slice(1);
-    if (!filePath) throw new InvalidArgumentError(`${optionName} requires a path after @`);
+  if (filePath !== undefined) {
+    if (!filePath) throw new Error(`${optionName} requires a path after @`);
     try {
       source = await readJsonFile(filePath);
     } catch (error) {
       const message = error instanceof Error ? error.message : String(error);
-      throw new InvalidArgumentError(
-        `Could not read JSON for ${optionName} from ${filePath}: ${message}`,
-      );
+      throw new Error(`Could not read JSON for ${optionName} from ${filePath}: ${message}`);
     }
   }
 
@@ -77,7 +94,7 @@ export async function parseJsonOption<T = unknown>(
   } catch (error) {
     const message = error instanceof Error ? error.message : String(error);
     const sourceName = filePath ? ` from ${filePath}` : "";
-    throw new InvalidArgumentError(`Invalid JSON for ${optionName}${sourceName}: ${message}`);
+    throw new Error(`Invalid JSON for ${optionName}${sourceName}: ${message}`);
   }
 }
 
@@ -173,7 +190,7 @@ export function registerOnboardingCommands(program: Command, getClient: GetClien
       `Section: ${ONBOARDING_SECTIONS.join("|")}`,
       parseOnboardingSection,
     )
-    .requiredOption("--data <json|@file>", "Section data as inline JSON or @file")
+    .requiredOption("--data <json|path>", "Section data as inline JSON, an absolute path, or @path")
     .action(async (projectId: string, opts: { section: OnboardingSection; data: string }) => {
       const data = await parseJsonOption(opts.data, "--data");
       printJson(
@@ -189,8 +206,8 @@ export function registerOnboardingCommands(program: Command, getClient: GetClien
     onboarding
       .command("generate-queries <projectId>")
       .description("Generate onboarding queries from a completed profile")
-      .requiredOption("--profile <json|@file>", "Profile as inline JSON or @file")
-      .option("--funnel-mix <json|@file>", "Optional funnel mix as inline JSON or @file"),
+      .requiredOption("--profile <json|path>", "Profile as inline JSON, an absolute path, or @path")
+      .option("--funnel-mix <json|path>", "Optional funnel mix as inline JSON, an absolute path, or @path"),
   ).action(
     async (
       projectId: string,
@@ -216,7 +233,7 @@ export function registerOnboardingCommands(program: Command, getClient: GetClien
   onboarding
     .command("complete <projectId>")
     .description("Complete onboarding with the approved queries")
-    .requiredOption("--queries <json|@file>", "Query array as inline JSON or @file")
+    .requiredOption("--queries <json|path>", "Query array as inline JSON, an absolute path, or @path")
     .action(async (projectId: string, opts: { queries: string }) => {
       const queries = await parseJsonOption(opts.queries, "--queries");
       printJson(

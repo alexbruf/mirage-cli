@@ -33,6 +33,8 @@
     "@mirage-cli/call": "workspace:*",
     "@mirage-cli/callrail": "workspace:*",
     "@mirage-cli/clarity": "workspace:*",
+    "@mirage-cli/contentdynamite": "workspace:*",
+    "@mirage-cli/contentdynamite-cli": "workspace:*",
     "@mirage-cli/core": "workspace:*",
     "@mirage-cli/dataforseo": "workspace:*",
     "@mirage-cli/firecrawl": "workspace:*",

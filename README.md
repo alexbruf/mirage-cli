@@ -22,6 +22,8 @@ Wrap any Commander.js TS CLI as an importable `@mirage-cli/<vendor>` package for
 | `@mirage-cli/openrouter` | Thin Mirage wrapper around `@mirage-cli/openrouter-cli`, exposing the global `openrouter` command. |
 | `@mirage-cli/rapidurlindexer-cli` | Rapid URL Indexer CLI source: credit balance, paid project submission, status, and delayed reports. |
 | `@mirage-cli/rapidurlindexer` | Thin Mirage wrapper around `@mirage-cli/rapidurlindexer-cli`, exposing the global `rapidurlindexer` command. |
+| `@mirage-cli/contentdynamite-cli` | Content Dynamite CLI source: SEO articles, BOFU landing pages, company profiles, ICP, batches, and featured image edits over the Dynamate v1 API. |
+| `@mirage-cli/contentdynamite` | Thin Mirage wrapper around `@mirage-cli/contentdynamite-cli`, exposing the global `ve-dynamite` command. |
 
 **Source packages vs wrapper packages.** A `*-cli` package is the CLI itself (the binary + its programmatic API). A `@mirage-cli/<vendor>` package is the thin adapter that surfaces it as `buildProgram` + `<vendor>Command` for mirage / worker consumption.
 

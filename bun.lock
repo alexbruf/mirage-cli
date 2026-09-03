@@ -12,6 +12,8 @@
         "@mirage-cli/call": "workspace:*",
         "@mirage-cli/callrail": "workspace:*",
         "@mirage-cli/clarity": "workspace:*",
+        "@mirage-cli/contentdynamite": "workspace:*",
+        "@mirage-cli/contentdynamite-cli": "workspace:*",
         "@mirage-cli/core": "workspace:*",
         "@mirage-cli/dataforseo": "workspace:*",
         "@mirage-cli/firecrawl": "workspace:*",
@@ -198,6 +200,37 @@
         "clarity": "./dist/bin.js",
       },
       "dependencies": {
+        "commander": "^14.0.3",
+      },
+    },
+    "packages/contentdynamite": {
+      "name": "@mirage-cli/contentdynamite",
+      "version": "0.1.0",
+      "dependencies": {
+        "@mirage-cli/core": "workspace:^",
+      },
+      "devDependencies": {
+        "@mirage-cli/contentdynamite-cli": "workspace:^",
+        "@struktoai/mirage-core": "^0.0.1",
+        "commander": "^14.0.3",
+        "tsup": "^8.5.1",
+      },
+      "peerDependencies": {
+        "@mirage-cli/contentdynamite-cli": "workspace:^",
+        "@struktoai/mirage-core": ">=0.0.1",
+      },
+      "optionalPeers": [
+        "@struktoai/mirage-core",
+      ],
+    },
+    "packages/contentdynamite-cli": {
+      "name": "@mirage-cli/contentdynamite-cli",
+      "version": "0.1.0",
+      "bin": {
+        "ve-dynamite": "./dist/bin.js",
+      },
+      "dependencies": {
+        "@mirage-cli/core": "workspace:^",
         "commander": "^14.0.3",
       },
     },
@@ -1053,6 +1086,10 @@
     "@mirage-cli/clarity": ["@mirage-cli/clarity@workspace:packages/clarity"],
 
     "@mirage-cli/clarity-cli": ["@mirage-cli/clarity-cli@workspace:packages/clarity-cli"],
+
+    "@mirage-cli/contentdynamite": ["@mirage-cli/contentdynamite@workspace:packages/contentdynamite"],
+
+    "@mirage-cli/contentdynamite-cli": ["@mirage-cli/contentdynamite-cli@workspace:packages/contentdynamite-cli"],
 
     "@mirage-cli/core": ["@mirage-cli/core@workspace:packages/core"],
 

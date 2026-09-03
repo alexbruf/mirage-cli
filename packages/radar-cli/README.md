@@ -1,8 +1,8 @@
 # @mirage-cli/radar-cli
 
 ViewEngine Radar CLI — org-scoped access to the ViewEngine AI Visibility API at
-`radar.viewengine.ai`. Read projects, queries, query-results, execution-jobs,
-and credits; manage game plans; switch between organizations.
+`radar.viewengine.ai`. Create and onboard projects; read queries, query-results,
+execution-jobs, and credits; manage game plans; switch between organizations.
 
 ```
 bun add -g @mirage-cli/radar-cli
@@ -13,6 +13,11 @@ radar orgs list                # orgs you belong to
 radar orgs use <id-or-slug>    # set the active org (persisted)
 
 radar projects list --search acme
+radar projects create example.com
+radar onboarding analyze <projectId> --domain example.com --verbose
+radar onboarding save <projectId> --section business --data @business.json
+radar onboarding generate-queries <projectId> --profile @profile.json
+radar onboarding complete <projectId> --queries @queries.json
 radar queries list --project-id <id>
 radar game-plans list --status open
 radar game-plans complete-action <planId> <actionIndex>
@@ -24,7 +29,12 @@ radar export game-plans > game-plans.json
 
 ## Commands
 
-- `projects {list, get}`
+- `projects {create, list, get}` — creation uses the onboarding-aware route;
+  renaming and descriptions remain a separate concern until that dashboard
+  update contract is represented in this repo
+- `onboarding {create, status, analyze, save, generate-queries, complete}` —
+  headless project setup; JSON options accept inline JSON or `@file`, and the
+  two SSE commands buffer output until completion (`--timeout`, `--verbose`)
 - `queries {list}`
 - `game-plans {list, get, update, complete-action}`
 - `results {list, get}` (query-results)

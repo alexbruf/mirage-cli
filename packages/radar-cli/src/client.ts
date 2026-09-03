@@ -6,7 +6,31 @@ export interface RequestOptions {
   body?: BodyInit;
   headers?: Record<string, string>;
   query?: Record<string, string | number | undefined>;
+  signal?: AbortSignal;
 }
+
+export interface SseRequestOptions {
+  /** Request timeout in milliseconds. Defaults to DEFAULT_SSE_TIMEOUT_MS. */
+  timeoutMs?: number;
+  /** Status messages are appended here and never printed while streaming. */
+  statusMessages?: string[];
+}
+
+interface SseEvent {
+  type?: string;
+  data?: unknown;
+  message?: string;
+}
+
+/**
+ * Ten minutes, matching the only timeout the Radar dashboard itself sets on
+ * these actions: both `generate-queries` call sites (the onboarding page and
+ * the preference game) pass `timeoutMs: 600_000`, and `analyze` passes none at
+ * all. A shorter default would abort a slow but valid run after the upstream
+ * OpenRouter and Firecrawl work had already been billed. Narrow it per call
+ * with `--timeout` when a caller wants to fail faster.
+ */
+export const DEFAULT_SSE_TIMEOUT_MS = 600_000;
 
 /** Shape returned by the org-scoped V1 list endpoints. */
 export interface ListResponse<T = Record<string, unknown>> {
@@ -91,6 +115,49 @@ export class ApiClient {
     return data.row;
   }
 
+  /** POST JSON to a dashboard API route and return its response body as-is. */
+  async post<T = unknown>(path: string, body: unknown): Promise<T> {
+    return this.request<T>(path, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(body),
+    });
+  }
+
+  /** POST JSON and buffer an authenticated SSE response until its `done` event. */
+  async postSse<T = unknown>(
+    path: string,
+    body: unknown,
+    opts: SseRequestOptions = {},
+  ): Promise<T> {
+    const timeoutMs = opts.timeoutMs ?? DEFAULT_SSE_TIMEOUT_MS;
+    if (!Number.isFinite(timeoutMs) || timeoutMs <= 0) {
+      throw new Error(
+        `SSE timeout must be a positive number of milliseconds (received ${timeoutMs})`,
+      );
+    }
+
+    const controller = new AbortController();
+    const timer = setTimeout(() => controller.abort(), timeoutMs);
+    try {
+      const res = await this.requestRaw(path, {
+        method: "POST",
+        headers: { "Content-Type": "application/json", Accept: "text/event-stream" },
+        body: JSON.stringify(body),
+        signal: controller.signal,
+      });
+      if (!res.body) throw new Error("SSE response had no body");
+      return await parseSseStream<T>(res.body, opts.statusMessages);
+    } catch (error) {
+      if (controller.signal.aborted) {
+        throw new Error(`SSE request timed out after ${timeoutMs}ms`, { cause: error });
+      }
+      throw error;
+    } finally {
+      clearTimeout(timer);
+    }
+  }
+
   private async fetch(path: string, opts: RequestOptions): Promise<Response> {
     await this.refreshIfNeeded();
     const url = this.buildUrl(path, opts.query);
@@ -107,6 +174,7 @@ export class ApiClient {
       method: opts.method ?? "GET",
       body: opts.body,
       headers,
+      signal: opts.signal,
     });
   }
 
@@ -140,6 +208,95 @@ export class ApiClient {
     }
     return url.toString();
   }
+}
+
+/**
+ * Incrementally parse Radar's single-line `data: <json>` SSE protocol.
+ * Nothing is emitted while reading: callers may print collected statuses only
+ * after the stream has completed, which keeps buffered command runners safe.
+ */
+export async function parseSseStream<T>(
+  stream: ReadableStream<Uint8Array>,
+  statusMessages: string[] = [],
+): Promise<T> {
+  const reader = stream.getReader();
+  const decoder = new TextDecoder();
+  let buffer = "";
+  let streamEnded = false;
+  let receivedDone = false;
+  let receivedResult = false;
+  let result: T | undefined;
+
+  const parseEvent = (block: string): void => {
+    const data = block
+      .split(/\r?\n/)
+      .filter((line) => line.startsWith("data:"))
+      .map((line) => line.slice(5).trimStart())
+      .join("\n");
+    if (!data) return;
+
+    let event: SseEvent;
+    try {
+      event = JSON.parse(data) as SseEvent;
+    } catch (error) {
+      const message = error instanceof Error ? error.message : String(error);
+      throw new Error(`Invalid JSON in SSE event: ${message}`);
+    }
+
+    switch (event.type) {
+      case "status":
+        if (typeof event.message === "string") statusMessages.push(event.message);
+        break;
+      case "result":
+        result = event.data as T;
+        receivedResult = true;
+        break;
+      case "error":
+        throw new ApiError(500, event.message ?? "Onboarding stream failed");
+      case "done":
+        receivedDone = true;
+        break;
+      default:
+        // `partial` and unknown forward-compatible event types do not affect
+        // the command's final JSON result.
+        break;
+    }
+  };
+
+  const consumeBufferedEvents = (): void => {
+    for (;;) {
+      const separator = buffer.match(/\r?\n\r?\n/);
+      if (!separator || separator.index === undefined) return;
+      const block = buffer.slice(0, separator.index);
+      buffer = buffer.slice(separator.index + separator[0].length);
+      parseEvent(block);
+      if (receivedDone) return;
+    }
+  };
+
+  try {
+    while (!receivedDone) {
+      const chunk = await reader.read();
+      if (chunk.done) {
+        streamEnded = true;
+        buffer += decoder.decode();
+        if (buffer.trim()) parseEvent(buffer);
+        break;
+      }
+      buffer += decoder.decode(chunk.value, { stream: true });
+      consumeBufferedEvents();
+    }
+  } finally {
+    if (!streamEnded) await reader.cancel().catch(() => undefined);
+    reader.releaseLock();
+  }
+
+  if (!receivedDone && !receivedResult) {
+    throw new Error("SSE stream ended without a result or done event");
+  }
+  if (!receivedDone) throw new Error("SSE stream ended without a done event");
+  if (!receivedResult) throw new Error("SSE stream ended without a result event");
+  return result as T;
 }
 
 /**

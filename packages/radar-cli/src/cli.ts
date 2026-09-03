@@ -2,6 +2,7 @@ import { Command } from "commander";
 import * as auth from "./auth.ts";
 import { ApiClient } from "./client.ts";
 import { registerMetricsCommands } from "./commands/metrics.ts";
+import { registerOnboardingCommands } from "./commands/onboarding.ts";
 import { registerOrgsCommands } from "./commands/orgs.ts";
 import { getDefaultBaseUrl, requireSession, type Session } from "./config.ts";
 
@@ -22,7 +23,7 @@ export function buildProgram(): Command {
   program
     .name("radar")
     .description("ViewEngine Radar — AI visibility CLI")
-    .version("0.3.0")
+    .version("0.4.0")
     .option("--api-key <key>", "Clerk API key (or set RADAR_API_KEY env)")
     .option("--url <url>", "API base URL (or set RADAR_API_BASE_URL env)")
     .option("--org <id-or-slug>", "Override the active org for this command only");
@@ -68,6 +69,13 @@ export function buildProgram(): Command {
   // ── Projects ──
 
   const projects = program.command("projects").description("Manage projects");
+
+  projects
+    .command("create <domain>")
+    .description("Create or reuse an incomplete project through onboarding")
+    .action(async (domain: string) => {
+      out(await (await getClient()).post("/onboarding/new", { action: "create", domain }));
+    });
 
   projects
     .command("list")
@@ -308,6 +316,7 @@ export function buildProgram(): Command {
   // ── Orgs (multi-tenant switch) ──
   registerOrgsCommands(program, getClient);
   registerMetricsCommands(program, getClient);
+  registerOnboardingCommands(program, getClient);
 
   return program;
 }

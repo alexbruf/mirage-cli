@@ -91,3 +91,5 @@ Errors go to stderr as one JSON object with `error`, `status`, and an actionable
 | `export --save` into a Mirage VFS path | ✅ via `globalThis.__MIRAGE_CLI_FILE_IO__` |
 | `export --save` to a local path | ⚠️ falls back to `node:fs` (dynamically imported) |
 | `--body-file -` (stdin) | ✅ via the host's `ByteSource` stdin |
+
+Credential safety: authenticated requests are restricted to https://api.figma.com and refuse redirects. The base URL option cannot redirect a mounted credential to another host. Render downloads send no Figma credential.

@@ -55,7 +55,12 @@ export class FigmaClient {
   constructor(opts: ClientOptions) {
     this.token = opts.token;
     this.scheme = opts.scheme;
-    this.baseUrl = (opts.baseUrl ?? getDefaultBaseUrl()).replace(/\/$/, "");
+    const base = new URL(opts.baseUrl ?? getDefaultBaseUrl());
+    if (base.origin !== "https://api.figma.com" || base.username || base.password ||
+        base.search || base.hash || base.pathname !== "/") {
+      throw new Error("Figma credential origin must be https://api.figma.com");
+    }
+    this.baseUrl = base.origin;
   }
 
   get<T = unknown>(path: string, query: Query = {}): Promise<T> {
@@ -102,6 +107,7 @@ export class FigmaClient {
     else headers["X-Figma-Token"] = this.token;
     if (body !== undefined) headers["Content-Type"] = "application/json";
     return fetch(url, {
+      redirect: "error",
       method,
       headers,
       ...(body !== undefined ? { body: JSON.stringify(body) } : {}),

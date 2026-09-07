@@ -2,6 +2,22 @@ import { describe, expect, test } from "bun:test";
 import { outletPriceUsd } from "../src/commands/outlets.ts";
 
 describe("outletPriceUsd (BLU-641)", () => {
+  test("reads nested API prices in whole USD", () => {
+    expect(outletPriceUsd({ prices: [{ unit_amount: 225, currency: "usd" }] })).toBe(225);
+  });
+
+  test("uses the lowest nested price tier", () => {
+    expect(
+      outletPriceUsd({
+        prices: [
+          { unit_amount: 725, currency: "usd", pricing_tier: "premium" },
+          { unit_amount: 225, currency: "usd", pricing_tier: "basic" },
+          { unit_amount: 450, currency: "usd", pricing_tier: "standard" },
+        ],
+      }),
+    ).toBe(225);
+  });
+
   test("reads unit_amount (whole USD) first", () => {
     expect(outletPriceUsd({ unit_amount: 250, price: 999 })).toBe(250);
   });

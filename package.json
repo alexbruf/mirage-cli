@@ -35,6 +35,8 @@
     "@mirage-cli/clarity": "workspace:*",
     "@mirage-cli/core": "workspace:*",
     "@mirage-cli/dataforseo": "workspace:*",
+    "@mirage-cli/figma": "workspace:*",
+    "@mirage-cli/figma-cli": "workspace:*",
     "@mirage-cli/firecrawl": "workspace:*",
     "@mirage-cli/ga4": "workspace:*",
     "@mirage-cli/gbp": "workspace:*",

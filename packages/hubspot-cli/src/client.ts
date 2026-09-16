@@ -1,4 +1,4 @@
-import { getDefaultBaseUrl } from "./config.ts";
+import { assertHubSpotOrigin, getDefaultBaseUrl } from "./config.ts";
 
 /**
  * Read-only HubSpot client. The only HTTP verbs this class can emit are GET
@@ -50,7 +50,7 @@ export class HubSpotClient {
 
   constructor(opts: ClientOptions) {
     this.token = typeof opts.token === "string" ? async () => opts.token as string : opts.token;
-    this.baseUrl = (opts.baseUrl ?? getDefaultBaseUrl()).replace(/\/$/, "");
+    this.baseUrl = assertHubSpotOrigin(opts.baseUrl ?? getDefaultBaseUrl());
   }
 
   /** GET an absolute v3 path (e.g. `/crm/v3/objects/contacts`). */
@@ -99,6 +99,7 @@ export class HubSpotClient {
   ): Promise<Response> {
     const token = await this.token();
     return fetch(url, {
+      redirect: "error",
       method,
       headers: {
         Authorization: `Bearer ${token}`,

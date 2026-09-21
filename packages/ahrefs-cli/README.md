@@ -24,6 +24,12 @@ Or if you're consuming it programmatically in another project:
 bun add ahrefs-cli
 ```
 
+## Site Audit pagination
+
+Page Explorer supports `--offset` for subsequent batches. Keep the project, crawl date, selected fields, filters and ordering fixed across requests. Save each response, advance by the number of rows actually returned, and reconcile distinct URLs against the matching crawl or issue population before treating an export as complete. A requested limit can exceed the account's per-request row allowance.
+
+The command makes one request per invocation; it does not fetch all batches automatically. See the [Page Explorer API reference](https://docs.ahrefs.com/en/api/reference/site-audit/get-page-explorer).
+
 ## Auth
 
 Create an API v3 key at <https://app.ahrefs.com/account/api-keys> (scope: **API v3**, not MCP). Then either drop it in `.env`:

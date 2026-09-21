@@ -13225,6 +13225,8 @@ export interface operations {
     "site-audit_page-explorer": {
         parameters: {
             query: {
+                /** @description The number of results to skip. */
+                offset?: number;
                 /** @description A manual timeout duration in seconds. */
                 timeout?: number;
                 /** @description The number of results to return. */

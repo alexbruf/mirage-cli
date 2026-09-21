@@ -9463,6 +9463,17 @@
         "operationId": "site-audit_page-explorer",
         "parameters": [
           {
+            "description": "The number of results to skip.",
+            "required": false,
+            "explode": false,
+            "schema": {
+              "type": "integer",
+              "default": 0
+            },
+            "name": "offset",
+            "in": "query"
+          },
+          {
             "description": "A manual timeout duration in seconds.",
             "required": false,
             "explode": false,

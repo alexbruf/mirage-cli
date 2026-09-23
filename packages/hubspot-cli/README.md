@@ -99,7 +99,7 @@ hubspot api /account-info/v3/details
 | `HUBSPOT_ACCESS_TOKEN` | Private app access token or any OAuth/access token. Used directly as a bearer. |
 | `HUBSPOT_PERSONAL_ACCESS_KEY` | Personal access key (the `hs` credential). Exchanged for a short-lived token. |
 | `HUBSPOT_ACCOUNT_ID` | Portal id to pin when exchanging a personal access key. |
-| `HUBSPOT_API_BASE_URL` | Override the API base (default `https://api.hubapi.com`). |
+| `HUBSPOT_API_BASE_URL` | Override the API base (default `https://api.hubapi.com`). Only `https://api.hubapi.com` or a regional `https://api-<region>.hubapi.com` is accepted, so credentials never leave HubSpot. |
 
 ## Worker compatibility
 

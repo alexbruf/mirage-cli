@@ -40,6 +40,7 @@ const tokenReply = (n: number) =>
 
 beforeEach(() => {
   delete process.env.MARKUP_TOKEN;
+  delete process.env.MARKUP_AGENT;
   process.env.MARKUP_HOST = HOST;
 });
 afterEach(() => {
@@ -114,6 +115,29 @@ describe("client", () => {
     expect(boards).toEqual([{ id: "b1" }]);
     expect(mcpCalls).toBe(2);
     expect(saved().oauth.refreshToken).toBe("refresh-2");
+  });
+
+  test("MARKUP_AGENT names the participant on every MCP call", async () => {
+    process.env.MARKUP_TOKEN = "injected";
+    process.env.MARKUP_AGENT = "  Jane Doe via Brain  ";
+    const urls: string[] = [];
+    globalThis.fetch = mock(async (url: string | URL | Request) => {
+      urls.push(String(url));
+      return toolReply([]);
+    }) as unknown as typeof fetch;
+    await callTool(await resolveClient(), TOOL.listBoards);
+    expect(new URL(String(urls[0])).searchParams.get("agent")).toBe("Jane Doe via Brain");
+  });
+
+  test("the participant defaults to markup-cli", async () => {
+    process.env.MARKUP_TOKEN = "injected";
+    const urls: string[] = [];
+    globalThis.fetch = mock(async (url: string | URL | Request) => {
+      urls.push(String(url));
+      return toolReply([]);
+    }) as unknown as typeof fetch;
+    await callTool(await resolveClient(), TOOL.listBoards);
+    expect(new URL(String(urls[0])).searchParams.get("agent")).toBe("markup-cli");
   });
 
   test("MARKUP_TOKEN is used as-is and never refreshed", async () => {

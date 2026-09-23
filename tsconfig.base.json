@@ -35,6 +35,8 @@
       "@mirage-cli/ahrefs-cli/*": ["./packages/ahrefs-cli/src/*"],
       "@mirage-cli/reddit-cli": ["./packages/reddit-cli/src/index.ts"],
       "@mirage-cli/reddit-cli/*": ["./packages/reddit-cli/src/*"],
+      "@mirage-cli/markup-cli": ["./packages/markup-cli/src/index.ts"],
+      "@mirage-cli/markup-cli/*": ["./packages/markup-cli/src/*"],
       "@mirage-cli/radar-cli": ["./packages/radar-cli/src/index.ts"],
       "@mirage-cli/radar-cli/*": ["./packages/radar-cli/src/*"],
       "@mirage-cli/pulse-cli": ["./packages/pulse-cli/src/index.ts"],

@@ -25,6 +25,8 @@
         "@mirage-cli/ics": "workspace:*",
         "@mirage-cli/localfalcon": "workspace:*",
         "@mirage-cli/localfalcon-cli": "workspace:*",
+        "@mirage-cli/markup": "workspace:*",
+        "@mirage-cli/markup-cli": "workspace:*",
         "@mirage-cli/openrouter": "workspace:*",
         "@mirage-cli/openrouter-cli": "workspace:*",
         "@mirage-cli/oura": "workspace:*",
@@ -456,6 +458,36 @@
         "commander": "^14.0.3",
       },
     },
+    "packages/markup": {
+      "name": "@mirage-cli/markup",
+      "version": "0.1.0",
+      "dependencies": {
+        "@mirage-cli/core": "workspace:^",
+      },
+      "devDependencies": {
+        "@mirage-cli/markup-cli": "workspace:^",
+        "@struktoai/mirage-core": "^0.0.1",
+        "commander": "^14.0.3",
+        "tsup": "^8.5.1",
+      },
+      "peerDependencies": {
+        "@mirage-cli/markup-cli": "workspace:^",
+        "@struktoai/mirage-core": ">=0.0.1",
+      },
+      "optionalPeers": [
+        "@struktoai/mirage-core",
+      ],
+    },
+    "packages/markup-cli": {
+      "name": "@mirage-cli/markup-cli",
+      "version": "0.1.0",
+      "bin": {
+        "markup": "./dist/bin.js",
+      },
+      "dependencies": {
+        "commander": "^14.0.3",
+      },
+    },
     "packages/openrouter": {
       "name": "@mirage-cli/openrouter",
       "version": "0.2.0",
@@ -599,7 +631,7 @@
     },
     "packages/radar-cli": {
       "name": "@mirage-cli/radar-cli",
-      "version": "0.3.0",
+      "version": "0.4.0",
       "bin": {
         "radar": "./dist/bin.js",
       },
@@ -1117,6 +1149,10 @@
     "@mirage-cli/localfalcon": ["@mirage-cli/localfalcon@workspace:packages/localfalcon"],
 
     "@mirage-cli/localfalcon-cli": ["@mirage-cli/localfalcon-cli@workspace:packages/localfalcon-cli"],
+
+    "@mirage-cli/markup": ["@mirage-cli/markup@workspace:packages/markup"],
+
+    "@mirage-cli/markup-cli": ["@mirage-cli/markup-cli@workspace:packages/markup-cli"],
 
     "@mirage-cli/openrouter": ["@mirage-cli/openrouter@workspace:packages/openrouter"],
 

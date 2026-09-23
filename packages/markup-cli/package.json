@@ -1,11 +1,11 @@
 {
   "name": "@mirage-cli/markup-cli",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "ViewEngine Markup CLI (drives markup.viewengine.dev over its MCP endpoint). Mirage-compatible command shape.",
   "license": "MIT",
   "repository": {
     "type": "git",
-    "url": "https://github.com/alexbruf/mirage-cli.git",
+    "url": "git+https://github.com/alexbruf/mirage-cli.git",
     "directory": "packages/markup-cli"
   },
   "bugs": {

@@ -3,7 +3,7 @@ import { type ApiClientOpts, callTool, listTools, resolveClient, TOOL } from "./
 import { configPath, DEFAULT_HOST, readConfig, resolveHost, updateConfig } from "./config.ts";
 import { emit, type OutputFormat, pickFmt } from "./format.ts";
 
-export const VERSION = "0.1.1";
+export const VERSION = "0.1.2";
 
 type FmtOpts = { json?: boolean; ndjson?: boolean };
 

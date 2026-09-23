@@ -12,8 +12,15 @@ export interface ApiClientOpts {
   token: string;
   /** Returns a fresh access token after a 401, or null when it cannot. */
   onRefresh?: () => Promise<string | null>;
-  /** Shown to people watching the board. Defaults to "markup-cli". */
+  /** Shown to people watching the board and recorded as the author of what
+   *  this client writes. MARKUP_AGENT, else "markup-cli". */
   agent?: string;
+}
+
+/** `MARKUP_AGENT` names this participant, e.g. the person a host acts for. */
+export function resolveAgent(): string | undefined {
+  const name = process.env.MARKUP_AGENT?.trim();
+  return name ? name.slice(0, 80) : undefined;
 }
 
 export class MarkupError extends Error {
@@ -37,7 +44,8 @@ const REFRESH_SKEW_MS = 60_000;
 export async function resolveClient(): Promise<ApiClientOpts> {
   const host = resolveHost();
   const envToken = process.env.MARKUP_TOKEN;
-  if (envToken) return { host, token: envToken };
+  const agent = resolveAgent();
+  if (envToken) return { host, token: envToken, agent };
 
   const saved = readConfig().oauth;
   if (!saved) {
@@ -51,6 +59,7 @@ export async function resolveClient(): Promise<ApiClientOpts> {
   if (current.expiresAt - REFRESH_SKEW_MS < Date.now()) current = await refresh(current);
   return {
     host,
+    agent,
     token: current.accessToken,
     onRefresh: async () => {
       const latest = readConfig().oauth;

@@ -17,6 +17,8 @@ markup watch <board> --follow               # stream new feedback
 
 `markup login` runs OAuth 2.1 with PKCE through your browser. It reuses Markup's magic-link login and asks you to approve the CLI. There is nothing to register: the CLI's `client_id` is the deployment's own metadata document (`<host>/cli/oauth-client.json`).
 
+**Browser on another machine (SSH, a remote dev box)?** The browser ends on a `http://127.0.0.1:.../callback?code=...` page that does not load. Copy that page's address, paste it into the waiting `markup login`, and press Enter. Add `--no-browser` to skip trying to open one.
+
 **You sign in once.** Access tokens last an hour and are refreshed silently. The refresh token rotates on every use and never expires. `markup logout` revokes it on the server.
 
 ## Commands

@@ -1,5 +1,6 @@
 import { createHash, randomBytes } from "node:crypto";
 import { createServer, type IncomingMessage, type ServerResponse } from "node:http";
+import { createInterface } from "node:readline";
 import { type OAuthState, readConfig, writeConfig } from "./config.ts";
 
 /**
@@ -82,11 +83,22 @@ export async function login(opts: LoginOpts): Promise<OAuthState> {
   authUrl.searchParams.set("code_challenge_method", "S256");
   authUrl.searchParams.set("resource", `${issuer}/mcp`);
 
-  const pending = waitForCode(port, state);
+  const loopback = waitForCode(port, state);
   console.error("Opening your browser to sign in to Markup...");
   console.error(`If it does not open, visit:\n  ${authUrl.toString()}`);
+  console.error(
+    "\nIf your browser is on another machine, it will end on a page that does not load.\n" +
+      "Paste that page's full address (http://127.0.0.1:.../callback?code=...) here and press Enter:",
+  );
   if (!opts.noBrowser) openBrowser(authUrl.toString());
-  const code = await pending;
+  const pasted = waitForPastedCallback(state);
+  let code: string;
+  try {
+    code = await Promise.race([loopback.code, pasted.code]);
+  } finally {
+    loopback.stop();
+    pasted.stop();
+  }
 
   const tok = await tokenRequest(issuer, {
     grant_type: "authorization_code",
@@ -109,8 +121,35 @@ export async function login(opts: LoginOpts): Promise<OAuthState> {
   return oauth;
 }
 
-function waitForCode(port: number, expectedState: string): Promise<string> {
-  return new Promise((resolve, reject) => {
+interface Waiter {
+  code: Promise<string>;
+  stop: () => void;
+}
+
+/**
+ * The code from a callback URL, or an error saying why not. Shared by the
+ * loopback listener and the paste fallback so both check `state` the same way.
+ */
+export function codeFromCallback(input: string, expectedState: string): string {
+  let url: URL;
+  try {
+    url = new URL(input.trim());
+  } catch {
+    throw new Error("that is not a URL; paste the whole address from the browser's address bar");
+  }
+  const err = url.searchParams.get("error");
+  if (err) throw new Error(`login failed: ${err}`);
+  const code = url.searchParams.get("code");
+  if (!code) throw new Error("that URL has no ?code=; paste the address the browser ended on after Allow");
+  if (url.searchParams.get("state") !== expectedState) {
+    throw new Error("that URL belongs to a different login attempt (state mismatch)");
+  }
+  return code;
+}
+
+function waitForCode(port: number, expectedState: string): Waiter {
+  let stop = () => {};
+  const code = new Promise<string>((resolve, reject) => {
     const page = (title: string, body: string) =>
       `<!doctype html><meta charset="utf-8"><title>${title}</title><body style="font:15px system-ui;padding:40px"><h1>${title}</h1><p>${body}</p>`;
     const server = createServer((req: IncomingMessage, res: ServerResponse) => {
@@ -119,31 +158,54 @@ function waitForCode(port: number, expectedState: string): Promise<string> {
         res.writeHead(404).end("not found");
         return;
       }
-      const code = url.searchParams.get("code");
-      const err = url.searchParams.get("error");
       res.writeHead(200, { "Content-Type": "text/html; charset=utf-8" });
-      if (err) {
-        res.end(page("Login cancelled", "You can close this tab."));
-        finish(() => reject(new Error(`login failed: ${err}`)));
-        return;
+      try {
+        const got = codeFromCallback(url.toString(), expectedState);
+        res.end(page("Signed in", "You can close this tab and return to the terminal."));
+        finish(() => resolve(got));
+      } catch (e) {
+        res.end(page("Login failed", "Run <code>markup login</code> again."));
+        finish(() => reject(e));
       }
-      if (!code || url.searchParams.get("state") !== expectedState) {
-        res.end(page("Login failed", "The response did not match this login. Run <code>markup login</code> again."));
-        finish(() => reject(new Error("missing code or state mismatch")));
-        return;
-      }
-      res.end(page("Signed in", "You can close this tab and return to the terminal."));
-      finish(() => resolve(code));
     });
     const timer = setTimeout(() => finish(() => reject(new Error("login timed out after 5 minutes"))), 300_000);
     function finish(settle: () => void) {
       clearTimeout(timer);
-      server.close();
+      server.close(() => {});
       settle();
     }
-    server.once("error", reject);
+    stop = () => finish(() => {});
+    // A busy port only disables this channel when pasting can stand in for it.
+    server.once("error", (e: Error) => {
+      clearTimeout(timer);
+      if (process.stdin.isTTY) console.error(`(port ${port} is busy, so paste the URL instead)`);
+      else reject(new Error(`cannot listen on 127.0.0.1:${port} (${e.message}); try --port`));
+    });
     server.listen(port, "127.0.0.1");
   });
+  return { code, stop };
+}
+
+/**
+ * The fallback for a browser that cannot reach this machine's loopback (SSH,
+ * a remote dev box): the person pastes the URL the browser ended on. Only
+ * listens on an interactive terminal, so a piped or backgrounded run is not
+ * held open waiting for input that will never come.
+ */
+function waitForPastedCallback(expectedState: string): Waiter {
+  if (!process.stdin.isTTY) return { code: new Promise<string>(() => {}), stop: () => {} };
+  const rl = createInterface({ input: process.stdin, terminal: false });
+  const code = new Promise<string>((resolve) => {
+    rl.on("line", (line) => {
+      if (!line.trim()) return;
+      try {
+        resolve(codeFromCallback(line, expectedState));
+      } catch (e) {
+        console.error(`${(e as Error).message}. Try again:`);
+      }
+    });
+  });
+  return { code, stop: () => rl.close() };
 }
 
 /**

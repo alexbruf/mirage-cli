@@ -9,7 +9,7 @@ process.env.MARKUP_CLI_CONFIG = join(dir, "config.json");
 
 const { buildProgram, parseRect } = await import("../src/cli.ts");
 const { callTool, parseRpcBody, resolveClient, TOOL } = await import("../src/client.ts");
-const { clientIdFor, pkce } = await import("../src/oauth.ts");
+const { clientIdFor, codeFromCallback, pkce } = await import("../src/oauth.ts");
 
 const HOST = "https://markup.example";
 const realFetch = globalThis.fetch;
@@ -133,3 +133,18 @@ describe("client", () => {
 });
 
 process.on("exit", () => rmSync(dir, { recursive: true, force: true }));
+
+describe("login callback", () => {
+  const url = (q: string) => `http://127.0.0.1:53683/callback?${q}`;
+
+  test("takes the code from a pasted callback URL with the right state", () => {
+    expect(codeFromCallback(`  ${url("code=abc%3Adef&state=s1&iss=x")}  `, "s1")).toBe("abc:def");
+  });
+
+  test("refuses a URL from another login attempt, one without a code, and non-URLs", () => {
+    expect(() => codeFromCallback(url("code=abc&state=other"), "s1")).toThrow("state mismatch");
+    expect(() => codeFromCallback(url("state=s1"), "s1")).toThrow("no ?code=");
+    expect(() => codeFromCallback(url("error=access_denied&state=s1"), "s1")).toThrow("access_denied");
+    expect(() => codeFromCallback("not a url", "s1")).toThrow("not a URL");
+  });
+});

@@ -3,7 +3,7 @@ import { type ApiClientOpts, callTool, listTools, resolveClient, TOOL } from "./
 import { configPath, DEFAULT_HOST, readConfig, resolveHost, updateConfig } from "./config.ts";
 import { emit, type OutputFormat, pickFmt } from "./format.ts";
 
-export const VERSION = "0.1.2";
+export const VERSION = "0.1.3";
 
 type FmtOpts = { json?: boolean; ndjson?: boolean };
 
@@ -47,9 +47,11 @@ export function buildProgram(): Command {
     .description(`ViewEngine Markup CLI: boards and annotations on ${DEFAULT_HOST}`)
     .version(VERSION)
     .option("--host <url>", "Markup deployment (default: MARKUP_HOST, saved host, or markup.viewengine.dev)")
+    .option("--as <name>", "name to act as on the board and record as author (default: MARKUP_AGENT or markup-cli)")
     .hook("preAction", (cmd) => {
-      const host = cmd.opts<{ host?: string }>().host;
+      const { host, as } = cmd.opts<{ host?: string; as?: string }>();
       if (host) process.env.MARKUP_HOST = host;
+      if (as?.trim()) process.env.MARKUP_AGENT = as;
     });
 
   const run = async (fn: (c: ApiClientOpts) => Promise<unknown>, fmt: OutputFormat, row?: (x: unknown) => string) =>
@@ -182,20 +184,23 @@ export function buildProgram(): Command {
   withFmt(
     program
       .command("comment <board> <text>")
-      .description("pin a comment on the page at x,y (page pixels)")
-      .requiredOption("--x <n>", "x position", Number)
-      .requiredOption("--y <n>", "y position", Number)
+      .description("pin a comment on an element (--selector/--tag/--markdown, as `page` prints them) or at x,y")
+      .option("--x <n>", "x position in page pixels (required without --selector)", Number)
+      .option("--y <n>", "y position in page pixels (required without --selector)", Number)
       .addOption(PRIORITY)
-      .option("--selector <css>", "target element (needs --tag and --markdown too)")
+      .option("--selector <css>", "target element (needs --tag and --markdown too); the pin sits on it")
       .option("--tag <tag>", "target element tag")
       .option("--markdown <md>", "target element snapshot"),
   ).action(
     (
       room: string,
       text: string,
-      o: FmtOpts & { x: number; y: number; priority?: string; selector?: string; tag?: string; markdown?: string },
-    ) =>
-      run(
+      o: FmtOpts & { x?: number; y?: number; priority?: string; selector?: string; tag?: string; markdown?: string },
+    ) => {
+      if (!o.selector && (o.x === undefined || o.y === undefined)) {
+        throw new Error("comment needs --x and --y, or --selector with --tag and --markdown");
+      }
+      return run(
         (c) =>
           callTool(
             c,
@@ -203,7 +208,8 @@ export function buildProgram(): Command {
             defined({ room, text, x: o.x, y: o.y, priority: o.priority, selector: o.selector, tag: o.tag, markdown: o.markdown }),
           ),
         pickFmt(o),
-      ),
+      );
+    },
   );
 
   withFmt(

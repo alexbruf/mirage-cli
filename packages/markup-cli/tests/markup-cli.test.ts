@@ -117,6 +117,38 @@ describe("client", () => {
     expect(saved().oauth.refreshToken).toBe("refresh-2");
   });
 
+  test("--as overrides MARKUP_AGENT, and comment pins to a selector without x/y", async () => {
+    process.env.MARKUP_TOKEN = "injected";
+    process.env.MARKUP_AGENT = "Host Default";
+    const calls: { url: string; body: string }[] = [];
+    globalThis.fetch = mock(async (url: string | URL | Request, init?: RequestInit) => {
+      calls.push({ url: String(url), body: String(init?.body) });
+      return toolReply({ id: "a1", status: "open" });
+    }) as unknown as typeof fetch;
+    const out = console.log;
+    console.log = () => {};
+    try {
+      await buildProgram().parseAsync(
+        ["--as", "Jane Doe", "comment", "b1", "fix this", "--selector", "#cta", "--tag", "a", "--markdown", "`<a>`", "--json"],
+        { from: "user" },
+      );
+    } finally {
+      console.log = out;
+    }
+    expect(new URL(String(calls[0]?.url)).searchParams.get("agent")).toBe("Jane Doe");
+    const args = JSON.parse(String(calls[0]?.body)).params.arguments;
+    expect(args).toMatchObject({ room: "b1", text: "fix this", selector: "#cta" });
+    expect(args.x).toBeUndefined();
+  });
+
+  test("comment without a selector still needs coordinates", async () => {
+    process.env.MARKUP_TOKEN = "injected";
+    globalThis.fetch = mock(async () => toolReply({})) as unknown as typeof fetch;
+    await expect(
+      buildProgram().exitOverride().parseAsync(["comment", "b1", "hi"], { from: "user" }),
+    ).rejects.toThrow(/--x and --y, or --selector/);
+  });
+
   test("MARKUP_AGENT names the participant on every MCP call", async () => {
     process.env.MARKUP_TOKEN = "injected";
     process.env.MARKUP_AGENT = "  Jane Doe via Brain  ";

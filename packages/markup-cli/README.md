@@ -43,6 +43,7 @@ markup watch <board> --follow               # stream new feedback
 | Variable | Purpose |
 | --- | --- |
 | `MARKUP_HOST` | Deployment URL (default `https://markup.viewengine.dev`) |
+| `--as <name>` (flag) | Act as this name for one command; overrides `MARKUP_AGENT` |
 | `MARKUP_AGENT` | Participant name shown on the board and recorded as the author of comments, replies and status changes (default `markup-cli`; trimmed, max 80 characters) |
 | `MARKUP_TOKEN` | An OAuth access token to use instead of the saved login (for hosts that inject one per call; not refreshed) |
 | `MARKUP_CLI_CONFIG` | Config file path (default `~/.config/markup-cli/config.json`, mode 600) |

@@ -29,7 +29,7 @@ export function buildProgram(): Command {
         "objects), marketing (forms, emails, campaigns), and CMS (blog, pages, HubDB). " +
         "hs-style grammar; reuses your `hs account auth` login.",
     )
-    .version("0.1.0")
+    .version("0.1.1")
     .option("--token <token>", "Access token: private app or OAuth (or HUBSPOT_ACCESS_TOKEN env)")
     .option("-a, --account <name|id>", "Account from ~/.hscli/config.yml (or HUBSPOT_ACCOUNT_ID env)")
     .option("--base-url <url>", "API base URL (or HUBSPOT_API_BASE_URL env)")

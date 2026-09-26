@@ -1,6 +1,11 @@
 import { afterEach, beforeEach, describe, expect, test } from "bun:test";
 import { HubSpotClient } from "../src/client.ts";
-import { resolveAuth, selectHsAccount, type HsConfig } from "../src/config.ts";
+import {
+  exchangePersonalAccessKey,
+  resolveAuth,
+  selectHsAccount,
+  type HsConfig,
+} from "../src/config.ts";
 import { buildProgram } from "../src/cli.ts";
 import { parseFormat, renderList, renderObject } from "../src/output.ts";
 
@@ -124,6 +129,89 @@ describe("read-only client", () => {
   test("search() refuses a non-/search path (no write primitive)", async () => {
     const client = new HubSpotClient({ token: "x" });
     await expect(client.search("/crm/v3/objects/contacts", {})).rejects.toThrow(/Refusing/);
+  });
+});
+
+describe("credential origin", () => {
+  const realFetch = globalThis.fetch;
+  const savedBase = process.env.HUBSPOT_API_BASE_URL;
+  let calls: { url: string; init?: RequestInit }[] = [];
+
+  beforeEach(() => {
+    calls = [];
+    delete process.env.HUBSPOT_API_BASE_URL;
+    globalThis.fetch = (async (url: string | URL | Request, init?: RequestInit) => {
+      calls.push({ url: String(url), init });
+      return new Response(JSON.stringify({ results: [] }), {
+        status: 200,
+        headers: { "Content-Type": "application/json" },
+      });
+    }) as typeof fetch;
+  });
+
+  afterEach(() => {
+    globalThis.fetch = realFetch;
+    if (savedBase === undefined) delete process.env.HUBSPOT_API_BASE_URL;
+    else process.env.HUBSPOT_API_BASE_URL = savedBase;
+  });
+
+  test("sends the token to api.hubapi.com and refuses redirects", async () => {
+    await new HubSpotClient({ token: "t" }).get("/crm/v3/objects/contacts", { limit: 1 });
+    expect(calls).toHaveLength(1);
+    expect(new URL(calls[0]?.url ?? "").origin).toBe("https://api.hubapi.com");
+    expect(calls[0]?.init?.redirect).toBe("error");
+  });
+
+  test("accepts a regional HubSpot API host", async () => {
+    await new HubSpotClient({ token: "t", baseUrl: "https://api-eu1.hubapi.com/" }).get("/x");
+    expect(new URL(calls[0]?.url ?? "").origin).toBe("https://api-eu1.hubapi.com");
+  });
+
+  test("refuses any other origin from the flag or the environment", () => {
+    for (const baseUrl of [
+      "https://attacker.example",
+      "http://api.hubapi.com",
+      "https://api.hubapi.com.attacker.example",
+      "https://user@api.hubapi.com",
+      "https://api.hubapi.com/proxy",
+      "not a url",
+    ]) {
+      expect(() => new HubSpotClient({ token: "t", baseUrl })).toThrow(/credential origin/);
+    }
+    process.env.HUBSPOT_API_BASE_URL = "https://attacker.example";
+    expect(() => new HubSpotClient({ token: "t" })).toThrow(/credential origin/);
+    expect(calls).toHaveLength(0);
+  });
+
+  test("refuses to send a personal access key to another origin", async () => {
+    await expect(
+      exchangePersonalAccessKey("pak", undefined, "https://attacker.example"),
+    ).rejects.toThrow(/credential origin/);
+    expect(calls).toHaveLength(0);
+  });
+
+  test("the CLI fails before any request when --base-url points elsewhere", async () => {
+    const program = buildProgram();
+    program.exitOverride();
+    const errors: string[] = [];
+    const realError = console.error;
+    const realExit = process.exit;
+    console.error = (...args: unknown[]) => errors.push(args.join(" "));
+    process.exit = ((code?: number) => {
+      throw new Error(`exit ${code}`);
+    }) as typeof process.exit;
+    try {
+      await program
+        .parseAsync(
+          ["--token", "t", "--base-url", "https://attacker.example", "crm", "contacts", "list"],
+          { from: "user" },
+        )
+        .catch(() => undefined);
+    } finally {
+      console.error = realError;
+      process.exit = realExit;
+    }
+    expect(calls).toHaveLength(0);
   });
 });
 

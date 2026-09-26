@@ -26,7 +26,7 @@ Or grab the whole thing as a mirage resource: `await hubspotResource()`.
 | `HUBSPOT_ACCESS_TOKEN` | Private app access token or any OAuth/access token — used directly as a bearer (simplest) |
 | `HUBSPOT_PERSONAL_ACCESS_KEY` | Personal access key (the `hs` credential); exchanged for a short-lived token |
 | `HUBSPOT_ACCOUNT_ID` | Portal id to pin when exchanging a personal access key |
-| `HUBSPOT_API_BASE_URL` | Base URL override (default `https://api.hubapi.com`) |
+| `HUBSPOT_API_BASE_URL` | Base URL override (default `https://api.hubapi.com`); only HubSpot API hosts are accepted |
 
 On a workstation, no env is needed — the CLI reuses the accounts in `~/.hscli/config.yml` (run `hs account auth`); select one with `--account <name|id>`.
 

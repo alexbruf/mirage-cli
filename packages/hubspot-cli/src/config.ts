@@ -33,6 +33,30 @@ export function getDefaultBaseUrl(): string {
   return process.env.HUBSPOT_API_BASE_URL ?? DEFAULT_BASE_URL;
 }
 
+const HUBSPOT_API_ORIGIN = /^https:\/\/api(?:-[a-z]{2}\d+)?\.hubapi\.com$/;
+
+export function assertHubSpotOrigin(baseUrl: string): string {
+  let base: URL;
+  try {
+    base = new URL(baseUrl);
+  } catch {
+    throw new Error(`HubSpot credential origin must be https://api.hubapi.com, got ${baseUrl}`);
+  }
+  if (
+    !HUBSPOT_API_ORIGIN.test(base.origin) ||
+    base.username ||
+    base.password ||
+    base.search ||
+    base.hash ||
+    base.pathname !== "/"
+  ) {
+    throw new Error(
+      "HubSpot credential origin must be https://api.hubapi.com or a regional https://api-<region>.hubapi.com",
+    );
+  }
+  return base.origin;
+}
+
 export interface CredentialFlags {
   /** Direct access token (private app / OAuth). */
   token?: string;
@@ -79,9 +103,10 @@ export async function exchangePersonalAccessKey(
   const cached = tokenCache.get(cacheKey);
   if (cached && Date.now() < cached.expiresAt) return cached.token;
 
-  const url = new URL(`${baseUrl.replace(/\/$/, "")}/localdevauth/v1/auth/refresh`);
+  const url = new URL(`${assertHubSpotOrigin(baseUrl)}/localdevauth/v1/auth/refresh`);
   if (portalId) url.searchParams.set("portalId", portalId);
   const res = await fetch(url.toString(), {
+    redirect: "error",
     method: "POST",
     headers: { "Content-Type": "application/json", Accept: "application/json" },
     body: JSON.stringify({ encodedOAuthRefreshToken: personalAccessKey }),

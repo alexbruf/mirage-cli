@@ -104,6 +104,7 @@ describe("gscTopBy", () => {
       start_date: "2026-06-28",
       end_date: "2026-07-12",
       dimensions: ["query"],
+      metrics: ["clicks", "impressions", "ctr", "position"],
       branded_queries: false,
     });
     expect(Object.prototype.hasOwnProperty.call(pager.calls[0], "property")).toBe(true);

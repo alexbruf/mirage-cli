@@ -1,13 +1,24 @@
 import { Command, Option } from "commander";
 import packageJson from "../package.json" with { type: "json" };
 import {
+  SEARCH_METRICS,
   gscCompare,
   gscTopBy,
   type GscDimension,
   type GscMetric,
 } from "./gsc-top.ts";
-import { McpClient, unwrapToolResult } from "./mcp.ts";
+import { McpClient, PERFORMANCE_TOOL, unwrapToolResult } from "./mcp.ts";
 import { writeObject, writeOutput, type OutputOpts } from "./output.ts";
+import {
+  changeRows,
+  collectPages,
+  hasMore,
+  listRows,
+  pageRows,
+  performanceRows,
+  performanceWarnings,
+  queryRows,
+} from "./site-data.ts";
 
 function newClient(globals: { token?: string; url?: string }): McpClient {
   return new McpClient({ token: globals.token, url: globals.url });
@@ -18,6 +29,36 @@ interface GscOpts extends OutputOpts {
   pageSize?: number;
   filters?: string;
   brandedQueries?: boolean;
+  metrics?: string;
+}
+
+interface PerfOpts extends OutputOpts {
+  metrics?: string;
+  filters?: string;
+  brandedQueries?: boolean;
+  raw?: boolean;
+}
+
+interface ListPageOpts extends OutputOpts {
+  page: number;
+  pageSize: number;
+  all?: boolean;
+  raw?: boolean;
+}
+
+interface ChangesOpts extends OutputOpts {
+  from?: string;
+  to?: string;
+  types?: string;
+  pageContains?: string;
+  group?: string;
+  priorityOnly?: boolean;
+  diff?: boolean;
+  raw?: boolean;
+}
+
+interface RawOpts extends OutputOpts {
+  raw?: boolean;
 }
 
 interface IndexingStatusOpts extends OutputOpts {
@@ -66,6 +107,122 @@ function parseFilters(value?: string): Record<string, unknown> | undefined {
   return parsed as Record<string, unknown>;
 }
 
+function splitList(value?: string): string[] | undefined {
+  if (!value) return undefined;
+  const items = value.split(",").map((item) => item.trim()).filter(Boolean);
+  return items.length > 0 ? items : undefined;
+}
+
+/**
+ * `--filters` for the performance commands: a JSON array becomes the
+ * `filters` field; a JSON object is merged into the arguments as-is, which
+ * keeps the `gsc --filters '{"filters":[...]}'` form working.
+ */
+function applyFilters(args: Record<string, unknown>, value?: string): void {
+  if (!value) return;
+  const parsed = JSON.parse(value) as unknown;
+  if (Array.isArray(parsed)) {
+    args.filters = parsed;
+    return;
+  }
+  if (!parsed || typeof parsed !== "object") {
+    throw new Error("--filters must be a JSON array of filters or a JSON object of arguments");
+  }
+  Object.assign(args, parsed);
+}
+
+function writeOutputOrRaw(envelope: unknown, rows: unknown[], opts: RawOpts): void {
+  if (opts.raw) writeObject(envelope, opts);
+  else writeOutput(rows, opts);
+}
+
+function warn(lines: string[]): void {
+  for (const line of lines) console.error(`# ${line}`);
+}
+
+function performanceArgs(
+  target: Record<string, unknown>,
+  start: string,
+  end: string,
+  dims: string | undefined,
+  opts: PerfOpts,
+): Record<string, unknown> {
+  const args: Record<string, unknown> = { ...target, start_date: start, end_date: end };
+  const dimensions = splitList(dims);
+  if (dimensions) args.dimensions = dimensions;
+  const metrics = splitList(opts.metrics);
+  if (metrics) args.metrics = metrics;
+  if (opts.brandedQueries !== undefined) args.branded_queries = opts.brandedQueries;
+  applyFilters(args, opts.filters);
+  return args;
+}
+
+function writePerformance(result: unknown, opts: PerfOpts): void {
+  const envelope = unwrapToolResult(result);
+  if (opts.raw) {
+    writeObject(envelope, opts);
+    return;
+  }
+  warn(performanceWarnings(envelope));
+  writeOutput(performanceRows(envelope), opts);
+}
+
+function addPerfFlags<T extends Command>(cmd: T): T {
+  return cmd
+    .option(
+      "--metrics <list>",
+      "comma-separated metrics: clicks,impressions,ctr,position (search) and " +
+        "activeUsers,sessions,engagedSessions,engagementRate,keyEvents,revenue (GA4). " +
+        "Default: every metric the site has data for",
+    )
+    .option(
+      "--branded-queries <bool>",
+      "filter to branded (true) or non-branded (false) queries; omit for both",
+      coerceBoolean,
+    )
+    .option(
+      "--filters <json>",
+      'dimension filters as a JSON array, e.g. \'[{"dimension":"page","operator":"contains","expression":"/blog/"}]\'',
+    )
+    .option("--raw", "emit the upstream envelope instead of typed rows") as T;
+}
+
+function addListPageFlags<T extends Command>(cmd: T): T {
+  return cmd
+    .option("--page <n>", "page number (1-based)", parsePositiveInteger, 1)
+    .option("--page-size <n>", "rows per page", parsePositiveInteger, 1000)
+    .option("--all", "fetch every page from --page on until the server reports no more")
+    .option("--raw", "emit the upstream envelope of one page instead of rows") as T;
+}
+
+async function runListPages<T>(
+  client: McpClient,
+  tool: string,
+  property: string,
+  toRows: (envelope: unknown) => T[],
+  opts: ListPageOpts,
+): Promise<void> {
+  const fetchPage = async (page: number) =>
+    unwrapToolResult(
+      await client.callTool(tool, { property, page, page_size: opts.pageSize }),
+    );
+  if (opts.raw) {
+    writeObject(await fetchPage(opts.page), opts);
+    return;
+  }
+  if (opts.all) {
+    const result = await collectPages(fetchPage, toRows, opts.page);
+    if (!result.complete) warn([`stopped after ${result.pages} pages; more rows remain`]);
+    writeOutput(result.rows, opts);
+    return;
+  }
+  const envelope = await fetchPage(opts.page);
+  if (hasMore(envelope)) {
+    warn([`more rows remain: use --page ${opts.page + 1} or --all`]);
+  }
+  writeOutput(toRows(envelope), opts);
+}
+
 function addFormatFlags<T extends Command>(cmd: T): T {
   return cmd
     .addOption(
@@ -81,8 +238,10 @@ export function buildProgram(): Command {
   program
     .name("seogets")
     .description(
-      "CLI for the SEO Gets MCP — list GSC properties, pull GSC performance, " +
-        "and inspect indexing status. Speaks JSON-RPC 2.0 to https://app.seogets.com/mcp.",
+      "CLI for the SEO Gets MCP — list GSC properties, pull GSC and GA4 performance " +
+        "for sites and portfolios, list pages, queries, content changes, content groups " +
+        "and topic clusters, and inspect indexing status. " +
+        "Speaks JSON-RPC 2.0 to https://app.seogets.com/mcp.",
     )
     .version(packageJson.version)
     .option("--token <token>", "MCP bearer token (defaults to SEOGETS_MCP_TOKEN env)")
@@ -113,8 +272,9 @@ export function buildProgram(): Command {
     program
       .command("gsc <site> <start_date> <end_date> [dimensions]")
       .description(
-        "GSC search analytics (MCP: get_gsc_performance). " +
-          "<dimensions> is a comma-separated subset of query,page,date,country,device,contentGroup,topicCluster.",
+        "GSC search analytics (MCP: get_site_performance, search metrics only). " +
+          "<dimensions> is a comma-separated subset of query,page,date,country,device,contentGroup,topicCluster. " +
+          "Use `perf` for GA4 metrics and typed rows.",
       )
       .addOption(
         new Option("--page <n>", "deprecated: the server no longer paginates; ignored")
@@ -125,6 +285,11 @@ export function buildProgram(): Command {
         new Option("--page-size <n>", "deprecated: the server no longer paginates; ignored")
           .argParser((v: string) => parseInt(v, 10))
           .hideHelp(),
+      )
+      .option(
+        "--metrics <list>",
+        "comma-separated metrics to request",
+        SEARCH_METRICS.join(","),
       )
       .option(
         "--branded-queries <bool>",
@@ -149,7 +314,7 @@ export function buildProgram(): Command {
       if (opts.page !== undefined || opts.pageSize !== undefined) {
         console.error(
           "# warning: --page/--page-size are deprecated and ignored; " +
-            "get_gsc_performance returns the whole window in one response",
+            "get_site_performance returns the whole window in one response",
         );
       }
       const args: Record<string, unknown> = {
@@ -158,12 +323,176 @@ export function buildProgram(): Command {
         end_date: end,
       };
       if (dims) args.dimensions = dims.split(",").map((d) => d.trim()).filter(Boolean);
+      const metrics = splitList(opts.metrics);
+      if (metrics) args.metrics = metrics;
       if (opts.brandedQueries !== undefined) args.branded_queries = opts.brandedQueries;
       if (opts.filters) Object.assign(args, JSON.parse(opts.filters));
-      const result = await newClient(globals).callTool("get_gsc_performance", args);
+      const result = await newClient(globals).callTool(PERFORMANCE_TOOL, args);
       writeObject(unwrapToolResult(result), opts);
     },
   );
+
+  // ── perf (GSC + GA4) ───────────────────────────────────────────────
+  addFormatFlags(
+    addPerfFlags(
+      program
+        .command("perf <site> <start_date> <end_date> [dimensions]")
+        .description(
+          "Merged GSC + GA4 performance as typed rows (MCP: get_site_performance). " +
+            "<dimensions> is a comma-separated subset of " +
+            "date,query,page,country,device,contentGroup,topicCluster,sessionSourceMedium,eventName. " +
+            "GA4 has no query dimension, so query rows carry search metrics only.",
+        ),
+    ),
+  ).action(
+    async (
+      site: string,
+      start: string,
+      end: string,
+      dims: string | undefined,
+      opts: PerfOpts,
+      cmd: Command,
+    ) => {
+      const args = performanceArgs({ property: site }, start, end, dims, opts);
+      const result = await newClient(cmd.optsWithGlobals()).callTool(PERFORMANCE_TOOL, args);
+      writePerformance(result, opts);
+    },
+  );
+
+  // ── portfolio ──────────────────────────────────────────────────────
+  const portfolio = program
+    .command("portfolio")
+    .description("Portfolios (groups of sites) and site migrations");
+
+  addFormatFlags(
+    portfolio
+      .command("list")
+      .description("Portfolios and migrations visible to this token (MCP: list_portfolios)")
+      .option("--raw", "emit the upstream envelope instead of rows"),
+  ).action(async (opts: RawOpts, cmd: Command) => {
+    const envelope = unwrapToolResult(
+      await newClient(cmd.optsWithGlobals()).callTool("list_portfolios", {}),
+    );
+    writeOutputOrRaw(envelope, listRows(envelope, "portfolios"), opts);
+  });
+
+  addFormatFlags(
+    addPerfFlags(
+      portfolio
+        .command("perf <portfolio> <start_date> <end_date> [dimensions]")
+        .description(
+          "Combined GSC + GA4 performance across a portfolio's sites (MCP: get_portfolio_performance). " +
+            "<portfolio> is a name or id from `portfolio list`. Add the `site` dimension " +
+            "for one row per site instead of summed rows.",
+        ),
+    ),
+  ).action(
+    async (
+      name: string,
+      start: string,
+      end: string,
+      dims: string | undefined,
+      opts: PerfOpts,
+      cmd: Command,
+    ) => {
+      const args = performanceArgs({ portfolio: name }, start, end, dims, opts);
+      const result = await newClient(cmd.optsWithGlobals()).callTool(
+        "get_portfolio_performance",
+        args,
+      );
+      writePerformance(result, opts);
+    },
+  );
+
+  // ── changes ────────────────────────────────────────────────────────
+  addFormatFlags(
+    program
+      .command("changes <site>")
+      .description(
+        "Content-change timeline: annotations, detected content edits, HTTP status " +
+          "changes, internal link changes and Google updates (MCP: list_content_changes). " +
+          "Defaults to the last 28 days. Detected changes need an SEO Gets super site.",
+      )
+      .option("--from <date>", "start date (YYYY-MM-DD)")
+      .option("--to <date>", "end date (YYYY-MM-DD)")
+      .option(
+        "--types <list>",
+        "comma-separated event types: content_changed,http_status_changed,internal_links," +
+          "tracking_changes,annotations,google_updates (default all)",
+      )
+      .option("--page-contains <text>", "only pages whose URL contains this text")
+      .option("--group <name>", "only pages in this content group")
+      .option("--priority-only", "only pages in priority content groups")
+      .option("--diff", "include added/removed text for up to 10 newest content changes (slower)")
+      .option("--raw", "emit the upstream envelope instead of rows"),
+  ).action(async (site: string, opts: ChangesOpts, cmd: Command) => {
+    const args: Record<string, unknown> = { property: site };
+    if (opts.from) args.start_date = opts.from;
+    if (opts.to) args.end_date = opts.to;
+    const types = splitList(opts.types);
+    if (types) args.event_types = types;
+    if (opts.pageContains) args.page_contains = opts.pageContains;
+    if (opts.group) args.content_group = opts.group;
+    if (opts.priorityOnly) args.priority_only = true;
+    if (opts.diff) args.include_text_diff = true;
+    const envelope = unwrapToolResult(
+      await newClient(cmd.optsWithGlobals()).callTool("list_content_changes", args),
+    );
+    if (!opts.raw) warn(performanceWarnings(envelope));
+    writeOutputOrRaw(envelope, changeRows(envelope), opts);
+  });
+
+  // ── pages / queries ────────────────────────────────────────────────
+  addFormatFlags(
+    addListPageFlags(
+      program
+        .command("pages <site>")
+        .description("Every page with search data in the last 16 months (MCP: list_site_pages)"),
+    ),
+  ).action(async (site: string, opts: ListPageOpts, cmd: Command) => {
+    await runListPages(newClient(cmd.optsWithGlobals()), "list_site_pages", site, pageRows, opts);
+  });
+
+  addFormatFlags(
+    addListPageFlags(
+      program
+        .command("queries <site>")
+        .description("Every search query in the last 16 months (MCP: list_site_queries)"),
+    ),
+  ).action(async (site: string, opts: ListPageOpts, cmd: Command) => {
+    await runListPages(
+      newClient(cmd.optsWithGlobals()),
+      "list_site_queries",
+      site,
+      queryRows,
+      opts,
+    );
+  });
+
+  // ── groups / clusters ──────────────────────────────────────────────
+  addFormatFlags(
+    program
+      .command("groups <site>")
+      .description("Content groups: pages segmented by URL filters (MCP: list_content_groups)")
+      .option("--raw", "emit the upstream envelope instead of rows"),
+  ).action(async (site: string, opts: RawOpts, cmd: Command) => {
+    const envelope = unwrapToolResult(
+      await newClient(cmd.optsWithGlobals()).callTool("list_content_groups", { property: site }),
+    );
+    writeOutputOrRaw(envelope, listRows(envelope, "content_groups"), opts);
+  });
+
+  addFormatFlags(
+    program
+      .command("clusters <site>")
+      .description("Topic clusters: queries segmented by keyword filters (MCP: list_topic_clusters)")
+      .option("--raw", "emit the upstream envelope instead of rows"),
+  ).action(async (site: string, opts: RawOpts, cmd: Command) => {
+    const envelope = unwrapToolResult(
+      await newClient(cmd.optsWithGlobals()).callTool("list_topic_clusters", { property: site }),
+    );
+    writeOutputOrRaw(envelope, listRows(envelope, "topic_clusters"), opts);
+  });
 
   // ── gsc-top ────────────────────────────────────────────────────────
   addFormatFlags(
@@ -188,7 +517,7 @@ export function buildProgram(): Command {
           .hideHelp(),
       )
       .option("--branded-queries <bool>", "server-side branded query filter", coerceBoolean)
-      .option("--filters <json>", "extra get_gsc_performance arguments as JSON")
+      .option("--filters <json>", "extra get_site_performance arguments as JSON")
       .option("--rows-only", "emit only the dimension and selected metric", true)
       .option("--no-rows-only", "emit complete upstream rows"),
   ).action(async (site: string, start: string, end: string, opts: GscTopOpts, cmd: Command) => {
@@ -239,7 +568,7 @@ export function buildProgram(): Command {
           .hideHelp(),
       )
       .option("--branded-queries <bool>", "server-side branded query filter", coerceBoolean)
-      .option("--filters <json>", "extra get_gsc_performance arguments as JSON"),
+      .option("--filters <json>", "extra get_site_performance arguments as JSON"),
   ).action(async (site: string, opts: GscCompareOpts, cmd: Command) => {
     const result = await gscCompare(newClient(cmd.optsWithGlobals()), {
       site,

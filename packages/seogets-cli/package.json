@@ -1,7 +1,7 @@
 {
   "name": "@mirage-cli/seogets-cli",
-  "version": "0.3.2",
-  "description": "SEO Gets MCP CLI — typed Commander layer over JSON-RPC 2.0. GSC properties, performance, indexing overview/status.",
+  "version": "0.4.0",
+  "description": "SEO Gets MCP CLI — typed Commander layer over JSON-RPC 2.0. GSC properties, GSC + GA4 performance for sites and portfolios, pages, queries, content changes, content groups, topic clusters, indexing overview/status.",
   "license": "MIT",
   "repository": {
     "type": "git",

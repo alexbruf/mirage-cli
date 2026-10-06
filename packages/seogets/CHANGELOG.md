@@ -1,5 +1,11 @@
 # @mirage-cli/seogets
 
+## 1.0.2
+
+### Patch Changes
+
+- Republish against `@mirage-cli/seogets-cli` 0.4.0 so the peer range is `^0.4.0`; 1.0.1 declared `^0.3.0`, which a 0.4 CLI does not satisfy.
+
 ## 1.0.1
 
 ### Patch Changes

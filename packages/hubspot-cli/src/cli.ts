@@ -3,6 +3,7 @@ import { ApiError, HubSpotClient, type ListEnvelope, type Query } from "./client
 import {
   HS_CONFIG_PATH_FOR_DISPLAY,
   getDefaultBaseUrl,
+  loadEnvAccounts,
   loadHsConfig,
   resolveAuth,
   type ResolvedAuth,
@@ -29,18 +30,20 @@ export function buildProgram(): Command {
         "objects), marketing (forms, emails, campaigns), and CMS (blog, pages, HubDB). " +
         "hs-style grammar; reuses your `hs account auth` login.",
     )
-    .version("0.1.0")
+    .version("0.1.1")
     .option("--token <token>", "Access token: private app or OAuth (or HUBSPOT_ACCESS_TOKEN env)")
-    .option("-a, --account <name|id>", "Account from ~/.hscli/config.yml (or HUBSPOT_ACCOUNT_ID env)")
+    .option("-a, --account <name|id>", "Account name from HUBSPOT_ACCOUNTS, or name/id from ~/.hscli/config.yml")
     .option("--base-url <url>", "API base URL (or HUBSPOT_API_BASE_URL env)")
     .option("-f, --format <fmt>", "Output format: json | jsonl | table | csv", "json")
     .addHelpText(
       "after",
       `
 Credentials (resolved per call, in order):
-  1. --token / HUBSPOT_ACCESS_TOKEN            private app token or any access token
-  2. HUBSPOT_PERSONAL_ACCESS_KEY (+ HUBSPOT_ACCOUNT_ID)   exchanged for a token
-  3. ~/.hscli/config.yml account (--account <name|id> or its default)
+  1. --token                                   access token, used directly
+  2. HUBSPOT_ACCOUNTS (--account <name>)       JSON map of account name to access token
+  3. HUBSPOT_ACCESS_TOKEN                      private app token or any access token
+  4. HUBSPOT_PERSONAL_ACCESS_KEY (+ HUBSPOT_ACCOUNT_ID)   exchanged for a token
+  5. ~/.hscli/config.yml account (--account <name|id> or its default)
      ${HS_CONFIG_PATH_FOR_DISPLAY} — populated by \`hs account auth\`
 
 Examples:
@@ -436,8 +439,20 @@ Examples:
 
   account
     .command("list")
-    .description("List HubSpot accounts found in ~/.hscli/config.yml")
+    .description("List HubSpot accounts from HUBSPOT_ACCOUNTS, else ~/.hscli/config.yml")
     .action(async () => {
+      let envAccounts: Map<string, string> | null;
+      try {
+        envAccounts = loadEnvAccounts();
+      } catch (err) {
+        return fail(err);
+      }
+      if (envAccounts) {
+        // Names only; the values are secrets.
+        const rows = [...envAccounts.keys()].map((name) => ({ name, source: "HUBSPOT_ACCOUNTS" }));
+        console.log(renderList({ results: rows }, rows, globalOpts().format));
+        return;
+      }
       const config = await loadHsConfig();
       const rows = (config?.accounts ?? []).map((a) => ({
         name: a.name ?? null,

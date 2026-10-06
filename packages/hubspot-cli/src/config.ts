@@ -9,11 +9,15 @@ import { ApiError, type TokenProvider } from "./client.ts";
  * we obtain that token. Resolution precedence (stateless per invocation, so
  * cached programs in long-lived hosts stay correct):
  *
- *   1. --token / HUBSPOT_ACCESS_TOKEN   → used directly (private app token or
+ *   1. --token                          → used directly.
+ *   2. HUBSPOT_ACCOUNTS                 → a JSON map of account name to access
+ *      token, selected by --account <name> (or the only entry). Lets one host
+ *      hold keys for several portals; no exchange, no disk.
+ *   3. HUBSPOT_ACCESS_TOKEN             → used directly (private app token or
  *      any OAuth/access token). No exchange, no disk — the worker-friendly path.
- *   2. HUBSPOT_PERSONAL_ACCESS_KEY (+ HUBSPOT_ACCOUNT_ID) → exchanged for a
+ *   4. HUBSPOT_PERSONAL_ACCESS_KEY (+ HUBSPOT_ACCOUNT_ID) → exchanged for a
  *      short-lived access token, cached in-process until expiry.
- *   3. ~/.hscli/config.yml account (selected by --account <name|id> or the
+ *   5. ~/.hscli/config.yml account (selected by --account <name|id> or the
  *      config's default) → that account's personal access key, exchanged.
  *      This reuses your existing `hs account auth` login — no new auth to learn.
  *
@@ -36,15 +40,15 @@ export function getDefaultBaseUrl(): string {
 export interface CredentialFlags {
   /** Direct access token (private app / OAuth). */
   token?: string;
-  /** Account name or numeric portal id to select from ~/.hscli/config.yml. */
+  /** Account name from HUBSPOT_ACCOUNTS, or name/portal id from ~/.hscli/config.yml. */
   account?: string;
   baseUrl?: string;
 }
 
 export interface ResolvedAuth {
   tokenProvider: TokenProvider;
-  source: "flag-token" | "env-token" | "env-pak" | "config-account";
-  /** Selected account name/id when resolved from config (display only). */
+  source: "flag-token" | "env-accounts" | "env-token" | "env-pak" | "config-account";
+  /** Selected account name/id when resolved from HUBSPOT_ACCOUNTS or config (display only). */
   account?: string;
   portalId?: string;
 }
@@ -108,6 +112,38 @@ export async function exchangePersonalAccessKey(
   return data.oauthAccessToken;
 }
 
+// ── HUBSPOT_ACCOUNTS ──
+
+/**
+ * Parse HUBSPOT_ACCOUNTS: a JSON object mapping account name to access token,
+ * e.g. `{"viewengine":"pat-na1-…","acme":"pat-na1-…"}`. Null when unset. Throws
+ * on malformed input without echoing the value, since it holds secrets.
+ */
+export function loadEnvAccounts(): Map<string, string> | null {
+  const raw = process.env.HUBSPOT_ACCOUNTS;
+  if (raw === undefined || raw.trim() === "") return null;
+  let parsed: unknown;
+  try {
+    parsed = JSON.parse(raw);
+  } catch {
+    throw new Error(
+      'HUBSPOT_ACCOUNTS is not valid JSON. Expected an object of account name to access token, e.g. {"acme":"pat-na1-..."}.',
+    );
+  }
+  if (!parsed || typeof parsed !== "object" || Array.isArray(parsed)) {
+    throw new Error("HUBSPOT_ACCOUNTS must be a JSON object of account name to access token.");
+  }
+  const accounts = new Map<string, string>();
+  for (const [name, token] of Object.entries(parsed as Record<string, unknown>)) {
+    if (typeof token !== "string" || token === "") {
+      throw new Error(`HUBSPOT_ACCOUNTS entry "${name}" must be a non-empty access token string.`);
+    }
+    accounts.set(name, token);
+  }
+  if (accounts.size === 0) throw new Error("HUBSPOT_ACCOUNTS has no accounts.");
+  return accounts;
+}
+
 // ── ~/.hscli/config.yml ──
 
 export interface HsAccount {
@@ -164,16 +200,30 @@ export function selectHsAccount(config: HsConfig, selector?: string | number): H
 export async function resolveAuth(flags: CredentialFlags = {}): Promise<ResolvedAuth> {
   const baseUrl = flags.baseUrl ?? getDefaultBaseUrl();
 
-  // 1. direct access token
-  const directToken = flags.token ?? process.env.HUBSPOT_ACCESS_TOKEN;
-  if (directToken) {
-    return {
-      tokenProvider: async () => directToken,
-      source: flags.token ? "flag-token" : "env-token",
-    };
+  // 1. explicit token flag
+  const flagToken = flags.token;
+  if (flagToken) return { tokenProvider: async () => flagToken, source: "flag-token" };
+
+  // 2. named access tokens from env
+  const envAccounts = loadEnvAccounts();
+  if (envAccounts) {
+    const names = [...envAccounts.keys()];
+    const name = flags.account ?? (names.length === 1 ? names[0] : undefined);
+    if (name === undefined) {
+      throw new Error(`Several HubSpot accounts are configured. Pick one with --account <name>. Accounts: ${names.join(", ")}`);
+    }
+    const token = envAccounts.get(name);
+    if (!token) {
+      throw new Error(`Unknown HubSpot account "${name}". Accounts: ${names.join(", ")}`);
+    }
+    return { tokenProvider: async () => token, source: "env-accounts", account: name };
   }
 
-  // 2. personal access key from env
+  // 3. direct access token from env
+  const envToken = process.env.HUBSPOT_ACCESS_TOKEN;
+  if (envToken) return { tokenProvider: async () => envToken, source: "env-token" };
+
+  // 4. personal access key from env
   const envPak = process.env.HUBSPOT_PERSONAL_ACCESS_KEY;
   if (envPak) {
     const portalId = flags.account ?? process.env.HUBSPOT_ACCOUNT_ID;
@@ -184,7 +234,7 @@ export async function resolveAuth(flags: CredentialFlags = {}): Promise<Resolved
     };
   }
 
-  // 3. reuse the existing `hs` login from ~/.hscli/config.yml
+  // 5. reuse the existing `hs` login from ~/.hscli/config.yml
   const config = await loadHsConfig();
   if (config && config.accounts.length > 0) {
     const account = selectHsAccount(config, flags.account);
@@ -212,8 +262,8 @@ export async function resolveAuth(flags: CredentialFlags = {}): Promise<Resolved
   }
 
   throw new Error(
-    "No HubSpot credentials. Set HUBSPOT_ACCESS_TOKEN (private app token), or " +
-      "HUBSPOT_PERSONAL_ACCESS_KEY, or run `hs account auth` to populate ~/.hscli/config.yml.",
+    "No HubSpot credentials. Set HUBSPOT_ACCESS_TOKEN (private app token), " +
+      "HUBSPOT_ACCOUNTS (JSON map of account name to token), HUBSPOT_PERSONAL_ACCESS_KEY, or run `hs account auth` to populate ~/.hscli/config.yml.",
   );
 }
 

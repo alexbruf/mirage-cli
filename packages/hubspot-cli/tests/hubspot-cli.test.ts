@@ -1,6 +1,6 @@
 import { afterEach, beforeEach, describe, expect, test } from "bun:test";
 import { HubSpotClient } from "../src/client.ts";
-import { resolveAuth, selectHsAccount, type HsConfig } from "../src/config.ts";
+import { loadEnvAccounts, resolveAuth, selectHsAccount, type HsConfig } from "../src/config.ts";
 import { buildProgram } from "../src/cli.ts";
 import { parseFormat, renderList, renderObject } from "../src/output.ts";
 
@@ -11,6 +11,7 @@ function subnames(program: ReturnType<typeof buildProgram>, name: string): strin
 
 const ENV_KEYS = [
   "HUBSPOT_ACCESS_TOKEN",
+  "HUBSPOT_ACCOUNTS",
   "HUBSPOT_PERSONAL_ACCESS_KEY",
   "HUBSPOT_ACCOUNT_ID",
   "HUBSPOT_API_BASE_URL",
@@ -94,6 +95,54 @@ describe("credential resolution", () => {
     process.env.HUBSPOT_ACCESS_TOKEN = "pat-env";
     process.env.HUBSPOT_PERSONAL_ACCESS_KEY = "pak-env";
     expect((await resolveAuth()).source).toBe("env-token");
+  });
+});
+
+describe("HUBSPOT_ACCOUNTS", () => {
+  const accounts = JSON.stringify({ viewengine: "pat-ve", acme: "pat-acme" });
+
+  test("--account selects the named token", async () => {
+    process.env.HUBSPOT_ACCOUNTS = accounts;
+    const resolved = await resolveAuth({ account: "acme" });
+    expect(resolved.source).toBe("env-accounts");
+    expect(resolved.account).toBe("acme");
+    expect(await resolved.tokenProvider()).toBe("pat-acme");
+  });
+
+  test("a single entry is used without --account", async () => {
+    process.env.HUBSPOT_ACCOUNTS = JSON.stringify({ viewengine: "pat-ve" });
+    expect(await (await resolveAuth()).tokenProvider()).toBe("pat-ve");
+  });
+
+  test("several entries without --account list the names, never the tokens", async () => {
+    process.env.HUBSPOT_ACCOUNTS = accounts;
+    const err = await resolveAuth().catch((e: Error) => e);
+    expect(String(err)).toContain("viewengine, acme");
+    expect(String(err)).not.toContain("pat-");
+  });
+
+  test("an unknown account names the valid ones", async () => {
+    process.env.HUBSPOT_ACCOUNTS = accounts;
+    await expect(resolveAuth({ account: "nope" })).rejects.toThrow(/Unknown HubSpot account "nope".*viewengine, acme/);
+  });
+
+  test("malformed JSON fails without echoing the value", async () => {
+    process.env.HUBSPOT_ACCOUNTS = "{pat-secret";
+    const err = await resolveAuth().catch((e: Error) => e);
+    expect(String(err)).toContain("not valid JSON");
+    expect(String(err)).not.toContain("pat-secret");
+  });
+
+  test("non-string tokens are rejected", () => {
+    process.env.HUBSPOT_ACCOUNTS = JSON.stringify({ acme: 1 });
+    expect(() => loadEnvAccounts()).toThrow(/"acme" must be a non-empty access token/);
+  });
+
+  test("precedes HUBSPOT_ACCESS_TOKEN, and --token precedes both", async () => {
+    process.env.HUBSPOT_ACCOUNTS = accounts;
+    process.env.HUBSPOT_ACCESS_TOKEN = "pat-env";
+    expect((await resolveAuth({ account: "acme" })).source).toBe("env-accounts");
+    expect((await resolveAuth({ token: "pat-flag", account: "acme" })).source).toBe("flag-token");
   });
 });
 

@@ -16,9 +16,11 @@ hubspot --help
 Every HubSpot token type is just an `Authorization: Bearer <token>` at the API layer; the only difference is how the token is obtained. Resolution per invocation, in order:
 
 ```
-1. --token / HUBSPOT_ACCESS_TOKEN                       private app token or any OAuth/access token (used directly)
-2. HUBSPOT_PERSONAL_ACCESS_KEY (+ HUBSPOT_ACCOUNT_ID)   personal access key, exchanged for a short-lived token
-3. ~/.hscli/config.yml account (--account <name|id>)   reuses your `hs account auth` login
+1. --token                                              access token (used directly)
+2. HUBSPOT_ACCOUNTS (--account <name>)                  JSON map of account name to access token
+3. HUBSPOT_ACCESS_TOKEN                                 private app token or any OAuth/access token (used directly)
+4. HUBSPOT_PERSONAL_ACCESS_KEY (+ HUBSPOT_ACCOUNT_ID)   personal access key, exchanged for a short-lived token
+5. ~/.hscli/config.yml account (--account <name|id>)   reuses your `hs account auth` login
 ```
 
 ### Quickest (headless / CI / workers)
@@ -28,6 +30,16 @@ Create a [private app](https://developers.hubspot.com/docs/api/private-apps), gr
 ```sh
 export HUBSPOT_ACCESS_TOKEN=pat-na1-xxxxxxxx
 hubspot account whoami
+```
+
+### Several portals (headless)
+
+Put one access token per portal in `HUBSPOT_ACCOUNTS` and pick the portal per call. With one entry, `--account` is optional; with several, it is required.
+
+```sh
+export HUBSPOT_ACCOUNTS='{"viewengine":"pat-na1-xxxx","acme":"pat-na1-yyyy"}'
+hubspot account list                  # names only, never the tokens
+hubspot -a acme crm deals list --limit 5
 ```
 
 ### Reuse your `hs` login (workstation)
@@ -96,6 +108,7 @@ hubspot api /account-info/v3/details
 
 | Var | Purpose |
 | --- | --- |
+| `HUBSPOT_ACCOUNTS` | JSON object of account name to access token. Selected with `--account <name>`; takes precedence over `HUBSPOT_ACCESS_TOKEN`. |
 | `HUBSPOT_ACCESS_TOKEN` | Private app access token or any OAuth/access token. Used directly as a bearer. |
 | `HUBSPOT_PERSONAL_ACCESS_KEY` | Personal access key (the `hs` credential). Exchanged for a short-lived token. |
 | `HUBSPOT_ACCOUNT_ID` | Portal id to pin when exchanging a personal access key. |
@@ -103,4 +116,4 @@ hubspot api /account-info/v3/details
 
 ## Worker compatibility
 
-Pure `fetch`. `node:fs` is touched only when env credentials are absent and `~/.hscli/config.yml` is read; set `HUBSPOT_ACCESS_TOKEN` in workerd and that path never runs.
+Pure `fetch`. `node:fs` is touched only when env credentials are absent and `~/.hscli/config.yml` is read; set `HUBSPOT_ACCESS_TOKEN` or `HUBSPOT_ACCOUNTS` in workerd and that path never runs.

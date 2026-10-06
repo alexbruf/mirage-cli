@@ -15,14 +15,18 @@ Read-only client for the HubSpot API. Every command is a GET (or the read-only `
 
 Every token type is a bearer at the API layer. Resolution order:
 
-1. `--token` / `HUBSPOT_ACCESS_TOKEN` — a private app access token (or any OAuth/access token), used directly.
-2. `HUBSPOT_PERSONAL_ACCESS_KEY` (+ `HUBSPOT_ACCOUNT_ID`) — a personal access key, exchanged for a short-lived token.
-3. `~/.hscli/config.yml` — reuses the existing `hs account auth` login; pick one with `--account <name|id>`.
+1. `--token` — an access token, used directly.
+2. `HUBSPOT_ACCOUNTS` — a JSON map of account name to access token, for several portals; pick one with `--account <name>`.
+3. `HUBSPOT_ACCESS_TOKEN` — a private app access token (or any OAuth/access token), used directly.
+4. `HUBSPOT_PERSONAL_ACCESS_KEY` (+ `HUBSPOT_ACCOUNT_ID`) — a personal access key, exchanged for a short-lived token.
+5. `~/.hscli/config.yml` — reuses the existing `hs account auth` login; pick one with `--account <name|id>`.
 
 ```sh
-hubspot account whoami                 # resolved credential source + portal details
-hubspot account list                   # accounts found in ~/.hscli/config.yml
+hubspot account list                   # account names (HUBSPOT_ACCOUNTS, else ~/.hscli/config.yml)
+hubspot -a acme account whoami         # resolved credential source + portal details
 ```
+
+When several accounts are configured, every call needs `--account <name>`; run `hubspot account list` first.
 
 ## CRM (the workhorse)
 

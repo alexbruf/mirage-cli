@@ -14,6 +14,7 @@ export {
 export {
   resolveAuth,
   exchangePersonalAccessKey,
+  loadEnvAccounts,
   loadHsConfig,
   selectHsAccount,
   getDefaultBaseUrl,

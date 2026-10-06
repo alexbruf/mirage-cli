@@ -14,6 +14,8 @@ Wrap any Commander.js TS CLI as an importable `@mirage-cli/<vendor>` package for
 | `@mirage-cli/ahrefs`       | Thin wrapper around `ahrefs-cli`'s `buildProgram` — `buildProgram` + `ahrefsCommand`.                              |
 | `@mirage-cli/gbp-cli`      | Google Business Profile CLI source (locations, metrics, reviews, keywords via Windsor.ai). Exports `buildProgram()`. |
 | `@mirage-cli/gbp`          | Thin wrapper around `@mirage-cli/gbp-cli`'s `buildProgram` — `buildProgram` + `gbpCommand`.                        |
+| `@mirage-cli/windsor-cli`  | Windsor.ai CLI source — read-only connectors/accounts/fields discovery and `query` with SQL-like `--where` filters across 350+ connectors. Exports `buildProgram()`. |
+| `@mirage-cli/windsor`      | Thin wrapper around `@mirage-cli/windsor-cli`'s `buildProgram` — `buildProgram` + `windsorCommand` + `windsorResource`. |
 | `@mirage-cli/callrail-cli` | CallRail v3 CLI source — read-only call tracking (calls, summaries, trackers, SMS, forms) with multi-account profiles. |
 | `@mirage-cli/callrail`     | Thin wrapper around `@mirage-cli/callrail-cli`'s `buildProgram` — `buildProgram` + `callrailCommand`.              |
 | `@mirage-cli/ve-fanout-cli` | VE Fanout CLI source — AI query fan-out (ChatGPT/Gemini/Perplexity sub-queries) over the VE Fanout v1 API. Exports `buildProgram()`. |

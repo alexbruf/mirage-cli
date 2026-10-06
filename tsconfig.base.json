@@ -63,6 +63,8 @@
       "@mirage-cli/callrail-cli/*": ["./packages/callrail-cli/src/*"],
       "@mirage-cli/gbp-cli": ["./packages/gbp-cli/src/index.ts"],
       "@mirage-cli/gbp-cli/*": ["./packages/gbp-cli/src/*"],
+      "@mirage-cli/windsor-cli": ["./packages/windsor-cli/src/index.ts"],
+      "@mirage-cli/windsor-cli/*": ["./packages/windsor-cli/src/*"],
       "@mirage-cli/localfalcon-cli": ["./packages/localfalcon-cli/src/index.ts"],
       "@mirage-cli/localfalcon-cli/*": ["./packages/localfalcon-cli/src/*"],
       "@mirage-cli/openrouter-cli": ["./packages/openrouter-cli/src/index.ts"],

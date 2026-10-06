@@ -1,6 +1,32 @@
 export type GscDimension = "query" | "page";
 export type GscMetric = "impressions" | "clicks" | "position";
 
+/** Search Console metrics, the only ones `get_site_performance` can join with the query dimension. */
+export const SEARCH_METRICS = ["clicks", "impressions", "ctr", "position"] as const;
+
+/** GA4 metrics `get_site_performance` merges in when the site has a linked GA4 property. */
+export const WEB_METRICS = [
+  "activeUsers",
+  "sessions",
+  "engagedSessions",
+  "engagementRate",
+  "keyEvents",
+  "revenue",
+] as const;
+
+const NUMERIC_COLUMNS = new Set<string>([...SEARCH_METRICS, ...WEB_METRICS]);
+
+/** Upstream camelCase column names kept as-is rather than snake_cased. */
+const CAMEL_COLUMNS = new Map<string, string>(
+  [
+    "contentGroup",
+    "topicCluster",
+    "sessionSourceMedium",
+    "eventName",
+    ...WEB_METRICS,
+  ].map((name) => [name.toLowerCase().replace(/[^a-z0-9]/g, ""), name]),
+);
+
 export interface GscRow {
   query?: string;
   page?: string;
@@ -21,9 +47,10 @@ export interface GscPageArgs {
   start_date: string;
   end_date: string;
   dimensions: string[];
-  /** @deprecated get_gsc_performance rejects pagination params; never sent. */
+  metrics?: string[];
+  /** @deprecated the performance tool rejects pagination params; never sent. */
   page?: number;
-  /** @deprecated get_gsc_performance rejects pagination params; never sent. */
+  /** @deprecated the performance tool rejects pagination params; never sent. */
   page_size?: number;
   branded_queries?: boolean;
   [key: string]: unknown;
@@ -89,7 +116,7 @@ export interface GscCompareResult {
 }
 
 /**
- * get_gsc_performance returns the whole window in one response, capped at
+ * get_site_performance returns the whole window in one response, capped at
  * this many rows (observed server behavior). A response exactly at the cap
  * is almost certainly truncated, and there is no way to fetch the rest.
  */
@@ -103,18 +130,18 @@ function asRecord(value: unknown): Record<string, unknown> | null {
 
 function normalizeHeader(header: string): string {
   const compact = header.trim().replace(/^\uFEFF/, "");
+  const camel = CAMEL_COLUMNS.get(compact.toLowerCase().replace(/[^a-z0-9]/g, ""));
+  if (camel) return camel;
   const normalized = compact
     .replace(/([a-z0-9])([A-Z])/g, "$1_$2")
     .toLowerCase()
     .replace(/[^a-z0-9]+/g, "_")
     .replace(/^_+|_+$/g, "");
-  if (normalized === "content_group") return "contentGroup";
-  if (normalized === "topic_cluster") return "topicCluster";
   return normalized;
 }
 
 function parseMetricCell(key: string, value: string): string | number {
-  if (!["clicks", "impressions", "ctr", "position"].includes(key)) return value;
+  if (!NUMERIC_COLUMNS.has(key)) return value;
   const trimmed = value.trim();
   if (trimmed === "") return 0;
   const numeric = Number(trimmed.replace(/[%,$]/g, "").replace(/,/g, ""));
@@ -135,7 +162,7 @@ export function parseGscTsv(value: string): GscRow[] {
   if (lines.length < 2 || !lines[0]?.includes("\t")) return [];
 
   const headers = lines[0].split("\t").map(normalizeHeader);
-  if (!headers.some((header) => ["query", "page", "clicks", "impressions"].includes(header))) {
+  if (!headers.some((header) => header === "query" || header === "page" || NUMERIC_COLUMNS.has(header))) {
     return [];
   }
 
@@ -184,7 +211,7 @@ export function normalizeGscPage(value: unknown): GscPage {
   const rows = rowsFromUnknown(value);
   if (rows === null) {
     throw new Error(
-      "SEO Gets get_gsc_performance returned an unsupported payload. Expected rows or TSV text under data.",
+      "SEO Gets get_site_performance returned an unsupported payload. Expected rows or TSV text under data.",
     );
   }
   return { rows, envelope };
@@ -209,7 +236,7 @@ function numberField(records: Record<string, unknown>[], keys: string[]): number
   return undefined;
 }
 
-/** @deprecated get_gsc_performance no longer paginates; kept for callers that inspect legacy envelopes. */
+/** @deprecated the performance tool no longer paginates; kept for callers that inspect legacy envelopes. */
 export function pageHasMore(
   envelope: Record<string, unknown>,
   rowCount: number,
@@ -334,6 +361,7 @@ function requestArgs(
     start_date: params.startDate,
     end_date: params.endDate,
     dimensions: [params.dimension],
+    metrics: [...SEARCH_METRICS],
     ...(params.brandedQueries !== undefined ? { branded_queries: params.brandedQueries } : {}),
     ...(params.filters ?? {}),
   };

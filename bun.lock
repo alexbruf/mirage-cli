@@ -704,7 +704,7 @@
     },
     "packages/seogets": {
       "name": "@mirage-cli/seogets",
-      "version": "1.0.1",
+      "version": "1.0.2",
       "dependencies": {
         "@mirage-cli/core": "workspace:^",
       },
@@ -724,7 +724,7 @@
     },
     "packages/seogets-cli": {
       "name": "@mirage-cli/seogets-cli",
-      "version": "0.3.2",
+      "version": "0.4.0",
       "bin": {
         "seogets": "./dist/bin.js",
       },

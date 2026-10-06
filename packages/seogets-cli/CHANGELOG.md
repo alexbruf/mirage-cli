@@ -1,5 +1,13 @@
 # @mirage-cli/seogets-cli
 
+## 0.4.0
+
+### Minor Changes
+
+- Fix `gsc`, `gsc-top` and `gsc-compare`, which all failed with `unknown tool "get_gsc_performance"`: SEO Gets renamed the tool to `get_site_performance`. The new tool also returns GA4 metrics by default, so these commands now request `clicks,impressions,ctr,position` explicitly and their output is unchanged. `gsc` gains `--metrics`.
+- Add the read tools SEO Gets has shipped since 0.3: `perf` (merged GSC + GA4 rows: sessions, active users, key events, revenue, source/medium, event name), `portfolio list`, `portfolio perf`, `changes` (annotations, detected content edits, HTTP status and internal link changes, Google updates), `pages` and `queries` (16-month inventories, `--all` walks every page), `groups` and `clusters`. New commands emit flat typed rows; `--raw` returns the upstream envelope.
+- Replace the application-failure check. The old rule ("a note with no echoed `property` is a failure") rejected every successful `list_site_pages` and `list_site_queries` call, which never echo the property, and missed `list_content_changes` failures, which echo `property: ""`. A property- or portfolio-scoped response is now a failure only when every field except `note` is null, empty, zero or false. Portfolio-scoped requests are checked too.
+
 ## 0.3.2
 
 ### Patch Changes

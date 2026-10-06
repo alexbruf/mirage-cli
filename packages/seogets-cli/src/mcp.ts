@@ -13,6 +13,9 @@ import { normalizeGscPage, type GscPage, type GscPageArgs } from "./gsc-top.ts";
 
 const DEFAULT_URL = "https://app.seogets.com/mcp";
 
+/** SEO Gets' performance tool. It replaced `get_gsc_performance` and also merges GA4 metrics. */
+export const PERFORMANCE_TOOL = "get_site_performance";
+
 export interface McpClientOpts {
   token?: string;
   url?: string;
@@ -96,7 +99,7 @@ export class McpClient {
 
   /** Fetch and normalize one GSC page, including SEO Gets' TSV-in-JSON payload. */
   async getGscPage(args: GscPageArgs): Promise<GscPage> {
-    const result = await this.callTool("get_gsc_performance", args);
+    const result = await this.callTool(PERFORMANCE_TOOL, args);
     return normalizeGscPage(unwrapToolResult(result));
   }
 
@@ -152,21 +155,32 @@ export function unwrapToolResult(result: unknown): unknown {
 }
 
 /**
- * SEO Gets reports some application failures as successful tool results. A
- * property-scoped success echoes the requested property, including legitimate
- * empty results; failures instead return a note without that property.
+ * SEO Gets reports some application failures as successful tool results: a
+ * `note` naming the problem and every other field null, empty or zero, e.g.
+ * `{"data":null,"note":"No accessible property matched ..."}` or
+ * `{"days":null,"end_date":"","note":"...","property":""}`. A success always
+ * carries something substantive besides its note: an echoed property, a
+ * result array (even an empty one), or a page number. Only property- and
+ * portfolio-scoped requests are checked; list tools with no target cannot
+ * fail this way.
  */
 function assertToolResponseOk(args: Record<string, unknown>, result: unknown): void {
-  if (!Object.prototype.hasOwnProperty.call(args, "property")) return;
+  const scoped =
+    Object.prototype.hasOwnProperty.call(args, "property") ||
+    Object.prototype.hasOwnProperty.call(args, "portfolio");
+  if (!scoped) return;
 
   const unwrapped = unwrapToolResult(result);
   if (!unwrapped || typeof unwrapped !== "object" || Array.isArray(unwrapped)) return;
 
   const response = unwrapped as Record<string, unknown>;
-  if (
-    Object.prototype.hasOwnProperty.call(response, "note") &&
-    !Object.prototype.hasOwnProperty.call(response, "property")
-  ) {
-    throw new Error(String(response.note));
-  }
+  if (!Object.prototype.hasOwnProperty.call(response, "note")) return;
+  const substantive = Object.entries(response).some(
+    ([key, value]) => key !== "note" && !isEmptyField(value),
+  );
+  if (!substantive) throw new Error(String(response.note));
+}
+
+function isEmptyField(value: unknown): boolean {
+  return value === null || value === undefined || value === "" || value === 0 || value === false;
 }

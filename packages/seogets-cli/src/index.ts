@@ -5,7 +5,9 @@
 export { buildProgram } from "./cli.ts";
 export {
   BoundedMinHeap,
+  SEARCH_METRICS,
   SERVER_ROW_CAP,
+  WEB_METRICS,
   gscCompare,
   gscTopBy,
   metricOf,
@@ -23,5 +25,24 @@ export {
   type GscTopParams,
   type GscTopResult,
 } from "./gsc-top.ts";
-export { McpClient, McpError, unwrapToolResult, type McpClientOpts, type McpTool } from "./mcp.ts";
+export {
+  McpClient,
+  McpError,
+  PERFORMANCE_TOOL,
+  unwrapToolResult,
+  type McpClientOpts,
+  type McpTool,
+} from "./mcp.ts";
+export {
+  MAX_LIST_PAGES,
+  changeRows,
+  collectPages,
+  hasMore,
+  listRows,
+  pageRows,
+  performanceRows,
+  performanceWarnings,
+  queryRows,
+  type PageRow,
+} from "./site-data.ts";
 export { renderOutput, writeObject, writeOutput, type OutputOpts, type Format } from "./output.ts";

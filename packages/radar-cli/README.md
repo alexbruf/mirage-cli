@@ -46,7 +46,7 @@ radar export game-plans > game-plans.json
   windowing, `--format table|csv|json`, `overview --compare` for
   period-over-period deltas
 - `export-results` — full-history NDJSON streamed server-side (`--since` resume,
-  `-o <file>`)
+  `--until <date>`, `--fields <list>`, `--no-text` to drop answer text, `-o <file>`)
 - `orgs {list, use, current, clear}` — multi-tenant switching
 - `login / whoami / logout`
 

@@ -1,6 +1,7 @@
 import { Command } from "commander";
 import * as auth from "./auth.ts";
 import { ApiClient } from "./client.ts";
+import { registerExportCommands } from "./commands/export.ts";
 import { registerMetricsCommands } from "./commands/metrics.ts";
 import { registerOnboardingCommands } from "./commands/onboarding.ts";
 import { registerOrgsCommands } from "./commands/orgs.ts";
@@ -316,6 +317,7 @@ export function buildProgram(): Command {
   // ── Orgs (multi-tenant switch) ──
   registerOrgsCommands(program, getClient);
   registerMetricsCommands(program, getClient);
+  registerExportCommands(program, getClient);
   registerOnboardingCommands(program, getClient);
 
   return program;

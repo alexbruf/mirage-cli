@@ -10,12 +10,20 @@ for (const baseUrl of ["https://attacker.example", "http://api.figma.com", "http
 for (const scheme of ["bearer", "x-figma-token"] as const) {
   test(`authenticated ${scheme} requests refuse redirects`, async () => {
     const fetchMock = mock(async (_url: unknown, init?: RequestInit) => {
-      expect(init?.redirect).toBe("error");
+      expect(init?.redirect).toBe("manual");
       expect(new Headers(init?.headers).get(scheme === "bearer" ? "Authorization" : "X-Figma-Token")).toContain("FAKE_TEST_TOKEN");
       return Response.json({id: "test"});
     });
     globalThis.fetch = fetchMock as unknown as typeof fetch;
     expect(await new FigmaClient({token: "FAKE_TEST_TOKEN", scheme}).get<{id: string}>("/v1/me")).toEqual({id: "test"});
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+  });
+}
+for (const scheme of ["bearer", "x-figma-token"] as const) {
+  test(`authenticated ${scheme} requests fail on a redirect instead of following it`, async () => {
+    const fetchMock = mock(async () => new Response(null, {status: 302, headers: {location: "https://attacker.example/"}}));
+    globalThis.fetch = fetchMock as unknown as typeof fetch;
+    await expect(new FigmaClient({token: "FAKE_TEST_TOKEN", scheme}).get("/v1/me")).rejects.toThrow();
     expect(fetchMock).toHaveBeenCalledTimes(1);
   });
 }

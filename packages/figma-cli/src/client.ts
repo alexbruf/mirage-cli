@@ -106,8 +106,11 @@ export class FigmaClient {
     if (this.scheme === "bearer") headers.Authorization = `Bearer ${this.token}`;
     else headers["X-Figma-Token"] = this.token;
     if (body !== undefined) headers["Content-Type"] = "application/json";
+    // "manual", not "error": the Workers runtime rejects redirect: "error"
+    // before sending. A 3xx is not res.ok, so request() still fails on it and
+    // the credential is never re-sent to wherever the redirect points.
     return fetch(url, {
-      redirect: "error",
+      redirect: "manual",
       method,
       headers,
       ...(body !== undefined ? { body: JSON.stringify(body) } : {}),

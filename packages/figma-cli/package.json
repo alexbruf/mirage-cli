@@ -1,6 +1,6 @@
 {
   "name": "@mirage-cli/figma-cli",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "Figma CLI — files, node trees, rendered exports, comments, variables, dev resources, and library assets over the Figma REST API. Dual credential support (personal access token or OAuth). Mirage-compatible command shape.",
   "license": "MIT",
   "repository": {

@@ -25,6 +25,8 @@
         "@mirage-cli/ics": "workspace:*",
         "@mirage-cli/localfalcon": "workspace:*",
         "@mirage-cli/localfalcon-cli": "workspace:*",
+        "@mirage-cli/looker": "workspace:*",
+        "@mirage-cli/looker-cli": "workspace:*",
         "@mirage-cli/markup": "workspace:*",
         "@mirage-cli/markup-cli": "workspace:*",
         "@mirage-cli/openrouter": "workspace:*",
@@ -278,7 +280,7 @@
     },
     "packages/figma-cli": {
       "name": "@mirage-cli/figma-cli",
-      "version": "0.1.0",
+      "version": "0.1.1",
       "bin": {
         "figma": "./dist/bin.js",
       },
@@ -460,6 +462,37 @@
         "commander": "^14.0.3",
       },
     },
+    "packages/looker": {
+      "name": "@mirage-cli/looker",
+      "version": "0.1.0",
+      "dependencies": {
+        "@mirage-cli/core": "workspace:^",
+      },
+      "devDependencies": {
+        "@mirage-cli/looker-cli": "workspace:^",
+        "@struktoai/mirage-core": "^0.0.1",
+        "commander": "^14.0.3",
+        "tsup": "^8.5.1",
+      },
+      "peerDependencies": {
+        "@mirage-cli/looker-cli": "workspace:^",
+        "@struktoai/mirage-core": ">=0.0.1",
+      },
+      "optionalPeers": [
+        "@struktoai/mirage-core",
+      ],
+    },
+    "packages/looker-cli": {
+      "name": "@mirage-cli/looker-cli",
+      "version": "0.1.0",
+      "bin": {
+        "looker": "./dist/bin.js",
+      },
+      "dependencies": {
+        "@mirage-cli/core": "workspace:^",
+        "commander": "^14.0.3",
+      },
+    },
     "packages/markup": {
       "name": "@mirage-cli/markup",
       "version": "0.1.1",
@@ -613,7 +646,7 @@
     },
     "packages/radar": {
       "name": "@mirage-cli/radar",
-      "version": "0.2.1",
+      "version": "0.2.2",
       "dependencies": {
         "@mirage-cli/core": "workspace:^",
       },
@@ -633,7 +666,7 @@
     },
     "packages/radar-cli": {
       "name": "@mirage-cli/radar-cli",
-      "version": "0.4.0",
+      "version": "0.5.0",
       "bin": {
         "radar": "./dist/bin.js",
       },
@@ -1181,6 +1214,10 @@
     "@mirage-cli/localfalcon": ["@mirage-cli/localfalcon@workspace:packages/localfalcon"],
 
     "@mirage-cli/localfalcon-cli": ["@mirage-cli/localfalcon-cli@workspace:packages/localfalcon-cli"],
+
+    "@mirage-cli/looker": ["@mirage-cli/looker@workspace:packages/looker"],
+
+    "@mirage-cli/looker-cli": ["@mirage-cli/looker-cli@workspace:packages/looker-cli"],
 
     "@mirage-cli/markup": ["@mirage-cli/markup@workspace:packages/markup"],
 

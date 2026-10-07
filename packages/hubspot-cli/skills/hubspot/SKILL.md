@@ -16,7 +16,7 @@ Read-only client for the HubSpot API. Every command is a GET (or the read-only `
 Every token type is a bearer at the API layer. Resolution order:
 
 1. `--token` — an access token, used directly.
-2. `HUBSPOT_ACCOUNTS` — a JSON map of account name to access token, for several portals; pick one with `--account <name>`.
+2. `HUBSPOT_ACCOUNTS` — a JSON map of account name to key (`pat-…`, or a personal access key that is exchanged), for several portals; pick one with `--account <name>`.
 3. `HUBSPOT_ACCESS_TOKEN` — a private app access token (or any OAuth/access token), used directly.
 4. `HUBSPOT_PERSONAL_ACCESS_KEY` (+ `HUBSPOT_ACCOUNT_ID`) — a personal access key, exchanged for a short-lived token.
 5. `~/.hscli/config.yml` — reuses the existing `hs account auth` login; pick one with `--account <name|id>`.

@@ -13,6 +13,7 @@ export {
 } from "./client.ts";
 export {
   resolveAuth,
+  accountTokenProvider,
   exchangePersonalAccessKey,
   loadEnvAccounts,
   loadHsConfig,

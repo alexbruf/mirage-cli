@@ -1,6 +1,12 @@
 import { afterEach, beforeEach, describe, expect, test } from "bun:test";
 import { HubSpotClient } from "../src/client.ts";
-import { loadEnvAccounts, resolveAuth, selectHsAccount, type HsConfig } from "../src/config.ts";
+import {
+  accountTokenProvider,
+  loadEnvAccounts,
+  resolveAuth,
+  selectHsAccount,
+  type HsConfig,
+} from "../src/config.ts";
 import { buildProgram } from "../src/cli.ts";
 import { parseFormat, renderList, renderObject } from "../src/output.ts";
 
@@ -143,6 +149,54 @@ describe("HUBSPOT_ACCOUNTS", () => {
     process.env.HUBSPOT_ACCESS_TOKEN = "pat-env";
     expect((await resolveAuth({ account: "acme" })).source).toBe("env-accounts");
     expect((await resolveAuth({ token: "pat-flag", account: "acme" })).source).toBe("flag-token");
+  });
+});
+
+describe("HUBSPOT_ACCOUNTS personal access keys", () => {
+  const realFetch = globalThis.fetch;
+  let calls: string[] = [];
+  function mockExchange(status: number) {
+    calls = [];
+    globalThis.fetch = (async (input: RequestInfo | URL) => {
+      calls.push(String(input));
+      return status === 200
+        ? new Response(JSON.stringify({ oauthAccessToken: "exchanged", expiresAtMillis: Date.now() + 3_600_000 }), { status })
+        : new Response(JSON.stringify({ message: "nope" }), { status });
+    }) as typeof fetch;
+  }
+  afterEach(() => {
+    globalThis.fetch = realFetch;
+  });
+
+  test("a pat- key is used directly, with no exchange", async () => {
+    mockExchange(200);
+    expect(await accountTokenProvider("pat-na1-x", "https://api.example")).toBe("pat-na1-x");
+    expect(calls).toHaveLength(0);
+  });
+
+  test("any other value is exchanged as a personal access key", async () => {
+    mockExchange(200);
+    expect(await accountTokenProvider("pak-value-1", "https://api.example")).toBe("exchanged");
+    expect(calls[0]).toBe("https://api.example/localdevauth/v1/auth/refresh");
+  });
+
+  test("a value the exchange refuses is used directly, and not exchanged again", async () => {
+    mockExchange(401);
+    expect(await accountTokenProvider("oauth-token-2", "https://api.example")).toBe("oauth-token-2");
+    expect(await accountTokenProvider("oauth-token-2", "https://api.example")).toBe("oauth-token-2");
+    expect(calls).toHaveLength(1);
+  });
+
+  test("a server error during the exchange is surfaced, not masked", async () => {
+    mockExchange(503);
+    await expect(accountTokenProvider("pak-value-3", "https://api.example")).rejects.toThrow(/exchange failed/);
+  });
+
+  test("resolveAuth routes account values through the same provider", async () => {
+    mockExchange(200);
+    process.env.HUBSPOT_ACCOUNTS = JSON.stringify({ acme: "pak-value-4" });
+    process.env.HUBSPOT_API_BASE_URL = "https://api.example";
+    expect(await (await resolveAuth()).tokenProvider()).toBe("exchanged");
   });
 });
 

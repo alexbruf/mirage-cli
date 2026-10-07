@@ -30,7 +30,7 @@ export function buildProgram(): Command {
         "objects), marketing (forms, emails, campaigns), and CMS (blog, pages, HubDB). " +
         "hs-style grammar; reuses your `hs account auth` login.",
     )
-    .version("0.1.1")
+    .version("0.1.2")
     .option("--token <token>", "Access token: private app or OAuth (or HUBSPOT_ACCESS_TOKEN env)")
     .option("-a, --account <name|id>", "Account name from HUBSPOT_ACCOUNTS, or name/id from ~/.hscli/config.yml")
     .option("--base-url <url>", "API base URL (or HUBSPOT_API_BASE_URL env)")
@@ -40,7 +40,7 @@ export function buildProgram(): Command {
       `
 Credentials (resolved per call, in order):
   1. --token                                   access token, used directly
-  2. HUBSPOT_ACCOUNTS (--account <name>)       JSON map of account name to access token
+  2. HUBSPOT_ACCOUNTS (--account <name>)       JSON map of account name to key (pat-… or personal access key)
   3. HUBSPOT_ACCESS_TOKEN                      private app token or any access token
   4. HUBSPOT_PERSONAL_ACCESS_KEY (+ HUBSPOT_ACCOUNT_ID)   exchanged for a token
   5. ~/.hscli/config.yml account (--account <name|id> or its default)

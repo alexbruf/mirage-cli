@@ -1,5 +1,28 @@
 # @mirage-cli/radar-cli
 
+## 0.5.0
+
+### Minor Changes
+
+- `export-results` gains `--until <date>` (YYYY-MM-DD = through end of that
+  day, UTC; ISO timestamp = inclusive), `--fields <list>` (emit only the named
+  row fields) and `--no-text` (drop `responseText`, ~75% of every export's
+  bytes; also skips the server's R2 reads). The command moves from
+  `commands/metrics.ts` to `commands/export.ts`, mirroring the prod `ve-radar`
+  CLI.
+- Requires visibility-tool PR #211 server-side (deployed to prod 2026-10-07),
+  which also stops `export-full` skipping rows that share a timestamp at a
+  500-row page edge. An older server ignores the new flags.
+
+## 0.4.0
+
+### Minor Changes
+
+- Add onboarding-aware project creation and the six-command headless
+  onboarding flow, including buffered authenticated SSE handling, JSON file
+  inputs, timeouts, and optional verbose status output. (Published 2026-09-03;
+  changelog entry backfilled.)
+
 ## 0.3.0
 
 ### Minor Changes

@@ -1,5 +1,14 @@
 # @mirage-cli/radar
 
+## 0.2.2
+
+### Patch Changes
+
+- Republish so the `@mirage-cli/radar-cli` peer range (expanded from
+  `workspace:^` at publish time) includes 0.5.0, the release that adds
+  `export-results --until/--fields/--no-text`. 0.2.1 pinned `^0.3.0`, which
+  excluded both 0.4.0 and 0.5.0. No code changes.
+
 ## 0.2.1
 
 ### Patch Changes

@@ -10,9 +10,10 @@ import { ApiError, type TokenProvider } from "./client.ts";
  * cached programs in long-lived hosts stay correct):
  *
  *   1. --token                          → used directly.
- *   2. HUBSPOT_ACCOUNTS                 → a JSON map of account name to access
- *      token, selected by --account <name> (or the only entry). Lets one host
- *      hold keys for several portals; no exchange, no disk.
+ *   2. HUBSPOT_ACCOUNTS                 → a JSON map of account name to key,
+ *      selected by --account <name> (or the only entry). Lets one host hold
+ *      keys for several portals. A `pat-…` key is used directly; any other
+ *      value is exchanged as a personal access key (falling back to direct).
  *   3. HUBSPOT_ACCESS_TOKEN             → used directly (private app token or
  *      any OAuth/access token). No exchange, no disk — the worker-friendly path.
  *   4. HUBSPOT_PERSONAL_ACCESS_KEY (+ HUBSPOT_ACCOUNT_ID) → exchanged for a
@@ -144,6 +145,31 @@ export function loadEnvAccounts(): Map<string, string> | null {
   return accounts;
 }
 
+/** Values the exchange refused, so later calls skip straight to the direct path. */
+const notPersonalAccessKeys = new Set<string>();
+
+/**
+ * Bearer for one HUBSPOT_ACCOUNTS value. A private app or service key
+ * (`pat-…`) is used directly. Anything else is first treated as a personal
+ * access key and exchanged; if the exchange refuses it (an OAuth access token,
+ * say), the value is used directly after all.
+ */
+export async function accountTokenProvider(
+  value: string,
+  baseUrl: string = getDefaultBaseUrl(),
+): Promise<string> {
+  if (value.startsWith("pat-") || notPersonalAccessKeys.has(value)) return value;
+  try {
+    return await exchangePersonalAccessKey(value, undefined, baseUrl);
+  } catch (err) {
+    if (err instanceof ApiError && err.status >= 400 && err.status < 500) {
+      notPersonalAccessKeys.add(value);
+      return value;
+    }
+    throw err;
+  }
+}
+
 // ── ~/.hscli/config.yml ──
 
 export interface HsAccount {
@@ -216,7 +242,11 @@ export async function resolveAuth(flags: CredentialFlags = {}): Promise<Resolved
     if (!token) {
       throw new Error(`Unknown HubSpot account "${name}". Accounts: ${names.join(", ")}`);
     }
-    return { tokenProvider: async () => token, source: "env-accounts", account: name };
+    return {
+      tokenProvider: () => accountTokenProvider(token, baseUrl),
+      source: "env-accounts",
+      account: name,
+    };
   }
 
   // 3. direct access token from env

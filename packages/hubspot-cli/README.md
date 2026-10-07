@@ -17,7 +17,7 @@ Every HubSpot token type is just an `Authorization: Bearer <token>` at the API l
 
 ```
 1. --token                                              access token (used directly)
-2. HUBSPOT_ACCOUNTS (--account <name>)                  JSON map of account name to access token
+2. HUBSPOT_ACCOUNTS (--account <name>)                  JSON map of account name to key (pat-… or personal access key)
 3. HUBSPOT_ACCESS_TOKEN                                 private app token or any OAuth/access token (used directly)
 4. HUBSPOT_PERSONAL_ACCESS_KEY (+ HUBSPOT_ACCOUNT_ID)   personal access key, exchanged for a short-lived token
 5. ~/.hscli/config.yml account (--account <name|id>)   reuses your `hs account auth` login
@@ -34,7 +34,7 @@ hubspot account whoami
 
 ### Several portals (headless)
 
-Put one access token per portal in `HUBSPOT_ACCOUNTS` and pick the portal per call. With one entry, `--account` is optional; with several, it is required.
+Put one key per portal in `HUBSPOT_ACCOUNTS` and pick the portal per call. A `pat-…` service or private app key is used directly; any other value is exchanged as a personal access key (the `hs` credential), falling back to using it directly if the exchange refuses it. With one entry, `--account` is optional; with several, it is required.
 
 ```sh
 export HUBSPOT_ACCOUNTS='{"viewengine":"pat-na1-xxxx","acme":"pat-na1-yyyy"}'
@@ -108,7 +108,7 @@ hubspot api /account-info/v3/details
 
 | Var | Purpose |
 | --- | --- |
-| `HUBSPOT_ACCOUNTS` | JSON object of account name to access token. Selected with `--account <name>`; takes precedence over `HUBSPOT_ACCESS_TOKEN`. |
+| `HUBSPOT_ACCOUNTS` | JSON object of account name to key (`pat-…`, or a personal access key that is exchanged). Selected with `--account <name>`; takes precedence over `HUBSPOT_ACCESS_TOKEN`. |
 | `HUBSPOT_ACCESS_TOKEN` | Private app access token or any OAuth/access token. Used directly as a bearer. |
 | `HUBSPOT_PERSONAL_ACCESS_KEY` | Personal access key (the `hs` credential). Exchanged for a short-lived token. |
 | `HUBSPOT_ACCOUNT_ID` | Portal id to pin when exchanging a personal access key. |

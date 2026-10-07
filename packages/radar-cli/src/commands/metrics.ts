@@ -1,8 +1,7 @@
 /**
- * `radar metrics *` + `radar export-results` — server-side aggregates and
- * bulk export over /api/v1/metrics + /api/v1/export-full, which remount the
- * Radar dashboard's own metrics/export routers, so every number here is
- * identical to the app's Overview.
+ * `radar metrics *` — server-side aggregates over /api/v1/metrics, which
+ * remounts the Radar dashboard's own metrics routers, so every number here is
+ * identical to the app's Overview. (`export-results` lives in ./export.ts.)
  *
  * Ported from the prod `ve-radar` CLI (prod-ai-visibility-tool
  * `cli/commands/metrics.ts`) — keep the two in lockstep; only the client
@@ -243,38 +242,4 @@ export function registerMetricsCommands(program: Command, getClient: GetClient):
       });
       printRows(data, rows, parseFormat(opts.format, "table"));
     });
-
-  program
-    .command("export-results")
-    .description("Full-history NDJSON export, streamed server-side (no client paging)")
-    .requiredOption("--project <id>", "Project id")
-    .option(
-      "--since <date>",
-      "Only rows created STRICTLY AFTER this ISO timestamp (the server's resume-cursor semantics: pass the last createdAt you already have)",
-    )
-    .option("-o, --output <file>", "Write to file instead of stdout")
-    .action(async (opts: { project: string; since?: string; output?: string }) => {
-      const client = await getClient();
-      const res = await client.requestRaw("/v1/export-full", {
-        query: { projectId: opts.project, since: opts.since },
-      });
-      if (!res.body) throw new Error("Empty response body");
-      if (opts.output) {
-        const { createWriteStream } = await import("node:fs");
-        const { Writable } = await import("node:stream");
-        await res.body.pipeTo(Writable.toWeb(createWriteStream(opts.output)) as WritableStream);
-        console.error(`Wrote ${opts.output}`);
-      } else {
-        await res.body.pipeTo(stdoutStream());
-      }
-    });
-}
-
-/** stdout as a WritableStream (kept tiny; Bun/Node both support this). */
-function stdoutStream(): WritableStream<Uint8Array> {
-  return new WritableStream<Uint8Array>({
-    write(chunk) {
-      process.stdout.write(chunk);
-    },
-  });
 }

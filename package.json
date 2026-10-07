@@ -46,6 +46,8 @@
     "@mirage-cli/ics": "workspace:*",
     "@mirage-cli/localfalcon": "workspace:*",
     "@mirage-cli/localfalcon-cli": "workspace:*",
+    "@mirage-cli/looker": "workspace:*",
+    "@mirage-cli/looker-cli": "workspace:*",
     "@mirage-cli/markup": "workspace:*",
     "@mirage-cli/markup-cli": "workspace:*",
     "@mirage-cli/openrouter": "workspace:*",

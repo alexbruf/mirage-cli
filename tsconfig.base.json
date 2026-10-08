@@ -37,6 +37,8 @@
       "@mirage-cli/reddit-cli/*": ["./packages/reddit-cli/src/*"],
       "@mirage-cli/markup-cli": ["./packages/markup-cli/src/index.ts"],
       "@mirage-cli/markup-cli/*": ["./packages/markup-cli/src/*"],
+      "@mirage-cli/mobbin-cli": ["./packages/mobbin-cli/src/index.ts"],
+      "@mirage-cli/mobbin-cli/*": ["./packages/mobbin-cli/src/*"],
       "@mirage-cli/radar-cli": ["./packages/radar-cli/src/index.ts"],
       "@mirage-cli/radar-cli/*": ["./packages/radar-cli/src/*"],
       "@mirage-cli/pulse-cli": ["./packages/pulse-cli/src/index.ts"],

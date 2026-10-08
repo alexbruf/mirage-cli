@@ -6,10 +6,12 @@ import {
   gscRows,
   historyRows,
   parseFormat,
+  fileHasContent,
   render,
   type RowSpec,
   writeOutput,
 } from "./export.ts";
+import { filterHistory, historyAll, type HistoryAllResult, resolveWindow } from "./history.ts";
 
 interface GlobalOptions {
   apiKey?: string;
@@ -18,9 +20,12 @@ interface GlobalOptions {
   format?: string;
   output?: string;
   rows?: string;
+  append?: boolean;
 }
 
-const VERSION = "0.2.0";
+type Meta = (value: unknown) => Record<string, unknown>;
+
+const VERSION = "0.3.0";
 const DEVICES = ["desktop", "mobile"];
 const MATCH_MODES = ["domain", "url"];
 const ENGINES = ["google", "bing"];
@@ -39,6 +44,7 @@ export function buildProgram(): Command {
     .option("--pretty", "Pretty-print JSON output")
     .option("--format <format>", `Output format: ${FORMATS.join(" | ")} (default json)`)
     .option("--output <path>", "Write the output to a file (e.g. /sessions/<id>/keywords.csv) and print a summary")
+    .option("--append", "With --output and csv/ndjson: add rows to the file (csv skips the header if the file has one)")
     .option("--rows <path>", "Dot path to the rows for csv/ndjson (or json), e.g. report.topPages; `.` for the whole value")
     .addHelpText(
       "after",
@@ -64,7 +70,9 @@ Export:
 
 Examples:
   looker --format csv --output /sessions/<id>/sunfish-keywords.csv keywords list <project-id>
-  looker --format csv keywords history <keyword-id> --days 90
+  looker --format csv keywords history <keyword-id> --since 2026-07-01
+  looker --format csv --output /sessions/<id>/history.csv keywords history-all <project-id> --since 2026-09-01
+  looker --format csv --output /sessions/<id>/history.csv --append keywords history-all <project-id> --since 2026-09-01 --offset 125
   looker --format csv --rows report.topPages domain-overview get <id>
   looker find sunfish
   looker projects list
@@ -84,28 +92,36 @@ Examples:
     const baseUrl = options.baseUrl ?? process.env.LOOKER_API_BASE_URL;
     return new LookerClient({ apiKey, ...(baseUrl ? { baseUrl } : {}) });
   };
-  const out = async (value: unknown, defaultRows?: RowSpec): Promise<void> => {
+  const out = async (value: unknown, defaultRows?: RowSpec, meta?: Meta): Promise<void> => {
     const options = opts();
     const format = parseFormat(options.format);
-    const rendered = render(value, { format, pretty: options.pretty, rowsPath: options.rows, defaultRows });
+    const extra = meta ? meta(value) : {};
+    if (options.append && !options.output) throw new Error("--append needs --output");
+    if (options.append && format === "json") throw new Error("--append needs --format csv or ndjson");
+    const header = !(options.append && options.output && (await fileHasContent(options.output)));
+    const rendered = render(value, { format, pretty: options.pretty, rowsPath: options.rows, defaultRows, header });
     if (!options.output) {
       process.stdout.write(rendered.text);
+      // A table on stdout cannot carry paging state; put it on stderr.
+      if (format !== "json" && Object.keys(extra).length > 0) process.stderr.write(JSON.stringify(extra) + "\n");
       return;
     }
-    const bytes = await writeOutput(options.output, rendered.text);
+    const bytes = await writeOutput(options.output, rendered.text, { append: options.append });
     process.stdout.write(JSON.stringify({
       output: options.output,
       format,
+      ...(options.append ? { appended: !header } : {}),
       rows: rendered.rows,
       ...(rendered.rowsFrom ? { rows_from: rendered.rowsFrom } : {}),
       bytes,
+      ...extra,
     }) + "\n");
   };
-  const run = <T extends unknown[]>(action: (...args: T) => Promise<unknown>, rows?: RowSpec) =>
+  const run = <T extends unknown[]>(action: (...args: T) => Promise<unknown>, rows?: RowSpec, meta?: Meta) =>
     async (...args: T): Promise<void> => {
       try {
         parseFormat(opts().format);
-        await out(await action(...args), rows);
+        await out(await action(...args), rows, meta);
       } catch (error) {
         fail(error);
       }
@@ -221,9 +237,48 @@ Examples:
     }));
   keywords
     .command("history <keyword-id>")
-    .description("Rank history (every check) over a look-back window")
+    .description("Rank history (every check) over a window: --days back from today, or --since/--until dates")
     .option("--days <n>", "1-365 (default 30)", int)
-    .action(run((id: string, o: { days?: number }) => client().get(`/keywords/${seg(id)}/history`, { days: o.days }), historyRows));
+    .option("--since <date>", "First day to include, YYYY-MM-DD (within the last 365 days)")
+    .option("--until <date>", "Last day to include, YYYY-MM-DD")
+    .action(run(async (id: string, o: { days?: number; since?: string; until?: string }) => {
+      const window = resolveWindow(o);
+      return filterHistory(await client().get(`/keywords/${seg(id)}/history`, { days: window.days }), window);
+    }, historyRows));
+  keywords
+    .command("history-all <project-id>")
+    .description("Every check for every keyword in a project, one row per check; runs in chunks (see next_offset)")
+    .option("--days <n>", "1-365 (default 30)", int)
+    .option("--since <date>", "First day to include, YYYY-MM-DD (within the last 365 days)")
+    .option("--until <date>", "Last day to include, YYYY-MM-DD")
+    .option("--offset <n>", "Start at this keyword (from the previous call's next_offset)", int, 0)
+    .option("--limit <n>", "At most this many keywords in this call", int)
+    .option("--max-seconds <n>", "Stop and report next_offset before this many seconds (default 70; keep under the mount's CLI timeout)", int, 70)
+    .option("--target-only", "Only the tracked domain's series, not competitors")
+    .action(run(async (projectId: string, o: { days?: number; since?: string; until?: string; offset: number; limit?: number; maxSeconds: number; targetOnly?: boolean }) => {
+      const window = resolveWindow(o);
+      if (o.offset < 0) throw new Error("--offset must be 0 or more");
+      return historyAll(client(), seg(projectId), {
+        ...window,
+        offset: o.offset,
+        limit: o.limit,
+        maxSeconds: o.maxSeconds,
+        targetOnly: o.targetOnly === true,
+        onProgress: (done, total) => {
+          if (done % 25 === 0 || done === total) process.stderr.write(`history-all: ${done}/${total} keywords\n`);
+        },
+      });
+    }, "rows", (value) => {
+      const r = value as HistoryAllResult;
+      return {
+        keywords_total: r.keywords_total,
+        offset: r.offset,
+        processed: r.processed,
+        next_offset: r.next_offset,
+        complete: r.complete,
+        failed: r.failed.length,
+      };
+    }));
   keywords
     .command("diagnose <keyword-id>")
     .description("Why a keyword moved: trajectory, page change, AIO status, stored top 5 (free)")

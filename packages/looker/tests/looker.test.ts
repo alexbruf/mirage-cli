@@ -20,7 +20,7 @@ describe("@mirage-cli/looker", () => {
   test("Mirage command routes argv through text operands", async () => {
     const [stdout, ioResult] = await lookerCommand(null, [], ["--version"], { stdin: null, flags: {} });
     const bytes = await new Response(stdout as ReadableStream).arrayBuffer();
-    expect(decoder.decode(new Uint8Array(bytes)).trim()).toBe("0.2.0");
+    expect(decoder.decode(new Uint8Array(bytes)).trim()).toBe("0.3.0");
     await new Promise<void>((resolve) => setTimeout(resolve, 10));
     expect(ioResult.exitCode).toBe(0);
   });

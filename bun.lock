@@ -29,6 +29,8 @@
         "@mirage-cli/looker-cli": "workspace:*",
         "@mirage-cli/markup": "workspace:*",
         "@mirage-cli/markup-cli": "workspace:*",
+        "@mirage-cli/mobbin": "workspace:*",
+        "@mirage-cli/mobbin-cli": "workspace:*",
         "@mirage-cli/openrouter": "workspace:*",
         "@mirage-cli/openrouter-cli": "workspace:*",
         "@mirage-cli/oura": "workspace:*",
@@ -518,6 +520,36 @@
       "version": "0.1.3",
       "bin": {
         "markup": "./dist/bin.js",
+      },
+      "dependencies": {
+        "commander": "^14.0.3",
+      },
+    },
+    "packages/mobbin": {
+      "name": "@mirage-cli/mobbin",
+      "version": "0.1.0",
+      "dependencies": {
+        "@mirage-cli/core": "workspace:^",
+      },
+      "devDependencies": {
+        "@mirage-cli/mobbin-cli": "workspace:^",
+        "@struktoai/mirage-core": "^0.0.1",
+        "commander": "^14.0.3",
+        "tsup": "^8.5.1",
+      },
+      "peerDependencies": {
+        "@mirage-cli/mobbin-cli": "workspace:^",
+        "@struktoai/mirage-core": ">=0.0.1",
+      },
+      "optionalPeers": [
+        "@struktoai/mirage-core",
+      ],
+    },
+    "packages/mobbin-cli": {
+      "name": "@mirage-cli/mobbin-cli",
+      "version": "0.1.0",
+      "bin": {
+        "mobbin": "./dist/bin.js",
       },
       "dependencies": {
         "commander": "^14.0.3",
@@ -1222,6 +1254,10 @@
     "@mirage-cli/markup": ["@mirage-cli/markup@workspace:packages/markup"],
 
     "@mirage-cli/markup-cli": ["@mirage-cli/markup-cli@workspace:packages/markup-cli"],
+
+    "@mirage-cli/mobbin": ["@mirage-cli/mobbin@workspace:packages/mobbin"],
+
+    "@mirage-cli/mobbin-cli": ["@mirage-cli/mobbin-cli@workspace:packages/mobbin-cli"],
 
     "@mirage-cli/openrouter": ["@mirage-cli/openrouter@workspace:packages/openrouter"],
 

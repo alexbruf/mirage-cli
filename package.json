@@ -50,6 +50,8 @@
     "@mirage-cli/looker-cli": "workspace:*",
     "@mirage-cli/markup": "workspace:*",
     "@mirage-cli/markup-cli": "workspace:*",
+    "@mirage-cli/mobbin": "workspace:*",
+    "@mirage-cli/mobbin-cli": "workspace:*",
     "@mirage-cli/openrouter": "workspace:*",
     "@mirage-cli/openrouter-cli": "workspace:*",
     "@mirage-cli/oura": "workspace:*",

@@ -1,6 +1,6 @@
 {
   "name": "@mirage-cli/looker-cli",
-  "version": "0.2.0",
+  "version": "0.3.0",
   "description": "looker.so rank tracker API client and CLI: projects, tracked keywords, rank history, reports, and paid SEO research runs over REST plus the MCP-only tools.",
   "license": "MIT",
   "repository": {

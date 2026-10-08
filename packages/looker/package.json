@@ -1,6 +1,6 @@
 {
   "name": "@mirage-cli/looker",
-  "version": "0.2.0",
+  "version": "0.3.0",
   "description": "looker.so rank tracker CLI as an importable Mirage and Cloudflare Worker command.",
   "type": "module",
   "main": "./dist/index.js",

@@ -23,6 +23,8 @@ export interface RenderOptions {
   rowsPath?: string;
   /** The command's natural rows. */
   defaultRows?: RowSpec;
+  /** CSV only: false omits the header row (appending to an existing file). */
+  header?: boolean;
 }
 
 export interface Rendered {
@@ -53,7 +55,7 @@ export function render(value: unknown, options: RenderOptions): Rendered {
   if (format === "ndjson") {
     return { text: rows.map((row) => JSON.stringify(row)).join("\n") + (rows.length ? "\n" : ""), rows: rows.length, rowsFrom: from };
   }
-  return { text: toCsv(rows), rows: rows.length, rowsFrom: from };
+  return { text: toCsv(rows, options.header ?? true), rows: rows.length, rowsFrom: from };
 }
 
 export function selectRows(
@@ -122,7 +124,7 @@ function largestTable(value: unknown): { rows: unknown[]; path: string } | null 
 }
 
 /** RFC 4180 CSV with a header row; nested objects flatten to dotted columns. */
-export function toCsv(rows: readonly unknown[]): string {
+export function toCsv(rows: readonly unknown[], header = true): string {
   const flat = rows.map((row) => flatten(row));
   const columns: string[] = [];
   const seen = new Set<string>();
@@ -135,9 +137,9 @@ export function toCsv(rows: readonly unknown[]): string {
     }
   }
   if (columns.length === 0) return "";
-  const lines = [columns.map(csvCell).join(",")];
+  const lines = header ? [columns.map(csvCell).join(",")] : [];
   for (const row of flat) lines.push(columns.map((column) => csvCell(row[column] ?? "")).join(","));
-  return lines.join("\n") + "\n";
+  return lines.length ? lines.join("\n") + "\n" : "";
 }
 
 function flatten(value: unknown, prefix = "", out: Record<string, string> = {}): Record<string, string> {
@@ -168,7 +170,28 @@ function csvCell(value: string): string {
 
 interface MirageFileIoBridge {
   canHandle?(path: unknown): boolean;
+  existsSync?(path: unknown): boolean | null;
+  readFileSync?(path: unknown, options?: unknown): Uint8Array | string | null;
   writeFileSync?(path: unknown, data: unknown, options?: unknown): boolean;
+  appendFileSync?(path: unknown, data: unknown, options?: unknown): boolean;
+}
+
+function fileBridge(path: string): MirageFileIoBridge | null {
+  const bridge = (globalThis as typeof globalThis & { __MIRAGE_CLI_FILE_IO__?: MirageFileIoBridge })
+    .__MIRAGE_CLI_FILE_IO__;
+  return bridge?.canHandle?.(path) ? bridge : null;
+}
+
+/** True when `path` exists and is not empty, so an append should skip the CSV header. */
+export async function fileHasContent(path: string): Promise<boolean> {
+  const bridge = fileBridge(path);
+  if (bridge) {
+    if (!bridge.existsSync?.(path)) return false;
+    const data = bridge.readFileSync?.(path);
+    return data !== null && data !== undefined && data.length > 0;
+  }
+  const { existsSync, statSync } = await import("node:fs");
+  return existsSync(path) && statSync(path).size > 0;
 }
 
 /**
@@ -176,20 +199,21 @@ interface MirageFileIoBridge {
  * land in the workspace), then fall back to node:fs, imported lazily so a
  * Worker never needs it.
  */
-export async function writeOutput(path: string, text: string): Promise<number> {
+export async function writeOutput(path: string, text: string, options: { append?: boolean } = {}): Promise<number> {
   const bytes = new TextEncoder().encode(text);
-  const bridge = (globalThis as typeof globalThis & { __MIRAGE_CLI_FILE_IO__?: MirageFileIoBridge })
-    .__MIRAGE_CLI_FILE_IO__;
-  if (bridge?.canHandle?.(path)) {
-    if (bridge.writeFileSync?.(path, bytes)) return bytes.byteLength;
+  const bridge = fileBridge(path);
+  if (bridge) {
+    const ok = options.append ? bridge.appendFileSync?.(path, bytes) : bridge.writeFileSync?.(path, bytes);
+    if (ok) return bytes.byteLength;
     throw new Error(`Mirage VFS could not write ${path}`);
   }
-  const [{ dirname }, { mkdirSync, writeFileSync }] = await Promise.all([
+  const [{ dirname }, { appendFileSync, mkdirSync, writeFileSync }] = await Promise.all([
     import("node:path"),
     import("node:fs"),
   ]);
   mkdirSync(dirname(path), { recursive: true });
-  writeFileSync(path, bytes);
+  if (options.append) appendFileSync(path, bytes);
+  else writeFileSync(path, bytes);
   return bytes.byteLength;
 }
 
@@ -201,15 +225,33 @@ export const historyRows: RowSpec = {
   extract: (value) => {
     const record = (value ?? {}) as { keyword?: unknown; series?: Array<{ label?: unknown; isTarget?: unknown; points?: unknown[] }> };
     return (record.series ?? []).flatMap((series) =>
-      (series.points ?? []).map((point) => ({
-        keyword: record.keyword,
-        series: series.label,
-        isTarget: series.isTarget,
-        ...(point as object),
-      })),
+      (series.points ?? []).map((point) => historyRow(record.keyword, series, point)),
     );
   },
 };
+
+/**
+ * One history check with a fixed column set, so chunks appended to one CSV
+ * line up even when a chunk has no not-found checks.
+ */
+export function historyRow(
+  keyword: unknown,
+  series: { label?: unknown; isTarget?: unknown },
+  point: unknown,
+  keywordId?: string,
+): Record<string, unknown> {
+  const p = (point ?? {}) as { date?: unknown; rank?: unknown; ts?: unknown; notFound?: unknown };
+  return {
+    ...(keywordId !== undefined ? { keywordId } : {}),
+    keyword,
+    series: series.label,
+    isTarget: series.isTarget,
+    date: p.date,
+    rank: p.rank ?? null,
+    ts: p.ts,
+    notFound: p.notFound === true,
+  };
+}
 
 /** `gsc performance`: name each `keys[i]` after `dimensions[i]`. */
 export const gscRows: RowSpec = {

@@ -75,7 +75,7 @@ describe("commands", () => {
       series: [{ label: "me.com", isTarget: true, points: [{ date: "2026-10-01", rank: 4 }, { date: "2026-10-02", rank: null, notFound: true }] }],
     });
     const r = await looker("--format", "csv", "keywords", "history", "kw_1");
-    expect(r.out).toBe("keyword,series,isTarget,date,rank,notFound\nk,me.com,true,2026-10-01,4,\nk,me.com,true,2026-10-02,,true\n");
+    expect(r.out).toBe("keyword,series,isTarget,date,rank,ts,notFound\nk,me.com,true,2026-10-01,4,,false\nk,me.com,true,2026-10-02,,,true\n");
   });
 
   test("gsc performance names keys after the dimensions", async () => {

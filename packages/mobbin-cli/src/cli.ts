@@ -4,7 +4,7 @@ import { configPath, readConfig, resolveMcpUrl } from "./config.ts";
 import { emit, type OutputFormat, pickFmt } from "./format.ts";
 import { downloadImage, joinPath, runSaves, type SaveJob, slug } from "./save.ts";
 
-export const VERSION = "0.1.0";
+export const VERSION = "0.1.1";
 
 type FmtOpts = { json?: boolean; ndjson?: boolean };
 

@@ -1,6 +1,6 @@
 {
   "name": "@mirage-cli/mobbin-cli",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "Mobbin CLI: search Mobbin's library of real app and website UI (screens, flows, sections) over its MCP server. Mirage-compatible command shape.",
   "license": "MIT",
   "repository": {

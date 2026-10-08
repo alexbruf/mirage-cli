@@ -1,13 +1,26 @@
 import { Command } from "commander";
 import { LookerApiError, LookerClient } from "./client.ts";
+import {
+  changesRows,
+  FORMATS,
+  gscRows,
+  historyRows,
+  parseFormat,
+  render,
+  type RowSpec,
+  writeOutput,
+} from "./export.ts";
 
 interface GlobalOptions {
   apiKey?: string;
   baseUrl?: string;
   pretty?: boolean;
+  format?: string;
+  output?: string;
+  rows?: string;
 }
 
-const VERSION = "0.1.0";
+const VERSION = "0.2.0";
 const DEVICES = ["desktop", "mobile"];
 const MATCH_MODES = ["domain", "url"];
 const ENGINES = ["google", "bing"];
@@ -24,6 +37,9 @@ export function buildProgram(): Command {
     .option("--api-key <key>", "API key (or LOOKER_API_KEY)")
     .option("--base-url <url>", "Site base URL (or LOOKER_API_BASE_URL)")
     .option("--pretty", "Pretty-print JSON output")
+    .option("--format <format>", `Output format: ${FORMATS.join(" | ")} (default json)`)
+    .option("--output <path>", "Write the output to a file (e.g. /sessions/<id>/keywords.csv) and print a summary")
+    .option("--rows <path>", "Dot path to the rows for csv/ndjson (or json), e.g. report.topPages; `.` for the whole value")
     .addHelpText(
       "after",
       `
@@ -39,7 +55,17 @@ Cost:
   Everything else (lists, gets, history, report, snapshot, changes, find,
   wait, gsc) reads stored data and is free.
 
+Export:
+  --format csv|ndjson prints a table of the command's natural rows (keywords for
+  projects report, one row per check for keywords history, ideas for
+  keyword-research get, ...). --rows <path> picks another array; nested fields
+  become dotted columns. --output <path> writes the file and prints
+  {output, format, rows, bytes}.
+
 Examples:
+  looker --format csv --output /sessions/<id>/sunfish-keywords.csv keywords list <project-id>
+  looker --format csv keywords history <keyword-id> --days 90
+  looker --format csv --rows report.topPages domain-overview get <id>
   looker find sunfish
   looker projects list
   looker keywords list <project-id>
@@ -58,13 +84,28 @@ Examples:
     const baseUrl = options.baseUrl ?? process.env.LOOKER_API_BASE_URL;
     return new LookerClient({ apiKey, ...(baseUrl ? { baseUrl } : {}) });
   };
-  const out = (value: unknown): void => {
-    process.stdout.write(JSON.stringify(value, null, opts().pretty ? 2 : undefined) + "\n");
+  const out = async (value: unknown, defaultRows?: RowSpec): Promise<void> => {
+    const options = opts();
+    const format = parseFormat(options.format);
+    const rendered = render(value, { format, pretty: options.pretty, rowsPath: options.rows, defaultRows });
+    if (!options.output) {
+      process.stdout.write(rendered.text);
+      return;
+    }
+    const bytes = await writeOutput(options.output, rendered.text);
+    process.stdout.write(JSON.stringify({
+      output: options.output,
+      format,
+      rows: rendered.rows,
+      ...(rendered.rowsFrom ? { rows_from: rendered.rowsFrom } : {}),
+      bytes,
+    }) + "\n");
   };
-  const run = <T extends unknown[]>(action: (...args: T) => Promise<unknown>) =>
+  const run = <T extends unknown[]>(action: (...args: T) => Promise<unknown>, rows?: RowSpec) =>
     async (...args: T): Promise<void> => {
       try {
-        out(await action(...args));
+        parseFormat(opts().format);
+        await out(await action(...args), rows);
       } catch (error) {
         fail(error);
       }
@@ -77,7 +118,7 @@ Examples:
     .option("--type <type>", "project | keyword | domain; repeat to combine", collectChoice(["project", "keyword", "domain"]), [])
     .option("--limit <n>", "Max results per type (default 10, max 25)", int)
     .action(run((query: string, o: { type: string[]; limit?: number }) =>
-      client().tool("find", { query, types: o.type.length ? o.type : undefined, limit: o.limit })));
+      client().tool("find", { query, types: o.type.length ? o.type : undefined, limit: o.limit }), "matches"));
 
   program
     .command("locations [query]")
@@ -88,7 +129,7 @@ Examples:
     .command("snapshot")
     .description("Digest per project: positions, movers, AIO citations, stale keywords (free)")
     .option("--project <id>", "Limit to one project")
-    .action(run((o: { project?: string }) => client().tool("get_seo_snapshot", { projectId: o.project })));
+    .action(run((o: { project?: string }) => client().tool("get_seo_snapshot", { projectId: o.project }), "projects"));
 
   program
     .command("changes")
@@ -96,7 +137,7 @@ Examples:
     .option("--days <n>", "Look-back window, 1-30 (default 7)", int)
     .option("--project <id>", "Limit to one project")
     .action(run((o: { days?: number; project?: string }) =>
-      client().tool("whats_changed", { sinceDays: o.days, projectId: o.project })));
+      client().tool("whats_changed", { sinceDays: o.days, projectId: o.project }), changesRows));
 
   program
     .command("wait <kind> <id>")
@@ -135,7 +176,7 @@ Examples:
   projects
     .command("report <project-id>")
     .description("Full report: summary cards plus every keyword's current rank")
-    .action(run((id: string) => client().get(`/projects/${seg(id)}/report`)));
+    .action(run((id: string) => client().get(`/projects/${seg(id)}/report`), "keywords"));
   projects
     .command("report-link <project-id>")
     .description("Create a public, shareable report URL (write, owner/admin key)")
@@ -182,11 +223,11 @@ Examples:
     .command("history <keyword-id>")
     .description("Rank history (every check) over a look-back window")
     .option("--days <n>", "1-365 (default 30)", int)
-    .action(run((id: string, o: { days?: number }) => client().get(`/keywords/${seg(id)}/history`, { days: o.days })));
+    .action(run((id: string, o: { days?: number }) => client().get(`/keywords/${seg(id)}/history`, { days: o.days }), historyRows));
   keywords
     .command("diagnose <keyword-id>")
     .description("Why a keyword moved: trajectory, page change, AIO status, stored top 5 (free)")
-    .action(run((id: string) => client().tool("diagnose_keyword", { keywordId: id })));
+    .action(run((id: string) => client().tool("diagnose_keyword", { keywordId: id }), "serpTop"));
   keywords
     .command("scan <keyword-id>")
     .description("Run a live SERP check now (write, paid)")
@@ -260,7 +301,7 @@ Examples:
   audits
     .command("get <audit-id>")
     .description("Get an audit; advances a running crawl, full report once done")
-    .action(run((id: string) => client().get(`/audits/${seg(id)}`)));
+    .action(run((id: string) => client().get(`/audits/${seg(id)}`), "report.pages"));
 
   const backlinks = program.command("backlinks").description("Backlink audits");
   backlinks.command("list").description("List backlink audits").action(run(() => client().get("/backlinks")));
@@ -305,8 +346,8 @@ Examples:
     .option("--location-name <name>", "Location display name")
     .option("--language <code>", "Language code (default en)")
     .action(run((seedKeyword: string, o: MarketOptions) =>
-      client().paid("POST", "/keyword-research", { seedKeyword, ...market(o) })));
-  research.command("get <id>").description("Run + result table").action(run((id: string) => client().get(`/keyword-research/${seg(id)}`)));
+      client().paid("POST", "/keyword-research", { seedKeyword, ...market(o) }), "report.items"));
+  research.command("get <id>").description("Run + result table").action(run((id: string) => client().get(`/keyword-research/${seg(id)}`), "report.items"));
   shareCommand(research, client, run, "/keyword-research");
   deleteCommand(research, client, run, "/keyword-research");
 
@@ -318,8 +359,8 @@ Examples:
     .option("--location-code <code>", "DataForSEO location code (default 2840)", int)
     .option("--location-name <name>", "Location display name")
     .option("--language <code>", "Language code (default en)")
-    .action(run((domain: string, o: MarketOptions) => client().paid("POST", "/domain-overview", { domain, ...market(o) })));
-  overview.command("get <id>").description("Overview + report").action(run((id: string) => client().get(`/domain-overview/${seg(id)}`)));
+    .action(run((domain: string, o: MarketOptions) => client().paid("POST", "/domain-overview", { domain, ...market(o) }), "report.topKeywords"));
+  overview.command("get <id>").description("Overview + report (csv rows: report.topKeywords; --rows report.topPages)").action(run((id: string) => client().get(`/domain-overview/${seg(id)}`), "report.topKeywords"));
   overview
     .command("rerun <id>")
     .description("Re-run with the original domain and market (write, paid)")
@@ -336,8 +377,8 @@ Examples:
     .action(run((prompt: string, o: { brand?: string }) => {
       if (prompt.length > 500) throw new Error("prompt must be 500 characters or fewer");
       return client().paid("POST", "/prompt-explorer", { prompt, brandTerm: o.brand });
-    }));
-  prompts.command("get <id>").description("Run + every model's answer and citations").action(run((id: string) => client().get(`/prompt-explorer/${seg(id)}`)));
+    }, "report.answers"));
+  prompts.command("get <id>").description("Run + every model's answer and citations").action(run((id: string) => client().get(`/prompt-explorer/${seg(id)}`), "report.answers"));
   deleteCommand(prompts, client, run, "/prompt-explorer");
 
   // ── MCP-only groups ──────────────────────────────────────────────────────
@@ -387,7 +428,7 @@ Examples:
       filters: o.filter.length ? o.filter.map(parseGscFilter) : undefined,
       rowLimit: o.limit,
       startRow: o.offset,
-    })));
+    }), gscRows));
   gsc
     .command("inspect <project-id> <url...>")
     .description("URL Inspection for 1-10 URLs (tight daily Google quota)")
@@ -452,7 +493,7 @@ interface GscOptions {
   offset?: number;
 }
 
-type Runner = <T extends unknown[]>(action: (...args: T) => Promise<unknown>) => (...args: T) => Promise<void>;
+type Runner = <T extends unknown[]>(action: (...args: T) => Promise<unknown>, rows?: RowSpec) => (...args: T) => Promise<void>;
 
 function projectFields(command: Command): Command {
   return command

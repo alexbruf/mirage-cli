@@ -29,4 +29,21 @@ MCP-backed: `find`, `snapshot`, `changes`, `wait`, `keywords diagnose|discover`,
 
 Paid commands report spend through `reportCost({ provider: "looker" })`, in dollars when the response carries `costMicros`.
 
-Output is JSON on stdout; errors are one JSON line on stderr with `status`, `kind`, `code` and `hint` where known.
+## Export
+
+Global flags, placed before the command:
+
+| Flag | Effect |
+|---|---|
+| `--format json\|csv\|ndjson` | `json` (default) prints the whole response; `csv` / `ndjson` print a table of the command's natural rows |
+| `--rows <path>` | Pick another array by dot path (`report.topPages`; arrays along the way flatten); `.` is the whole value |
+| `--output <path>` | Write the file (Mirage VFS path such as `/sessions/<id>/x.csv`, or a local path) and print `{output, format, rows, rows_from, bytes}` |
+
+Default rows: `projects report` → keywords, `keywords history` → one row per check (with `series`, `isTarget`), `gsc performance` → rows with each dimension as a column, `keyword-research get|run` → `report.items`, `domain-overview get|run` → `report.topKeywords`, `audits get` → `report.pages`, `prompts get|run` → `report.answers`, `keywords diagnose` → `serpTop`, `snapshot` → projects, `changes` → every list with a `section` column, `find` → matches. Lists export as-is; anything else uses the largest array of objects at the top level or under `report`. In CSV, nested objects become dotted columns, arrays of values join with `|`, arrays of objects are JSON in the cell.
+
+```bash
+looker --format csv --output /sessions/<id>/keywords.csv keywords list <project-id>
+looker --format csv --rows report.topPages domain-overview get <id>
+```
+
+Output is JSON on stdout by default; errors are one JSON line on stderr with `status`, `kind`, `code` and `hint` where known.

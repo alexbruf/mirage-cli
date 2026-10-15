@@ -36,7 +36,7 @@ afterEach(() => {
 describe("openrouter CLI", () => {
   test("registers only the curated top-level command surface", () => {
     const names = buildProgram().commands.map((command) => command.name()).sort();
-    expect(names).toEqual(["chat", "generation", "images", "key", "models", "providers"]);
+    expect(names).toEqual(["chat", "decisions", "generation", "images", "key", "models", "providers"]);
     expect(names).not.toContain("raw");
     expect(names).not.toContain("keys");
   });

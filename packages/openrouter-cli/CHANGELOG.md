@@ -1,5 +1,15 @@
 # @mirage-cli/openrouter-cli
 
+## 0.3.0
+
+### Minor Changes
+
+- Add `decisions` for the OpenRouter Decisions API (`POST /api/alpha/decisions`),
+  used by decision models such as `typesafe/jev-1.14`: state from text, a file
+  or images, questions from a JSON file, or a full request body.
+- `-f text` prints one line per answer (noul, choice, score, box).
+- Cost reports read the Decisions usage fields `input_tokens` / `output_tokens`.
+
 ## 0.2.0
 
 ### Minor Changes

@@ -1,7 +1,8 @@
 # @mirage-cli/openrouter-cli
 
 Fetch-only OpenRouter CLI for model and image discovery, API-key quota
-inspection, generation cost metadata, chat completions, and image generation.
+inspection, generation cost metadata, chat completions, typed decisions, and
+image generation.
 It exposes a pure
 `buildProgram()` for in-process hosts and a standalone `openrouter` binary.
 
@@ -54,6 +55,42 @@ cat request.json | openrouter chat --request -
 
 The request path is fixed to `/chat/completions`; this package intentionally
 does not expose arbitrary HTTP methods or API-key management endpoints.
+
+## Decisions
+
+`decisions` calls the OpenRouter Decisions API (`POST /api/alpha/decisions`)
+with a decision model such as `typesafe/jev-1.14`. It returns typed answers
+with probabilities instead of text: `noul` (probability a condition holds),
+`choice` (one of your options), `score` (position on an ordered scale) and,
+on jev-1.14, `box` (where a target is in an image). It is billable on input
+tokens; output tokens are free.
+
+```bash
+openrouter decisions --model typesafe/jev-1.14 \
+  --state 'Help! My payouts have been failing for 3 days.' \
+  --questions ./questions.json -f text
+openrouter decisions --model typesafe/jev-1.14 --state-file ./ticket.json \
+  --questions ./questions.json --image ./screenshot.png
+openrouter decisions --request ./decision.json
+```
+
+`--questions` is a JSON object keyed by question name:
+
+```json
+{
+  "urgent": { "type": "noul", "instructions": "Is this urgent?",
+              "criteria": { "true": "Time-sensitive", "false": "Can wait" } },
+  "team": { "type": "choice", "instructions": "Which team should handle it?",
+            "criteria": { "billing": "Payments", "technical": "Bugs and outages" } },
+  "severity": { "type": "score", "instructions": "How severe is it?",
+                "criteria": ["Low", "Medium", "High"] }
+}
+```
+
+`--state-file` sends a JSON object or array as structured state and anything
+else as text. `--image` (repeatable) appends an image URL or a local/mounted
+file to the state. `-f text` prints one tab-separated line per answer; the
+default JSON output is the full response, including `usage.cost`.
 
 ## Image generation
 

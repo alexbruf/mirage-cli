@@ -71,6 +71,26 @@ describe("openrouter cost reporting", () => {
     ]);
   });
 
+  test("reports a decision, whose usage names input_tokens / output_tokens", async () => {
+    const c = client(
+      json({
+        answers: {},
+        model: "typesafe/jev-1.14-20261014",
+        usage: { cost: 0.00002, input_tokens: 476, output_tokens: 70 },
+      }),
+    );
+    const r = await scoped(() =>
+      c.decisions({ model: "typesafe/jev-1.14", state: "hi", questions: {} }),
+    );
+    expect(r.costs[0]).toMatchObject({
+      provider: "openrouter",
+      usd: 0.00002,
+      model: "typesafe/jev-1.14-20261014",
+      promptTokens: 476,
+      completionTokens: 70,
+    });
+  });
+
   test("reports tokens even when the account returns no cost figure", async () => {
     const c = client(json({ model: "x/y", usage: { prompt_tokens: 10, completion_tokens: 2 } }));
     const r = await scoped(() => c.chat({ model: "x/y", prompt: "hi" }));

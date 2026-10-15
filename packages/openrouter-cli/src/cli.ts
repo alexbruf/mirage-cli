@@ -4,6 +4,8 @@ import {
   ApiError,
   type ChatRequest,
   type ChatResponse,
+  type DecisionsRequest,
+  type DecisionsResponse,
   type ImageGenerationRequest,
   type ImageGenerationResponse,
   type ImageReference,
@@ -14,7 +16,7 @@ import {
 import { resolveConfig } from "./config.ts";
 import { parseFormat, renderList, renderObject, type Format } from "./output.ts";
 
-const VERSION = "0.2.0";
+const VERSION = "0.3.0";
 
 interface GlobalOptions {
   apiKey?: string;
@@ -38,6 +40,17 @@ interface ChatOptions {
   sessionId?: string;
   user?: string;
   stream?: boolean;
+}
+
+interface DecisionsOptions {
+  model?: string;
+  request?: string;
+  state?: string;
+  stateFile?: string;
+  questions?: string;
+  image: string[];
+  sessionId?: string;
+  user?: string;
 }
 
 interface ImageGenerateOptions {
@@ -78,7 +91,7 @@ export function buildProgram(): Command {
   program
     .name("openrouter")
     .description(
-      "OpenRouter CLI for model discovery, quota inspection, generation metadata, and chat completions.",
+      "OpenRouter CLI for model discovery, quota inspection, generation metadata, chat completions, and typed decisions.",
     )
     .version(VERSION)
     .option("--api-key <key>", "API key (or OPENROUTER_API_KEY)")
@@ -217,6 +230,26 @@ export function buildProgram(): Command {
     .option("--stream", "Request SSE streaming; Mirage still materializes command output")
     .action(async (opts: ChatOptions) => runChat(client(), opts, format()));
 
+  program
+    .command("decisions")
+    .description(
+      "Billable typed decision (Decisions API, e.g. typesafe/jev-1.14): yes/no probability, choice, score or box",
+    )
+    .option("--model <slug>", "Decision model, such as typesafe/jev-1.14. Required unless in --request")
+    .option("--request <path>", "Full Decisions JSON body from a file, or - for stdin")
+    .option("--state <text>", "State to evaluate, as text")
+    .option("--state-file <path>", "State from a file: a JSON object/array is sent as JSON, anything else as text")
+    .option("--questions <path>", "Questions JSON object from a file, or - for stdin")
+    .option(
+      "--image <url-or-path>",
+      "Image to add to the state (URL, data URL, or local/mounted path); repeatable",
+      collect,
+      [],
+    )
+    .option("--session-id <id>", "Observability session id")
+    .option("--user <id>", "Stable end-user identifier")
+    .action(async (opts: DecisionsOptions) => runDecisions(client(), opts, format()));
+
   program.addHelpText(
     "after",
     `
@@ -228,9 +261,16 @@ Examples:
   openrouter key
   openrouter chat --model anthropic/claude-sonnet-4.6 --prompt "Summarize this"
   openrouter chat --request /data/openrouter-request.json
+  openrouter decisions --model typesafe/jev-1.14 --state-file /data/ticket.txt --questions /data/questions.json -f text
   cat /data/openrouter-request.json | openrouter chat --request -
 
-Auth: OPENROUTER_API_KEY or --api-key. Chat and images generate are billable and should be write-gated in Mirage.
+Decisions questions are a JSON object keyed by name, each with a type:
+  {"urgent":  {"type":"noul",   "instructions":"Is this urgent?", "criteria":{"true":"Time-sensitive","false":"Can wait"}},
+   "team":    {"type":"choice", "instructions":"Which team?",     "criteria":{"billing":"Payments","tech":"Bugs"}},
+   "severity":{"type":"score",  "instructions":"How severe?",     "criteria":["Low","Medium","High"]}}
+  box (jev-1.14 only) takes instructions naming an image target and no criteria.
+
+Auth: OPENROUTER_API_KEY or --api-key. Chat, decisions and images generate are billable and should be write-gated in Mirage.
 `,
   );
   return program;
@@ -488,6 +528,82 @@ async function runChat(client: OpenRouterClient, opts: ChatOptions, format: Form
   }
   if (format === "jsonl") return;
   console.log(renderObject(result, format));
+}
+
+async function runDecisions(
+  client: OpenRouterClient,
+  opts: DecisionsOptions,
+  format: Format,
+): Promise<void> {
+  const fromStdin = [opts.request, opts.questions].filter((p) => p === "-").length;
+  if (fromStdin > 1) throw new Error("Only one of --request and --questions can read stdin.");
+  if (opts.state !== undefined && opts.stateFile) {
+    throw new Error("Use either --state or --state-file, not both.");
+  }
+  const request = (opts.request ? await readJsonRequest(opts.request) : {}) as Partial<DecisionsRequest> &
+    JsonRecord;
+  if (opts.model) request.model = opts.model;
+  if (opts.questions) request.questions = await readJsonRequest(opts.questions);
+  if (opts.state !== undefined) request.state = opts.state;
+  if (opts.stateFile) request.state = parseStateFile(await readFile(opts.stateFile));
+  if (opts.image.length > 0) {
+    const images: ImageReference[] = [];
+    for (const value of opts.image) images.push(await toImageReference(value));
+    const base = request.state === undefined ? [] : Array.isArray(request.state) ? request.state : [request.state];
+    request.state = [...base, ...images];
+  }
+  if (opts.sessionId) request.session_id = opts.sessionId;
+  if (opts.user) request.user = opts.user;
+
+  if (typeof request.model !== "string" || request.model === "") {
+    throw new Error("A decision model is required. Pass --model <author/slug>, such as typesafe/jev-1.14.");
+  }
+  if (request.state === undefined || request.state === "") {
+    throw new Error("State is required. Pass --state, --state-file, --image, or include state in --request.");
+  }
+  if (!isRecord(request.questions) || Object.keys(request.questions).length === 0) {
+    throw new Error("Questions are required. Pass --questions <path> or include questions in --request.");
+  }
+
+  const response = await client.decisions(request as DecisionsRequest);
+  console.log(format === "text" ? decisionsText(response) : renderObject(response, format));
+}
+
+/** A JSON object or array is sent as structured state; anything else as text. */
+function parseStateFile(raw: string): unknown {
+  const trimmed = raw.trim();
+  if (trimmed.startsWith("{") || trimmed.startsWith("[")) {
+    try {
+      return JSON.parse(trimmed) as unknown;
+    } catch {
+      return raw;
+    }
+  }
+  return raw;
+}
+
+/** One line per answer: name, type, and the value code would branch on. */
+function decisionsText(response: DecisionsResponse): string {
+  const answers = isRecord(response.answers) ? response.answers : {};
+  const lines = Object.entries(answers).map(([name, answer]) => {
+    const a = isRecord(answer) ? answer : {};
+    switch (a.type) {
+      case "noul":
+        return `${name}\tnoul\t${String(a.noul)}`;
+      case "choice":
+        return `${name}\tchoice\t${String(a.choice)}\tconfidence=${String(a.confidence)}`;
+      case "score": {
+        const legend = isRecord(a.legend) ? a.legend : {};
+        const nearest = typeof a.score === "number" ? legend[String(Math.round(a.score))] : undefined;
+        return `${name}\tscore\t${String(a.score)}${nearest === undefined ? "" : `\t${String(nearest)}`}\tconfidence=${String(a.confidence)}`;
+      }
+      case "box":
+        return `${name}\tbox\t${JSON.stringify(a.box)}\tconfidence=${String(a.confidence)}`;
+      default:
+        return `${name}\t${JSON.stringify(a)}`;
+    }
+  });
+  return lines.length > 0 ? lines.join("\n") : JSON.stringify(response, null, 2);
 }
 
 function assertCompletionSucceeded(response: ChatResponse): void {

@@ -141,6 +141,18 @@ export interface ImageGenerationResponse extends JsonRecord {
   usage?: ImageGenerationUsage;
 }
 
+export interface DecisionsRequest extends JsonRecord {
+  model: string;
+  state: unknown;
+  questions: JsonRecord;
+}
+
+export interface DecisionsResponse extends JsonRecord {
+  answers?: Record<string, JsonRecord>;
+  model?: string;
+  usage?: JsonRecord;
+}
+
 export interface ClientOptions {
   apiKey: string;
   baseUrl?: string;
@@ -176,12 +188,16 @@ export interface StreamResult {
 export class OpenRouterClient {
   private readonly apiKey: string;
   private readonly baseUrl: string;
+  // The Decisions API lives under /api/alpha, not the /api/v1 base the other
+  // endpoints share, so it gets its own base derived from the configured one.
+  private readonly alphaBaseUrl: string;
   private readonly fetchFn: typeof fetch;
   private readonly attribution: Record<string, string>;
 
   constructor(opts: ClientOptions) {
     this.apiKey = opts.apiKey;
     this.baseUrl = (opts.baseUrl ?? "https://openrouter.ai/api/v1").replace(/\/$/, "");
+    this.alphaBaseUrl = this.baseUrl.replace(/\/v1$/, "/alpha");
     this.fetchFn = opts.fetch
       ?? ((input, init) => globalThis.fetch(input, init)) as typeof fetch;
     this.attribution = {};
@@ -245,6 +261,10 @@ export class OpenRouterClient {
     });
   }
 
+  decisions(request: DecisionsRequest): Promise<DecisionsResponse> {
+    return this.requestJson("POST", "/decisions", undefined, request, this.alphaBaseUrl);
+  }
+
   async streamChat(
     request: ChatRequest,
     onChunk?: (chunk: ChatResponse) => void,
@@ -306,8 +326,9 @@ export class OpenRouterClient {
     path: string,
     query: Query | undefined,
     body: JsonRecord,
+    baseUrl: string = this.baseUrl,
   ): Promise<T> {
-    const response = await this.fetchResponse(method, path, query, body);
+    const response = await this.fetchResponse(method, path, query, body, baseUrl);
     if (!response.ok) {
       // A rejected call is normally not billed, but record that it happened
       // with no amount rather than nothing: "attempted, cost unknown" and
@@ -330,8 +351,9 @@ export class OpenRouterClient {
     path: string,
     query: Query = {},
     body?: JsonRecord,
+    baseUrl: string = this.baseUrl,
   ): Promise<Response> {
-    const url = new URL(`${this.baseUrl}${path.startsWith("/") ? path : `/${path}`}`);
+    const url = new URL(`${baseUrl}${path.startsWith("/") ? path : `/${path}`}`);
     for (const [key, value] of Object.entries(query)) {
       if (value !== undefined) url.searchParams.set(key, String(value));
     }
@@ -377,8 +399,9 @@ function reportOpenRouterUsage(
     provider: "openrouter",
     usd: finiteNumber(usage?.cost),
     model: typeof model === "string" ? model : null,
-    promptTokens: finiteNumber(usage?.prompt_tokens),
-    completionTokens: finiteNumber(usage?.completion_tokens),
+    // Decisions responses name these input_tokens / output_tokens.
+    promptTokens: finiteNumber(usage?.prompt_tokens) ?? finiteNumber(usage?.input_tokens),
+    completionTokens: finiteNumber(usage?.completion_tokens) ?? finiteNumber(usage?.output_tokens),
     statusCode,
   });
 }

@@ -60,6 +60,19 @@ console.log("exitCode:", r.exitCode);
 | `buildProgram`     | `() => Promise<Command>`                               | Lazily captures + caches the firecrawl-cli `Command` instance. Async, idempotent. |
 | `firecrawlCommand` | `MirageCommandFn`                                      | Drop-in for mirage's `command({ fn })`. Lazily wires up on first invocation.   |
 
+## `crawl-results`
+
+Upstream `firecrawl crawl <job-id>` reports a crawl's status but not its pages, and the multi-page commands save into a local `.firecrawl/` folder. This wrapper adds a subcommand that returns the pages:
+
+```bash
+firecrawl crawl https://example.com --limit 50          # start; prints a job ID
+firecrawl crawl <job-id>                                # progress
+firecrawl crawl-results <job-id> --dir ./crawls/example # one .md per page + _index.json
+firecrawl crawl-results <job-id> --max-pages 5 --pretty # JSON on stdout
+```
+
+With `--dir`, `https://example.com/blog/post` lands at `<dir>/example.com/blog/post.md`, the site root at `<dir>/example.com/index.md`, and a query string adds a short hash to the file name. Inside a Mirage host the writes go through `globalThis.__MIRAGE_CLI_FILE_IO__`, so a path like `/data/crawls/example` works in a Worker. Reading results does not use Firecrawl credits.
+
 ## Env vars
 
 | Var                       | Required | Default at import   | Notes                                                                |

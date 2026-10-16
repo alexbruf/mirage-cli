@@ -36,7 +36,8 @@
  * `init`, `setup`, `browser`, `interact` will fail at runtime in workers.
  *
  * `crawl-results <job-id>` is added by this wrapper: it fetches a crawl's
- * pages and can write them as files under `--dir`.
+ * pages and can write them as files under `--dir`. `scrape-many` scrapes a
+ * list of URLs into a folder the same way.
  */
 
 export {
@@ -46,12 +47,14 @@ export {
   relativePagePath,
   writeCrawlResults,
 } from "./crawl-results.ts";
+export { addScrapeManyCommand, parseUrlList, scrapeMany, writeScrapeResults } from "./scrape-many.ts";
 
 import { Command } from "commander";
 import { toMirageCommandFn, type IOResultCtor, type MirageCommandFn } from "@mirage-cli/core";
 // @struktoai/mirage-core is an optional peer dep — only needed for
 // `firecrawlResource()`. Type-only at compile time.
 import { addCrawlResultsCommand } from "./crawl-results.ts";
+import { addScrapeManyCommand } from "./scrape-many.ts";
 import type {
   RegisteredCommand,
   Resource,
@@ -109,6 +112,9 @@ export async function buildProgram(): Promise<Command> {
     // Upstream `crawl <job-id>` reports status only; add a command that
     // returns the pages (see ./crawl-results.ts).
     addCrawlResultsCommand(captured);
+    // Upstream multi-URL `scrape` saves into a local `.firecrawl/` folder;
+    // scrape-many writes to a folder the caller names (see ./scrape-many.ts).
+    addScrapeManyCommand(captured);
     cachedProgram = captured;
     return cachedProgram;
   })();
@@ -189,7 +195,7 @@ export async function firecrawlResource(): Promise<Resource> {
     kind: "firecrawl",
     isRemote: true,
     prompt:
-      "Firecrawl CLI — scrape, search, map, crawl, crawl-results, parse. Auth via FIRECRAWL_API_KEY env var. Use `firecrawl --help` to discover subcommands.",
+      "Firecrawl CLI — scrape, search, map, crawl, crawl-results, scrape-many, parse. Auth via FIRECRAWL_API_KEY env var. Use `firecrawl --help` to discover subcommands.",
     async open() {},
     async close() {},
     commands(): readonly RegisteredCommand[] {

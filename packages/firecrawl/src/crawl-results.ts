@@ -18,10 +18,16 @@ const DEFAULT_API_URL = "https://api.firecrawl.dev";
 
 interface MirageCliFileIoBridge {
   canHandle?(path: unknown): boolean;
+  readFileSync?(path: unknown, options?: unknown): Uint8Array | string | null;
   writeFileSync?(path: unknown, data: unknown, options?: unknown): boolean;
 }
 
-interface CrawlDocument {
+function bridge(): MirageCliFileIoBridge | undefined {
+  return (globalThis as typeof globalThis & { __MIRAGE_CLI_FILE_IO__?: MirageCliFileIoBridge })
+    .__MIRAGE_CLI_FILE_IO__;
+}
+
+export interface CrawlDocument {
   markdown?: string;
   html?: string;
   rawHtml?: string;
@@ -213,10 +219,9 @@ export function planCrawlFiles(results: CrawlResults): {
   return { files, manifest };
 }
 
-async function writeText(path: string, text: string): Promise<void> {
+export async function writeText(path: string, text: string): Promise<void> {
   const bytes = new TextEncoder().encode(text);
-  const io = (globalThis as typeof globalThis & { __MIRAGE_CLI_FILE_IO__?: MirageCliFileIoBridge })
-    .__MIRAGE_CLI_FILE_IO__;
+  const io = bridge();
   if (io?.canHandle?.(path)) {
     if (io.writeFileSync?.(path, bytes)) return;
     throw new Error(`Mirage VFS refused to write: ${path}`);
@@ -227,6 +232,18 @@ async function writeText(path: string, text: string): Promise<void> {
   ]);
   mkdirSync(dirname(path), { recursive: true });
   writeFileSync(path, bytes);
+}
+
+/** Read a UTF-8 text file through the Mirage bridge, else `node:fs`. */
+export async function readText(path: string): Promise<string> {
+  const io = bridge();
+  if (io?.canHandle?.(path)) {
+    const value = io.readFileSync?.(path, "utf8");
+    if (value === null || value === undefined) throw new Error(`cannot read ${path}`);
+    return typeof value === "string" ? value : new TextDecoder().decode(value);
+  }
+  const { readFileSync } = await import("node:fs");
+  return readFileSync(path, "utf8");
 }
 
 /** Write a crawl's pages under `dir`. Returns the manifest that was written. */
@@ -251,7 +268,7 @@ export async function writeCrawlResults(
   return manifest;
 }
 
-function resolveApiKey(cmd: Command, local?: string): string | undefined {
+export function resolveApiKey(cmd: Command, local?: string): string | undefined {
   if (local) return local;
   let cur: Command | null = cmd.parent;
   while (cur) {

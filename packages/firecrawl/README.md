@@ -73,6 +73,18 @@ firecrawl crawl-results <job-id> --max-pages 5 --pretty # JSON on stdout
 
 With `--dir`, `https://example.com/blog/post` lands at `<dir>/example.com/blog/post.md`, the site root at `<dir>/example.com/index.md`, and a query string adds a short hash to the file name. Inside a Mirage host the writes go through `globalThis.__MIRAGE_CLI_FILE_IO__`, so a path like `/data/crawls/example` works in a Worker. Reading results does not use Firecrawl credits.
 
+## `scrape-many`
+
+Upstream `firecrawl scrape <url> <url>…` saves into a hard-coded `.firecrawl/` folder. `scrape-many` writes where you say:
+
+```bash
+firecrawl scrape-many https://example.com/a https://example.com/b --dir ./pages
+firecrawl map https://example.com --search blog > urls.txt
+firecrawl scrape-many --urls-file urls.txt --dir ./blog --only-main-content
+```
+
+Files follow the same layout as `crawl-results`. `_index.json` lists every page written and every URL that failed; one failure does not stop the rest. Each URL is a normal billed scrape (`--concurrency` 1-10, default 5; at most 500 URLs).
+
 ## Env vars
 
 | Var                       | Required | Default at import   | Notes                                                                |

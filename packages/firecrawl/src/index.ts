@@ -34,12 +34,24 @@
  * invoke touches `fs`/`child_process`. `--help`, `--version`, and the
  * API-call subcommands (`scrape`, `search`, `map`, `crawl`, `parse`) work;
  * `init`, `setup`, `browser`, `interact` will fail at runtime in workers.
+ *
+ * `crawl-results <job-id>` is added by this wrapper: it fetches a crawl's
+ * pages and can write them as files under `--dir`.
  */
+
+export {
+  addCrawlResultsCommand,
+  fetchCrawlResults,
+  planCrawlFiles,
+  relativePagePath,
+  writeCrawlResults,
+} from "./crawl-results.ts";
 
 import { Command } from "commander";
 import { toMirageCommandFn, type IOResultCtor, type MirageCommandFn } from "@mirage-cli/core";
 // @struktoai/mirage-core is an optional peer dep — only needed for
 // `firecrawlResource()`. Type-only at compile time.
+import { addCrawlResultsCommand } from "./crawl-results.ts";
 import type {
   RegisteredCommand,
   Resource,
@@ -94,6 +106,9 @@ export async function buildProgram(): Promise<Command> {
           "This usually means upstream changed its entry point structure.",
       );
     }
+    // Upstream `crawl <job-id>` reports status only; add a command that
+    // returns the pages (see ./crawl-results.ts).
+    addCrawlResultsCommand(captured);
     cachedProgram = captured;
     return cachedProgram;
   })();
@@ -174,7 +189,7 @@ export async function firecrawlResource(): Promise<Resource> {
     kind: "firecrawl",
     isRemote: true,
     prompt:
-      "Firecrawl CLI — scrape, search, map, crawl, parse. Auth via FIRECRAWL_API_KEY env var. Use `firecrawl --help` to discover subcommands.",
+      "Firecrawl CLI — scrape, search, map, crawl, crawl-results, parse. Auth via FIRECRAWL_API_KEY env var. Use `firecrawl --help` to discover subcommands.",
     async open() {},
     async close() {},
     commands(): readonly RegisteredCommand[] {

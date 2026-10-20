@@ -22,6 +22,8 @@ Wrap any Commander.js TS CLI as an importable `@mirage-cli/<vendor>` package for
 | `@mirage-cli/ve-fanout`    | Thin wrapper around `@mirage-cli/ve-fanout-cli`'s `buildProgram` - `buildProgram` + `veFanoutCommand`.            |
 | `@mirage-cli/openrouter-cli` | OpenRouter CLI source: model/provider discovery, key usage, generation audit, and billable chat completions. |
 | `@mirage-cli/openrouter` | Thin Mirage wrapper around `@mirage-cli/openrouter-cli`, exposing the global `openrouter` command. |
+| `@mirage-cli/contentdynamite-cli` | Content Dynamite CLI (`ve-dynamite`): SEO articles, GBP posts, BOFU landing pages, profiles, ICP, design systems, revisions and featured images over the Content Dynamite API. |
+| `@mirage-cli/contentdynamite` | Thin Mirage wrapper around `@mirage-cli/contentdynamite-cli`, exposing the global `ve-dynamite` command in its mount mode. |
 | `@mirage-cli/rapidurlindexer-cli` | Rapid URL Indexer CLI source: credit balance, paid project submission, status, and delayed reports. |
 | `@mirage-cli/rapidurlindexer` | Thin Mirage wrapper around `@mirage-cli/rapidurlindexer-cli`, exposing the global `rapidurlindexer` command. |
 | `@mirage-cli/figma-cli` | Figma CLI source: files, node trees, rendered exports, comments, variables, dev resources, and library assets. Dual credentials (personal access token or OAuth). |

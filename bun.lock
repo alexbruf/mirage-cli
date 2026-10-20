@@ -12,6 +12,8 @@
         "@mirage-cli/call": "workspace:*",
         "@mirage-cli/callrail": "workspace:*",
         "@mirage-cli/clarity": "workspace:*",
+        "@mirage-cli/contentdynamite": "workspace:*",
+        "@mirage-cli/contentdynamite-cli": "workspace:*",
         "@mirage-cli/core": "workspace:*",
         "@mirage-cli/dataforseo": "workspace:*",
         "@mirage-cli/figma": "workspace:*",
@@ -211,6 +213,37 @@
         "commander": "^14.0.3",
       },
     },
+    "packages/contentdynamite": {
+      "name": "@mirage-cli/contentdynamite",
+      "version": "1.0.0",
+      "dependencies": {
+        "@mirage-cli/core": "workspace:^",
+      },
+      "devDependencies": {
+        "@mirage-cli/contentdynamite-cli": "workspace:^",
+        "@struktoai/mirage-core": "^0.0.1",
+        "commander": "^14.0.3",
+        "tsup": "^8.5.1",
+      },
+      "peerDependencies": {
+        "@mirage-cli/contentdynamite-cli": "workspace:^",
+        "@struktoai/mirage-core": ">=0.0.1",
+      },
+      "optionalPeers": [
+        "@struktoai/mirage-core",
+      ],
+    },
+    "packages/contentdynamite-cli": {
+      "name": "@mirage-cli/contentdynamite-cli",
+      "version": "1.0.0",
+      "bin": {
+        "ve-dynamite": "./dist/bin.js",
+      },
+      "dependencies": {
+        "commander": "^14.0.3",
+        "zod": "^4.6.5",
+      },
+    },
     "packages/core": {
       "name": "@mirage-cli/core",
       "version": "0.1.11",
@@ -292,7 +325,7 @@
     },
     "packages/firecrawl": {
       "name": "@mirage-cli/firecrawl",
-      "version": "0.1.9",
+      "version": "0.3.0",
       "dependencies": {
         "@mirage-cli/core": "workspace:^",
         "commander": "^14.0.0",
@@ -466,7 +499,7 @@
     },
     "packages/looker": {
       "name": "@mirage-cli/looker",
-      "version": "0.1.0",
+      "version": "0.3.0",
       "dependencies": {
         "@mirage-cli/core": "workspace:^",
       },
@@ -486,7 +519,7 @@
     },
     "packages/looker-cli": {
       "name": "@mirage-cli/looker-cli",
-      "version": "0.1.0",
+      "version": "0.3.0",
       "bin": {
         "looker": "./dist/bin.js",
       },
@@ -527,7 +560,7 @@
     },
     "packages/mobbin": {
       "name": "@mirage-cli/mobbin",
-      "version": "0.1.0",
+      "version": "0.1.1",
       "dependencies": {
         "@mirage-cli/core": "workspace:^",
       },
@@ -547,7 +580,7 @@
     },
     "packages/mobbin-cli": {
       "name": "@mirage-cli/mobbin-cli",
-      "version": "0.1.0",
+      "version": "0.1.1",
       "bin": {
         "mobbin": "./dist/bin.js",
       },
@@ -1214,6 +1247,10 @@
     "@mirage-cli/clarity": ["@mirage-cli/clarity@workspace:packages/clarity"],
 
     "@mirage-cli/clarity-cli": ["@mirage-cli/clarity-cli@workspace:packages/clarity-cli"],
+
+    "@mirage-cli/contentdynamite": ["@mirage-cli/contentdynamite@workspace:packages/contentdynamite"],
+
+    "@mirage-cli/contentdynamite-cli": ["@mirage-cli/contentdynamite-cli@workspace:packages/contentdynamite-cli"],
 
     "@mirage-cli/core": ["@mirage-cli/core@workspace:packages/core"],
 
@@ -2169,7 +2206,7 @@
 
     "youch-core": ["youch-core@0.3.3", "", { "dependencies": { "@poppinss/exception": "^1.2.2", "error-stack-parser-es": "^1.0.5" } }, "sha512-ho7XuGjLaJ2hWHoK8yFnsUGy2Y5uDpqSTq1FkHLK4/oqKtyUU1AFbOOxY4IpC9f0fTLjwYbslUz0Po5BpD1wrA=="],
 
-    "zod": ["zod@3.25.76", "", {}, "sha512-gzUt/qt81nXsFGKIFcC3YnfEAx5NkunCfnDlvuBSSFS02bcXu4Lmea0AFIUwbLWxWPx3d9p8S5QoaujKcNQxcQ=="],
+    "zod": ["zod@4.6.7", "", {}, "sha512-g8W2D2kU6a8untc053fX1uVBKzM7yqAxW/3zwk83+6RyF2+SKOuV+c0wBDhUwzV1PaGapmZH+rmcUzPf+3CGwg=="],
 
     "zod-to-json-schema": ["zod-to-json-schema@3.25.2", "", { "peerDependencies": { "zod": "^3.25.28 || ^4" } }, "sha512-O/PgfnpT1xKSDeQYSCfRI5Gy3hPf91mKVDuYLUHZJMiDFptvP41MSnWofm8dnCm0256ZNfZIM7DSzuSMAFnjHA=="],
 
@@ -2185,15 +2222,21 @@
 
     "@manypkg/get-packages/fs-extra": ["fs-extra@8.1.0", "", { "dependencies": { "graceful-fs": "^4.2.0", "jsonfile": "^4.0.0", "universalify": "^0.1.0" } }, "sha512-yhlQgA6mnOJUKOsRUFsgJdQCvkKhcz8tlZG5HBQfReYZy46OwLcY+Zia0mtdHsOo9y/hP+CxMN0TU9QxoOtG4g=="],
 
+    "@mendable/firecrawl-js/zod": ["zod@3.25.76", "", {}, "sha512-gzUt/qt81nXsFGKIFcC3YnfEAx5NkunCfnDlvuBSSFS02bcXu4Lmea0AFIUwbLWxWPx3d9p8S5QoaujKcNQxcQ=="],
+
     "@mirage-cli/core/commander": ["commander@12.1.0", "", {}, "sha512-Vw8qHK3bZM9y/P10u3Vib8o/DdkvA2OtPtZvD871QKjy74Wj1WSKFILMPRPSdUSx5RFK1arlJzEtA4PkFgnbuA=="],
 
     "@mirage-cli/dataforseo/commander": ["commander@12.1.0", "", {}, "sha512-Vw8qHK3bZM9y/P10u3Vib8o/DdkvA2OtPtZvD871QKjy74Wj1WSKFILMPRPSdUSx5RFK1arlJzEtA4PkFgnbuA=="],
 
     "@mirage-cli/dataforseo-cli/commander": ["commander@12.1.0", "", {}, "sha512-Vw8qHK3bZM9y/P10u3Vib8o/DdkvA2OtPtZvD871QKjy74Wj1WSKFILMPRPSdUSx5RFK1arlJzEtA4PkFgnbuA=="],
 
+    "@modelcontextprotocol/sdk/zod": ["zod@3.25.76", "", {}, "sha512-gzUt/qt81nXsFGKIFcC3YnfEAx5NkunCfnDlvuBSSFS02bcXu4Lmea0AFIUwbLWxWPx3d9p8S5QoaujKcNQxcQ=="],
+
     "apache-arrow/@types/node": ["@types/node@24.12.4", "", { "dependencies": { "undici-types": "~7.16.0" } }, "sha512-GUUEShf+PBCGW2KaXwcIt3Yk+e3pkKwWKb9GSyM9WQVE+ep2jzmHdGsHzu4wgcZy5fN9FBdVzjpBQsYlpfpgLA=="],
 
     "chalk-template/chalk": ["chalk@4.1.2", "", { "dependencies": { "ansi-styles": "^4.1.0", "supports-color": "^7.1.0" } }, "sha512-oKnbhFyRIXpUuez8iBMmyEa4nbj4IOQyuhc/wy9kY7/WVPcwIO9VA668Pu8RkO7+0G76SLROeyw9CpQ061i4mA=="],
+
+    "firecrawl/zod": ["zod@3.25.76", "", {}, "sha512-gzUt/qt81nXsFGKIFcC3YnfEAx5NkunCfnDlvuBSSFS02bcXu4Lmea0AFIUwbLWxWPx3d9p8S5QoaujKcNQxcQ=="],
 
     "form-data/mime-types": ["mime-types@2.1.35", "", { "dependencies": { "mime-db": "1.52.0" } }, "sha512-ZDY+bPm5zTTF+YpCrAU9nK0UgICYPT0QtT1NZWFv4s++TNkcgVaT0g6+4R2uI4MjQjzysHB1zxuWL50hzaeXiw=="],
 

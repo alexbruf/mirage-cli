@@ -6,6 +6,7 @@ interface Payload {
 	params?: Params;
 	body?: unknown;
 	form?: FormData;
+	timeoutMs?: number;
 }
 
 export class ApiError extends Error {
@@ -22,6 +23,10 @@ function describeDetail(text: string): string | null {
 		const detail = (JSON.parse(text) as { detail?: unknown }).detail;
 		if (typeof detail === 'string') return detail;
 		if (Array.isArray(detail)) return detail.map((item: { loc?: unknown[]; msg?: unknown }) => `${(item.loc ?? []).slice(1).join('.')}: ${item.msg}`).join('; ');
+		if (detail && typeof detail === 'object' && typeof (detail as { msg?: unknown }).msg === 'string') {
+			const { msg, authorize_url: url } = detail as { msg: string; authorize_url?: unknown };
+			return typeof url === 'string' && url ? `${msg} Open this link to connect: ${url}` : msg;
+		}
 		return null;
 	} catch {
 		return null;
@@ -53,8 +58,8 @@ export class ApiClient {
 		return { content: new Uint8Array(await response.arrayBuffer()), filename };
 	}
 
-	post<T = unknown>(path: string, body?: unknown, params?: Params): Promise<T> {
-		return this.json('POST', path, { body, params });
+	post<T = unknown>(path: string, body?: unknown, params?: Params, timeoutMs?: number): Promise<T> {
+		return this.json('POST', path, { body, params, timeoutMs });
 	}
 
 	postForm<T = unknown>(path: string, file: Blob, filename: string, params?: Params): Promise<T> {
@@ -79,14 +84,16 @@ export class ApiClient {
 		return (await (await this.request(method, path, payload)).json()) as T;
 	}
 
-	private async request(method: Method, path: string, { params, body, form }: Payload): Promise<Response> {
+	private async request(method: Method, path: string, { params, body, form, timeoutMs }: Payload): Promise<Response> {
 		const headers: Record<string, string> = this.token ? { Authorization: `Bearer ${this.token}` } : {};
 		let content: FormData | string | undefined = form;
 		if (!form && method !== 'GET' && method !== 'DELETE') {
 			headers['Content-Type'] = 'application/json';
 			content = body == null ? undefined : JSON.stringify(body);
 		}
-		const response = await fetch(this.url(path, params), { method, headers, body: content, redirect: 'manual' });
+		// Bun ends any fetch after five idle minutes unless told `timeout: false`; a long call sets its own limit instead.
+		const limit = timeoutMs ? { signal: AbortSignal.timeout(timeoutMs), timeout: false } : {};
+		const response = await fetch(this.url(path, params), { method, headers, body: content, redirect: 'manual', ...limit } as RequestInit);
 		if (!response.ok) throw await apiError(response);
 		return response;
 	}

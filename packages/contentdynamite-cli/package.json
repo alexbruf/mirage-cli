@@ -1,6 +1,6 @@
 {
   "name": "@mirage-cli/contentdynamite-cli",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "description": "The Content Dynamite CLI (ve-dynamite): SEO articles, Google Business Profile posts, BOFU landing pages, company profiles, ICP, design systems, revisions and featured images over the Content Dynamite API.",
   "license": "MIT",
   "repository": {

@@ -8,6 +8,7 @@ import {
 	INTERACTIVE_TYPES,
 	wireStatus,
 	type ArticleDoneRes,
+	type ArticleGdocRes,
 	type ArticlePendingRes,
 	type CleanProvenanceRes,
 	type EmbedAuditRes,
@@ -205,6 +206,17 @@ export function registerArticles(program: Command, cli: Cli): Command {
 		const target = await downloadDocument(cli, `content-writing/article/${articleId}/export`, options.format, options.output, `article-${articleId}`);
 		err(`exported article ${articleId} to ${target}`);
 	});
+
+	articles
+		.command('export-docs')
+		.description("Export a finished article to a Google Doc in your connected Google Drive (free); Dynamite then tracks the writer's edits and QA comments on it")
+		.argument('<ID>', 'Article id', integer)
+		.option('--replace', 'Overwrite the existing doc with the current article instead of linking to it')
+		.action(async (articleId: number, options: { replace?: boolean }) => {
+			const res = await cli.client().post<ArticleGdocRes>(`content-writing/article/${articleId}/export-to-docs`, undefined, { replace: options.replace ? 'true' : undefined });
+			err(`${res.created ? 'exported' : options.replace ? 'replaced' : 'already exported'} article ${articleId} to ${res.folder_path}`);
+			out(res);
+		});
 
 	articles
 		.command('get')

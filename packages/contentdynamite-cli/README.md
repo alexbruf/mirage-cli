@@ -37,7 +37,7 @@ Or pass a token per call: `--token ved_xxx` or `VE_DYNAMITE_TOKEN=ved_xxx`. Prec
 | `icp` | `show`, `export`, `regenerate`, `update` |
 | `categories` | `list`, `add` |
 | `design-system` | `show`, `set <profile-id> <zip>`, `rescan`, `clear` |
-| `articles` | `write`, `research-prompt`, `get`, `list`, `watch`, `update`, `delete`, `download`, `export`, `parts`, `reject`, `revisions`, `provenance-audit`, `clean-provenance`, `embed-audit`, `strip-embeds` |
+| `articles` | `write`, `research-prompt`, `get`, `list`, `watch`, `update`, `delete`, `download`, `export-docs`, `export`, `parts`, `reject`, `revisions`, `provenance-audit`, `clean-provenance`, `embed-audit`, `strip-embeds` |
 | `revisions` | `list`, `get`, `watch`, `verdict` |
 | `batches` | `create`, `list`, `get`, `watch`, `delete` |
 | `gbp` | `write`, `batch`, `list`, `get`, `watch`, `update`, `regenerate`, `delete`, `image-options` |

@@ -6,10 +6,12 @@ import { err, line, out } from '../output';
 import type { ArticleQaRes, QaAuditRes } from '../wire';
 
 const DEFAULT_THRESHOLD = 7.0;
+const JUDGED_QA_TIMEOUT_MS = 20 * 60 * 1000;
 const ORIGIN_ORDER = ['copy', 'inputs', 'age', 'blocked'];
 
 type Summary = Partial<Extract<QaAuditRes['summary'], { mean: number }>> & { count: number };
 type Part = ArticleQaRes['report']['content']['compliance'];
+type FormatPart = NonNullable<ArticleQaRes['report']['format']>;
 
 interface RunOptions {
 	all?: boolean;
@@ -63,6 +65,14 @@ function printPart(name: string, part: Part): void {
 	for (const skipped of part.skipped) line(`    skipped: ${skipped}`);
 }
 
+function printFormat(format: FormatPart): void {
+	line(`  format  ${format.format}   code checks failing ${format.code.length}${format.rubric ? `   rubric ${format.rubric.passed}/${format.rubric.asked} passed` : ''}`);
+	for (const failure of format.code) line(`    - code   ${failure.check.padEnd(24)} ${(failure.part ?? '-').padEnd(10)} ${failure.message}`);
+	for (const failure of format.rubric?.failures ?? []) line(`    - judge  ${failure.check.padEnd(24)} ${(failure.part ?? '-').padEnd(10)} ${failure.message}`);
+	if (format.rubric_error) err(`  rubric did not run: ${format.rubric_error}`);
+	for (const note of format.notes) line(`    note: ${note}`);
+}
+
 function printReport(articleId: number, res: ArticleQaRes): void {
 	const { content, image } = res.report;
 	const blended = content.score_with_model ?? content.score;
@@ -81,6 +91,7 @@ function printReport(articleId: number, res: ArticleQaRes): void {
 	printPart('compliance', content.compliance);
 	printPart('craft', content.craft);
 	if (image) printPart('image', image);
+	if (res.report.format) printFormat(res.report.format);
 }
 
 export function registerEvals(program: Command, cli: Cli): void {
@@ -93,7 +104,7 @@ export function registerEvals(program: Command, cli: Cli): void {
 		.option('--all', 'Score every shipped article')
 		.option('--company <name>', "Only this company's articles (with --all)")
 		.option('--no-images', 'Skip the per image fetch')
-		.option('--judge', 'Also run the model judge. Costs a model call per article.')
+		.option('--judge', 'Also run the model judge, and the format rubric on an article written in a format. Each costs a model call per article.')
 		.option('--store', 'Keep the result on article.qa_report (the default)')
 		.option('--no-store', 'Score without keeping the result')
 		.option('--threshold <score>', 'Exit 1 if any article scores below this', decimal, DEFAULT_THRESHOLD)
@@ -119,15 +130,17 @@ export function registerEvals(program: Command, cli: Cli): void {
 			const rows: { article_id: number; score: number; report: ArticleQaRes['report'] }[] = [];
 			try {
 				for (const articleId of articles) {
-					const res = await client.post<ArticleQaRes>(`content-writing/article/${articleId}/qa`, undefined, {
-						model_checks: options.judge ? 'true' : 'false',
-						store: options.store === false ? 'false' : 'true',
-					});
+					const res = await client.post<ArticleQaRes>(
+						`content-writing/article/${articleId}/qa`,
+						undefined,
+						{ model_checks: options.judge ? 'true' : 'false', store: options.store === false ? 'false' : 'true' },
+						options.judge ? JUDGED_QA_TIMEOUT_MS : undefined,
+					);
 					rows.push({ article_id: articleId, score: res.score, report: res.report });
 					if (!options.json) printReport(articleId, res);
 				}
 			} finally {
-				cli.billed(rows.filter((row) => row.report.content.judge).length);
+				cli.billed(rows.filter((row) => row.report.content.judge).length + rows.filter((row) => row.report.format?.rubric).length);
 			}
 			if (options.json) out(rows);
 			exitOn(rows, options.threshold);
